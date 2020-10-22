@@ -58,6 +58,25 @@ func LoadSettings(config backend.DataSourceInstanceSettings) (DatasourceSettings
 		settings.Region = settings.DefaultRegion
 	}
 
+	if settings.Profile == "" {
+		settings.Profile = config.Database // legacy support (only for cloudwatch?)
+	}
+
+	// at := authTypeDefault
+	// switch atStr {
+	// case "credentials":
+	// 	at = authTypeSharedCreds
+	// case "keys":
+	// 	at = authTypeKeys
+	// case "default":
+	// 	at = authTypeDefault
+	// case "arn":
+	// 	at = authTypeDefault
+	// 	plog.Warn("Authentication type \"arn\" is deprecated, falling back to default")
+	// default:
+	// 	plog.Warn("Unrecognized AWS authentication type", "type", atStr)
+	// }
+
 	settings.AccessKey = config.DecryptedSecureJSONData["accessKey"]
 	settings.SecretKey = config.DecryptedSecureJSONData["secretKey"]
 
