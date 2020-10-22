@@ -1,4 +1,4 @@
-package aws
+package awsds
 
 import (
 	"encoding/json"
@@ -7,14 +7,37 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
+const defaultRegion = "default"
+
+type AuthType int
+
+const (
+	AuthTypeDefault AuthType = iota
+	AuthTypeSharedCreds
+	AuthTypeKeys
+)
+
+func (at AuthType) String() string {
+	switch at {
+	case AuthTypeDefault:
+		return "default"
+	case AuthTypeSharedCreds:
+		return "sharedCreds"
+	case AuthTypeKeys:
+		return "keys"
+	default:
+		panic(fmt.Sprintf("Unrecognized auth type %d", at))
+	}
+}
+
 // DatasourceSettings holds basic connection info
 type DatasourceSettings struct {
-	Profile       string `json:"profile"`
-	Region        string `json:"region"`
-	DefaultRegion string `json:"defaultRegion"`
-	AuthType      string `json:"authType"`
-	AssumeRoleArn string `json:"assumeRoleArn"`
-	Namespace     string `json:"namespace"`
+	Profile       string   `json:"profile"`
+	Region        string   `json:"region"`
+	DefaultRegion string   `json:"defaultRegion"` // NOT in cloudwatch?
+	AuthType      AuthType `json:"authType"`
+	AssumeRoleARN string   `json:"assumeRoleARN"`
+	ExternalID    string   `json:"externalId"`
 
 	// Loaded from DecryptedSecureJSONData (not the json object)
 	AccessKey string `json:"-"`
@@ -31,7 +54,7 @@ func LoadSettings(config backend.DataSourceInstanceSettings) (DatasourceSettings
 		}
 	}
 
-	if settings.Region == "default" || settings.Region == "" {
+	if settings.Region == defaultRegion || settings.Region == "" {
 		settings.Region = settings.DefaultRegion
 	}
 
