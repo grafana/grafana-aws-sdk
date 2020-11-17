@@ -69,6 +69,9 @@ type AWSDatasourceSettings struct {
 	AssumeRoleARN string   `json:"assumeRoleARN"`
 	ExternalID    string   `json:"externalId"`
 
+	// Override the client endpoint
+	Endpoint string `json:"endpoint"`
+
 	//go:deprecated Use Region instead
 	DefaultRegion string `json:"defaultRegion"`
 
