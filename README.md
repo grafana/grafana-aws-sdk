@@ -1,6 +1,7 @@
 # Grafana AWS SDK
 
-This is a common package used for all amazon plugins
+This is a common package that can be used for all amazon plugins.
+
 
 ## Backend plugins (go sdk)
 

@@ -53,7 +53,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	t.Run("Without external ID", func(t *testing.T) {
 		const roleARN = "test"
 
-		settings := DatasourceSettings{
+		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
 
@@ -77,7 +77,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		const roleARN = "test"
 		const externalID = "external"
 
-		settings := DatasourceSettings{
+		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 			ExternalID:    externalID,
 		}

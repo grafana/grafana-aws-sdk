@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -30,14 +31,46 @@ func (at AuthType) String() string {
 	}
 }
 
+// MarshalJSON marshals the enum as a quoted json string
+func (at *AuthType) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(at.String())
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (at *AuthType) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	switch j {
+	case "sharedCreds":
+		*at = AuthTypeSharedCreds
+	case "keys":
+		*at = AuthTypeKeys
+	case "credentials": // This was the old name for default
+		fallthrough
+	case "default":
+		fallthrough
+	default:
+		*at = AuthTypeDefault // Credentials
+	}
+	return nil
+}
+
 // DatasourceSettings holds basic connection info
-type DatasourceSettings struct {
+type AWSDatasourceSettings struct {
 	Profile       string   `json:"profile"`
 	Region        string   `json:"region"`
-	DefaultRegion string   `json:"defaultRegion"` // NOT in cloudwatch?
 	AuthType      AuthType `json:"authType"`
 	AssumeRoleARN string   `json:"assumeRoleARN"`
 	ExternalID    string   `json:"externalId"`
+
+	//go:deprecated Use Region instead
+	DefaultRegion string `json:"defaultRegion"`
 
 	// Loaded from DecryptedSecureJSONData (not the json object)
 	AccessKey string `json:"-"`
@@ -45,40 +78,23 @@ type DatasourceSettings struct {
 }
 
 // LoadSettings will read and validate Settings from the DataSourceConfg
-func LoadSettings(config backend.DataSourceInstanceSettings) (DatasourceSettings, error) {
-	settings := DatasourceSettings{}
-
+func (s *AWSDatasourceSettings) Load(config backend.DataSourceInstanceSettings) error {
 	if config.JSONData != nil && len(config.JSONData) > 1 {
-		if err := json.Unmarshal(config.JSONData, &settings); err != nil {
-			return settings, fmt.Errorf("could not unmarshal DatasourceSettings json: %w", err)
+		if err := json.Unmarshal(config.JSONData, s); err != nil {
+			return fmt.Errorf("could not unmarshal DatasourceSettings json: %w", err)
 		}
 	}
 
-	if settings.Region == defaultRegion || settings.Region == "" {
-		settings.Region = settings.DefaultRegion
+	if s.Region == defaultRegion || s.Region == "" {
+		s.Region = s.DefaultRegion
 	}
 
-	if settings.Profile == "" {
-		settings.Profile = config.Database // legacy support (only for cloudwatch?)
+	if s.Profile == "" {
+		s.Profile = config.Database // legacy support (only for cloudwatch?)
 	}
 
-	// at := authTypeDefault
-	// switch atStr {
-	// case "credentials":
-	// 	at = authTypeSharedCreds
-	// case "keys":
-	// 	at = authTypeKeys
-	// case "default":
-	// 	at = authTypeDefault
-	// case "arn":
-	// 	at = authTypeDefault
-	// 	plog.Warn("Authentication type \"arn\" is deprecated, falling back to default")
-	// default:
-	// 	plog.Warn("Unrecognized AWS authentication type", "type", atStr)
-	// }
+	s.AccessKey = config.DecryptedSecureJSONData["accessKey"]
+	s.SecretKey = config.DecryptedSecureJSONData["secretKey"]
 
-	settings.AccessKey = config.DecryptedSecureJSONData["accessKey"]
-	settings.SecretKey = config.DecryptedSecureJSONData["secretKey"]
-
-	return settings, nil
+	return nil
 }

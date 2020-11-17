@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-var plog = log.New() // "awssdk"
+var plog = backend.Logger
 
 type envelope struct {
 	session    *session.Session
@@ -53,7 +53,7 @@ var newSTSCredentials = stscreds.NewCredentials
 var newEC2Metadata = ec2metadata.New
 
 // GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
-func (sc *SessionCache) GetSession(region string, s DatasourceSettings) (*session.Session, error) {
+func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*session.Session, error) {
 	if region == "" || region == defaultRegion {
 		region = s.Region
 	}

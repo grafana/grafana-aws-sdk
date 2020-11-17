@@ -5,4 +5,4 @@ import (
 )
 
 // AmazonSessionProvider will return a session (perhaps cached) for given region and settings
-type AmazonSessionProvider func(region string, s DatasourceSettings) (*session.Session, error)
+type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*session.Session, error)
