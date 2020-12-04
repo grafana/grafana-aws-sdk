@@ -117,7 +117,7 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	}
 
 	duration := stscreds.DefaultDuration
-	expiration := time.Now().Add(duration)
+	expiration := time.Now().UTC().Add(duration)
 	if s.AssumeRoleARN != "" {
 		// We should assume a role in AWS
 		plog.Debug("Trying to assume role in AWS", "arn", s.AssumeRoleARN)
