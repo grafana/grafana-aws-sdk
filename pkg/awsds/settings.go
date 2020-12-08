@@ -47,16 +47,16 @@ func (at *AuthType) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	switch j {
+	case "credentials": // Old name
+		fallthrough
 	case "sharedCreds":
 		*at = AuthTypeSharedCreds
 	case "keys":
 		*at = AuthTypeKeys
-	case "credentials": // This was the old name for default
-		fallthrough
 	case "default":
 		fallthrough
 	default:
-		*at = AuthTypeDefault // Credentials
+		*at = AuthTypeDefault // For old 'arn' option
 	}
 	return nil
 }
