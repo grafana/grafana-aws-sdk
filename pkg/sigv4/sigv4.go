@@ -45,7 +45,7 @@ type Config struct {
 
 	Profile string
 
-	DatasourceType string
+	Service string
 
 	AccessKey string
 	SecretKey string
@@ -85,7 +85,7 @@ func (m *SigV4Middleware) signRequest(req *http.Request) (http.Header, error) {
 
 	stripHeaders(req)
 
-	return signer.Sign(req, bytes.NewReader(body), awsServiceNamespace(m.Config.DatasourceType), m.Config.Region, time.Now().UTC())
+	return signer.Sign(req, bytes.NewReader(body), m.Config.Service, m.Config.Region, time.Now().UTC())
 }
 
 func (m *SigV4Middleware) signer() (*v4.Signer, error) {
@@ -139,17 +139,6 @@ func replaceBody(req *http.Request) ([]byte, error) {
 	}
 	req.Body = ioutil.NopCloser(bytes.NewReader(payload))
 	return payload, nil
-}
-
-func awsServiceNamespace(dsType string) string {
-	switch dsType {
-	case "elasticsearch":
-		return "es"
-	case "prometheus":
-		return "aps"
-	default:
-		panic(fmt.Sprintf("Unsupported datasource %s", dsType))
-	}
 }
 
 func stripHeaders(req *http.Request) {
