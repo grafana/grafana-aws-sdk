@@ -62,21 +62,21 @@ type RoundTripperFunc func(req *http.Request) (*http.Response, error)
 
 // RoundTrip implements the RoundTripper interface.
 func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
-		return rt(r)
+	return rt(r)
 }
 
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
-		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
-				if next == nil {
-						next = http.DefaultTransport
-				}
-				return (&middleware{
-						config: config,
-						next:   next,
-				}).exec(r)
-		})
+	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		if next == nil {
+			next = http.DefaultTransport
+		}
+		return (&middleware{
+			config: config,
+			next:   next,
+		}).exec(r)
+	})
 }
 
 func (m *middleware) exec(req *http.Request) (*http.Response, error) {
