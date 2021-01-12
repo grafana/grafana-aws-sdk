@@ -1,4 +1,4 @@
-package models
+package sigv4
 
 import (
 	"bytes"
@@ -35,9 +35,9 @@ var permittedHeaders = map[string]struct{}{
 	"Accept-Encoding": {},
 }
 
-type SigV4Middleware struct {
-	Config *Config
-	Next   http.RoundTripper
+type middleware struct {
+	config *Config
+	next   http.RoundTripper
 }
 
 type Config struct {
@@ -55,20 +55,40 @@ type Config struct {
 	Region        string
 }
 
-func (m *SigV4Middleware) RoundTrip(req *http.Request) (*http.Response, error) {
+// The RoundTripperFunc type is an adapter to allow the use of ordinary
+// functions as RoundTrippers. If f is a function with the appropriate
+// signature, RoundTripperFunc(f) is a RoundTripper that calls f.
+type RoundTripperFunc func(req *http.Request) (*http.Response, error)
+
+// RoundTrip implements the RoundTripper interface.
+func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+		return rt(r)
+}
+
+// New instantiates a new signing middleware with an optional child
+// middleware. The http.DefaultTransport will be used if nil
+func New(config *Config, next http.RoundTripper) http.RoundTripper {
+		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				if next == nil {
+						next = http.DefaultTransport
+				}
+				return (&middleware{
+						config: config,
+						next:   next,
+				}).exec(r)
+		})
+}
+
+func (m *middleware) exec(req *http.Request) (*http.Response, error) {
 	_, err := m.signRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
-	if m.Next == nil {
-		return http.DefaultTransport.RoundTrip(req)
-	}
-
-	return m.Next.RoundTrip(req)
+	return m.next.RoundTrip(req)
 }
 
-func (m *SigV4Middleware) signRequest(req *http.Request) (http.Header, error) {
+func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 	signer, err := m.signer()
 	if err != nil {
 		return nil, err
@@ -85,29 +105,29 @@ func (m *SigV4Middleware) signRequest(req *http.Request) (http.Header, error) {
 
 	stripHeaders(req)
 
-	return signer.Sign(req, bytes.NewReader(body), m.Config.Service, m.Config.Region, time.Now().UTC())
+	return signer.Sign(req, bytes.NewReader(body), m.config.Service, m.config.Region, time.Now().UTC())
 }
 
-func (m *SigV4Middleware) signer() (*v4.Signer, error) {
-	authType := AuthType(m.Config.AuthType)
+func (m *middleware) signer() (*v4.Signer, error) {
+	authType := AuthType(m.config.AuthType)
 
 	var c *credentials.Credentials
 	switch authType {
 	case Keys:
-		c = credentials.NewStaticCredentials(m.Config.AccessKey, m.Config.SecretKey, "")
+		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
 	case Credentials:
-		c = credentials.NewSharedCredentials("", m.Config.Profile)
+		c = credentials.NewSharedCredentials("", m.config.Profile)
 	case Default:
 		// passing nil credentials will force AWS to allow a more complete credential chain vs the explicit default
 		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(m.Config.Region),
+			Region: aws.String(m.config.Region),
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		if m.Config.AssumeRoleARN != "" {
-			return v4.NewSigner(stscreds.NewCredentials(s, m.Config.AssumeRoleARN)), nil
+		if m.config.AssumeRoleARN != "" {
+			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
 		}
 
 		return v4.NewSigner(s.Config.Credentials), nil
@@ -115,15 +135,15 @@ func (m *SigV4Middleware) signer() (*v4.Signer, error) {
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 
-	if m.Config.AssumeRoleARN != "" {
+	if m.config.AssumeRoleARN != "" {
 		s, err := session.NewSession(&aws.Config{
-			Region:      aws.String(m.Config.Region),
+			Region:      aws.String(m.config.Region),
 			Credentials: c},
 		)
 		if err != nil {
 			return nil, err
 		}
-		return v4.NewSigner(stscreds.NewCredentials(s, m.Config.AssumeRoleARN)), nil
+		return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
 	}
 
 	return v4.NewSigner(c), nil
