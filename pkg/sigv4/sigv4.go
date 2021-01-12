@@ -65,7 +65,7 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 		return rt(r)
 }
 
-// New instantiates a new signing middleware with an optional child
+// New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
 		return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
