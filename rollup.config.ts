@@ -1,8 +1,8 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import sourceMaps from 'rollup-plugin-sourcemaps';
-import json from '@rollup/plugin-json';
 import { terser } from 'rollup-plugin-terser';
+
+import typescript from 'rollup-plugin-typescript2';
 
 const pkg = require('./package.json');
 
@@ -10,45 +10,34 @@ const libraryName = pkg.name;
 
 const buildCjsPackage = ({ env }) => {
   return {
-    input: `compiled/index.js`,
+    input: 'src/index.ts',
     output: [
       {
         file: `dist/index.${env}.js`,
         name: libraryName,
         format: 'cjs',
         sourcemap: true,
+        chunkFileNames: `[name].${env}.js`,
+        strict: false,
         exports: 'named',
-        globals: {},
+        globals: {
+          react: 'React',
+          'prop-types': 'PropTypes',
+        },
       },
     ],
-    external: ['lodash', 'rxjs', 'apache-arrow'], // Use Lodash, rxjs & arrow from grafana
     plugins: [
-      json({
-        include: ['../../node_modules/moment-timezone/data/packed/latest.json'],
+      typescript({
+        rollupCommonJSResolveHack: false,
+        clean: true,
       }),
       commonjs({
         include: /node_modules/,
-        namedExports: {
-          '../../node_modules/lodash/lodash.js': [
-            'flatten',
-            'find',
-            'upperFirst',
-            'debounce',
-            'isNil',
-            'isNumber',
-            'flattenDeep',
-            'map',
-            'chunk',
-            'sortBy',
-            'uniqueId',
-            'zip',
-          ],
-        },
       }),
       resolve(),
-      sourceMaps(),
       env === 'production' && terser(),
     ],
+    external: ['react', 'react-dom', '@grafana/data', '@grafana/ui', '@grafana/runtime'],
   };
 };
 export default [buildCjsPackage({ env: 'development' }), buildCjsPackage({ env: 'production' })];
