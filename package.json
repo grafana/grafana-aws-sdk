@@ -1,5 +1,5 @@
 {
-  "name": "grafana-aws-sdk",
+  "name": "@grafana/grafana-aws-sdk",
   "version": "0.0.1",
   "description": "Common AWS features for grafana",
   "main": "dist/index.js",
