@@ -1095,7 +1095,7 @@
   resolved "https://registry.yarnpkg.com/@emotion/weak-memoize/-/weak-memoize-0.2.5.tgz#8eed982e2ee6f7f4e44c253e12962980791efd46"
   integrity sha512-6U71C2Wp7r5XtFtQzYrW5iKFT67OixrSxjI4MptCHzdSVlgabczzqLe0ZSgnub/5Kp4hSbpDB1tMytZY9pwxxA==
 
-"@grafana/data@7.4.3", "@grafana/data@latest":
+"@grafana/data@7.4.3":
   version "7.4.3"
   resolved "https://registry.yarnpkg.com/@grafana/data/-/data-7.4.3.tgz#b19a6a767e0be92e9a3d49d6441d2b056eefe944"
   integrity sha512-zYpqNVtcAbJnY9KiW2bYH9fAu5H91+SC5W926KCc4ZKwT5I/B/uAvl1TwT3pLF1w8bMsuotrNorWQOFSk36Fbg==
@@ -1286,7 +1286,7 @@
   resolved "https://registry.yarnpkg.com/@grafana/tsconfig/-/tsconfig-1.0.0-rc1.tgz#d07ea16755a50cae21000113f30546b61647a200"
   integrity sha512-nucKPGyzlSKYSiJk5RA8GzMdVWhdYNdF+Hh65AXxjD9PlY69JKr5wANj8bVdQboag6dgg0BFKqgKPyY+YtV4Iw==
 
-"@grafana/ui@7.4.3", "@grafana/ui@latest":
+"@grafana/ui@7.4.3":
   version "7.4.3"
   resolved "https://registry.yarnpkg.com/@grafana/ui/-/ui-7.4.3.tgz#9de5225f102f133d143186281045e11a4ca75320"
   integrity sha512-EZW9Y/idL8bNCIW8lHcqPLytP4yNn5dmx+zJYumWuO4drW+Jx/UJVdEkEUQ5H7Es3rNr2Y5HwDO09ubD+T1PCQ==
