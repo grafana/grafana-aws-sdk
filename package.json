@@ -1,6 +1,6 @@
 {
-  "name": "@grafana/grafana-aws-sdk",
-  "version": "0.0.1",
+  "name": "@grafana/aws-sdk",
+  "version": "0.0.12",
   "description": "Common AWS features for grafana",
   "main": "dist/index.js",
   "scripts": {
@@ -10,19 +10,20 @@
     "typecheck": "tsc --noEmit"
   },
   "files": [
+    "index.js",
     "dist"
   ],
   "repository": "github:grafana/grafana-aws-sdk",
   "author": "Grafana Labs <team@grafana.com> (https://grafana.com)",
   "license": "Apache-2.0",
   "dependencies": {
-    "@grafana/data": "next",
-    "@grafana/ui": "next",
-    "@grafana/runtime": "next"
+    "@grafana/data": "latest",
+    "@grafana/runtime": "7.5.0-pre.0-8379f36a68",
+    "@grafana/ui": "latest"
   },
   "devDependencies": {
-    "@grafana/toolkit": "next",
-    "@grafana/tsconfig": "next",
+    "@grafana/toolkit": "latest",
+    "@grafana/tsconfig": "latest",
     "@rollup/plugin-commonjs": "11.0.2",
     "@rollup/plugin-json": "4.0.3",
     "@rollup/plugin-node-resolve": "7.1.1",

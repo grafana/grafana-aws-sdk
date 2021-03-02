@@ -26,6 +26,7 @@ const buildCjsPackage = ({ env }) => {
         },
       },
     ],
+    external: ['react', '@grafana/data', '@grafana/ui', '@grafana/runtime'],
     plugins: [
       typescript({
         rollupCommonJSResolveHack: false,
@@ -37,7 +38,6 @@ const buildCjsPackage = ({ env }) => {
       resolve(),
       env === 'production' && terser(),
     ],
-    external: ['react', 'react-dom', '@grafana/data', '@grafana/ui', '@grafana/runtime'],
   };
 };
 export default [buildCjsPackage({ env: 'development' }), buildCjsPackage({ env: 'production' })];
