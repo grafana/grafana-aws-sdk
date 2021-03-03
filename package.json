@@ -1,9 +1,10 @@
 {
   "name": "@grafana/aws-sdk",
-  "version": "0.0.13",
+  "version": "0.0.142",
   "description": "Common AWS features for grafana",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "watch 'npm run bundle' ./src",
     "build": "yarn clean && yarn typecheck && yarn bundle",
     "bundle": "rollup -c rollup.config.ts",
     "clean": "rimraf ./dist ./compiled",
@@ -17,9 +18,10 @@
   "author": "Grafana Labs <team@grafana.com> (https://grafanap.com)",
   "license": "Apache-2.0",
   "dependencies": {
-    "@grafana/data": "7.5.0-pre.0-8379f36a68",
-    "@grafana/runtime": "7.5.0-pre.0-8379f36a68",
-    "@grafana/ui": "7.5.0-pre.0-8379f36a68"
+    "@grafana/data": "7.5.0-pre.0-f5d1fa48ca",
+    "@grafana/runtime": "7.5.0-pre.0-f5d1fa48ca",
+    "@grafana/ui": "7.5.0-pre.0-f5d1fa48ca",
+    "watch": "^1.0.2"
   },
   "devDependencies": {
     "@grafana/toolkit": "latest",
