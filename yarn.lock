@@ -1121,10 +1121,24 @@
     rxjs "6.6.3"
     xss "1.0.6"
 
-"@grafana/data@7.5.0-pre.0-f5d1fa48ca":
-  version "7.5.0-pre.0-f5d1fa48ca"
-  resolved "https://npm.pkg.github.com/download/@grafana/data/7.5.0-pre.0-f5d1fa48ca/2e0e115af9cad82605064a095c80981ca275b84f75ac1d28e6a0ef6408b6bf6f#b95a0aa36f8ac390fa08b3413d64be6c78d2c483"
-  integrity sha1-uVoKo2+Kw5D6CLNBPWS+bHjSxIM=
+"@grafana/data@7.5.0-pre.0-bd2390c49f":
+  version "7.5.0-pre.0-bd2390c49f"
+  resolved "https://npm.pkg.github.com/download/@grafana/data/7.5.0-pre.0-bd2390c49f/3eea66bcb05a53ffbabfb8aa5edef5bb77e2ac9da5a76b8be1cad423714180f1#341dab3c21b590f4ba9d7fe9cb89559990bcc20b"
+  integrity sha1-NB2rPCG1kPS6nX/py4lVmZC8wgs=
+  dependencies:
+    "@braintree/sanitize-url" "4.0.0"
+    "@types/d3-interpolate" "^1.3.1"
+    apache-arrow "0.16.0"
+    eventemitter3 "4.0.7"
+    lodash "4.17.21"
+    marked "2.0.1"
+    rxjs "6.6.3"
+    xss "1.0.6"
+
+"@grafana/data@7.5.0-pre.0-f33bbbd9d0", "@grafana/data@canary":
+  version "7.5.0-pre.0-f33bbbd9d0"
+  resolved "https://npm.pkg.github.com/download/@grafana/data/7.5.0-pre.0-f33bbbd9d0/947ec73987933f95f1c052e5e74d883e627d8898e207792368a15f45619926af#311d80db07525b836daee8a83dc356c0e64052f7"
+  integrity sha1-MR2A2wdSW4NtruioPcNWwOZAUvc=
   dependencies:
     "@braintree/sanitize-url" "4.0.0"
     "@types/d3-interpolate" "^1.3.1"
@@ -1146,10 +1160,21 @@
     typescript "4.1.2"
     yaml "^1.8.3"
 
-"@grafana/e2e-selectors@7.5.0-pre.0-f5d1fa48ca":
-  version "7.5.0-pre.0-f5d1fa48ca"
-  resolved "https://npm.pkg.github.com/download/@grafana/e2e-selectors/7.5.0-pre.0-f5d1fa48ca/730c29edf304f5f8090b3ec2256a35862ef8b13dc5576be2c83daed663825eb9#c0a48aa4dfbdbbea3cce130c7743ce7c2a9c7a83"
-  integrity sha1-wKSKpN+9u+o8zhMMd0POfCqceoM=
+"@grafana/e2e-selectors@7.5.0-pre.0-bd2390c49f":
+  version "7.5.0-pre.0-bd2390c49f"
+  resolved "https://npm.pkg.github.com/download/@grafana/e2e-selectors/7.5.0-pre.0-bd2390c49f/5e7d0a8877dd7f1dcb58ba56839d9ab556a4f61329d37637ddd4f393be1848be#973287175e7a892fcec5efe7710dccd11121c162"
+  integrity sha1-lzKHF156iS/Oxe/ncQ3M0REhwWI=
+  dependencies:
+    "@grafana/tsconfig" "^1.0.0-rc1"
+    commander "5.0.0"
+    execa "4.0.0"
+    typescript "4.1.2"
+    yaml "^1.8.3"
+
+"@grafana/e2e-selectors@7.5.0-pre.0-f33bbbd9d0":
+  version "7.5.0-pre.0-f33bbbd9d0"
+  resolved "https://npm.pkg.github.com/download/@grafana/e2e-selectors/7.5.0-pre.0-f33bbbd9d0/d3b5b9546844490fa62612a97addb7e779a8697c706c4761a079f52dbdc5cf25#a2f26f9d3fc5aa467fdada36043b8db20f2e25a8"
+  integrity sha1-ovJvnT/FqkZ/2to2BDuNsg8uJag=
   dependencies:
     "@grafana/tsconfig" "^1.0.0-rc1"
     commander "5.0.0"
@@ -1173,13 +1198,13 @@
     prettier "2.2.1"
     typescript "4.0.2"
 
-"@grafana/runtime@7.5.0-pre.0-f5d1fa48ca":
-  version "7.5.0-pre.0-f5d1fa48ca"
-  resolved "https://npm.pkg.github.com/download/@grafana/runtime/7.5.0-pre.0-f5d1fa48ca/104b85a112ec59da71b4af0925c74c88a04c78a6ba9e43ca1a649eaa9bef5b92#8eb88dfb355328c6e4c99255a846b9993be42a06"
-  integrity sha1-jriN+zVTKMbkyZJVqEa5mTvkKgY=
+"@grafana/runtime@canary":
+  version "7.5.0-pre.0-bd2390c49f"
+  resolved "https://npm.pkg.github.com/download/@grafana/runtime/7.5.0-pre.0-bd2390c49f/24692dc1211843fe3ba5eff0793e92a76a782995655b59913b0d1c02bfa416fb#9fd99a0d0f1947bbb50ffdfc10c1b8a3ed705671"
+  integrity sha1-n9maDQ8ZR7u1D/38EMG4o+1wVnE=
   dependencies:
-    "@grafana/data" "7.5.0-pre.0-f5d1fa48ca"
-    "@grafana/ui" "7.5.0-pre.0-f5d1fa48ca"
+    "@grafana/data" "7.5.0-pre.0-bd2390c49f"
+    "@grafana/ui" "7.5.0-pre.0-bd2390c49f"
     systemjs "0.20.19"
     systemjs-plugin-css "0.1.37"
 
@@ -1351,14 +1376,72 @@
     tinycolor2 "1.4.1"
     uplot "1.6.4"
 
-"@grafana/ui@7.5.0-pre.0-f5d1fa48ca":
-  version "7.5.0-pre.0-f5d1fa48ca"
-  resolved "https://npm.pkg.github.com/download/@grafana/ui/7.5.0-pre.0-f5d1fa48ca/71d752143bf9fa14f3518d68e017a0644226d42c5e1da4913d4a0d1a7688b42b#0cf6110e57212c739cbb9f6b24fd550365c89820"
-  integrity sha1-DPYRDlchLHOcu59rJP1VA2XImCA=
+"@grafana/ui@7.5.0-pre.0-bd2390c49f":
+  version "7.5.0-pre.0-bd2390c49f"
+  resolved "https://npm.pkg.github.com/download/@grafana/ui/7.5.0-pre.0-bd2390c49f/20516e7098a8de341c568023866878e870540bf17928f1338be25685bcae6134#d0f36405c4d9c8cfd8a3e21ae8f98878e242db1d"
+  integrity sha1-0PNkBcTZyM/Yo+Ia6PmIeOJC2x0=
   dependencies:
     "@emotion/core" "10.0.27"
-    "@grafana/data" "7.5.0-pre.0-f5d1fa48ca"
-    "@grafana/e2e-selectors" "7.5.0-pre.0-f5d1fa48ca"
+    "@grafana/data" "7.5.0-pre.0-bd2390c49f"
+    "@grafana/e2e-selectors" "7.5.0-pre.0-bd2390c49f"
+    "@grafana/slate-react" "0.22.9-grafana"
+    "@grafana/tsconfig" "^1.0.0-rc1"
+    "@iconscout/react-unicons" "1.1.4"
+    "@popperjs/core" "2.5.4"
+    "@sentry/browser" "5.25.0"
+    "@testing-library/jest-dom" "5.11.9"
+    "@torkelo/react-select" "3.0.8"
+    "@types/hoist-non-react-statics" "3.3.1"
+    "@types/react-beautiful-dnd" "12.1.2"
+    "@types/react-color" "3.0.1"
+    "@types/react-select" "3.0.8"
+    "@types/react-table" "7.0.12"
+    "@types/slate" "0.47.1"
+    "@types/slate-react" "0.22.5"
+    "@visx/event" "1.3.0"
+    "@visx/gradient" "1.0.0"
+    "@visx/scale" "1.4.0"
+    "@visx/shape" "1.4.0"
+    "@visx/tooltip" "1.3.0"
+    classnames "2.2.6"
+    d3 "5.15.0"
+    emotion "10.0.27"
+    hoist-non-react-statics "3.3.2"
+    immutable "3.8.2"
+    jquery "3.5.1"
+    lodash "4.17.21"
+    moment "2.24.0"
+    monaco-editor "0.20.0"
+    papaparse "5.3.0"
+    rc-cascader "1.0.1"
+    rc-drawer "3.1.3"
+    rc-slider "9.6.4"
+    rc-time-picker "^3.7.3"
+    react "17.0.1"
+    react-beautiful-dnd "13.0.0"
+    react-calendar "2.19.2"
+    react-color "2.18.0"
+    react-custom-scrollbars "4.2.1"
+    react-dom "17.0.1"
+    react-highlight-words "0.16.0"
+    react-hook-form "5.1.3"
+    react-monaco-editor "0.36.0"
+    react-popper "2.2.4"
+    react-storybook-addon-props-combinations "1.1.0"
+    react-table "7.0.0"
+    react-transition-group "4.4.1"
+    slate "0.47.8"
+    tinycolor2 "1.4.1"
+    uplot "1.6.4"
+
+"@grafana/ui@canary":
+  version "7.5.0-pre.0-f33bbbd9d0"
+  resolved "https://npm.pkg.github.com/download/@grafana/ui/7.5.0-pre.0-f33bbbd9d0/0232aab4519eccdc974893ea78ebd9714bdf611553c138373d86f9c993df8523#7c0ee0392b5cb18872b64b75c0d788f7dfc19966"
+  integrity sha1-fA7gOStcsYhytkt1wNeI99/BmWY=
+  dependencies:
+    "@emotion/core" "10.0.27"
+    "@grafana/data" "7.5.0-pre.0-f33bbbd9d0"
+    "@grafana/e2e-selectors" "7.5.0-pre.0-f33bbbd9d0"
     "@grafana/slate-react" "0.22.9-grafana"
     "@grafana/tsconfig" "^1.0.0-rc1"
     "@iconscout/react-unicons" "1.1.4"
@@ -5712,13 +5795,6 @@ evp_bytestokey@^1.0.0, evp_bytestokey@^1.0.3:
     md5.js "^1.3.4"
     safe-buffer "^5.1.1"
 
-exec-sh@^0.2.0:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/exec-sh/-/exec-sh-0.2.2.tgz#2a5e7ffcbd7d0ba2755bdecb16e5a427dfbdec36"
-  integrity sha512-FIUCJz1RbuS0FKTdaAafAByGS0CPvU3R0MeHxgtl+djzCc//F8HakL8GzmVNZanasTbTAY/3DRFA0KpVqj/eAw==
-  dependencies:
-    merge "^1.2.0"
-
 exec-sh@^0.3.2:
   version "0.3.4"
   resolved "https://registry.yarnpkg.com/exec-sh/-/exec-sh-0.3.4.tgz#3a018ceb526cc6f6df2bb504b2bfe8e3a4934ec5"
@@ -8403,11 +8479,6 @@ merge2@^1.2.3, merge2@^1.3.0:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/merge2/-/merge2-1.4.1.tgz#4368892f885e907455a6fd7dc55c0c9d404990ae"
   integrity sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==
-
-merge@^1.2.0:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/merge/-/merge-1.2.1.tgz#38bebf80c3220a8a487b6fcfb3941bb11720c145"
-  integrity sha512-VjFo4P5Whtj4vsLzsYBu5ayHhoHJ0UqNm7ibvShmbmoz7tGi0vXaoJbGdB+GmDMLUdg8DpQXEIeVDAe8MaABvQ==
 
 microevent.ts@~0.1.1:
   version "0.1.1"
@@ -12674,14 +12745,6 @@ warning@^4.0.1, warning@^4.0.2:
   integrity sha512-rpJyN222KWIvHJ/F53XSZv0Zl/accqHR8et1kpaMTD/fLCRxtV8iX8czMzY7sVZupTI3zcUTg8eycS2kNF9l6w==
   dependencies:
     loose-envify "^1.0.0"
-
-watch@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/watch/-/watch-1.0.2.tgz#340a717bde765726fa0aa07d721e0147a551df0c"
-  integrity sha1-NApxe952Vyb6CqB9ch4BR6VR3ww=
-  dependencies:
-    exec-sh "^0.2.0"
-    minimist "^1.2.0"
 
 watchpack-chokidar2@^2.0.0:
   version "2.0.0"
