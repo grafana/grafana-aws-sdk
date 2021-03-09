@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react';
-import { Input, Select, InlineField, ButtonGroup, ToolbarButton } from '@grafana/ui';
+import { Input, Select, InlineField, ButtonGroup, ToolbarButton, FieldSet } from '@grafana/ui';
 import {
   DataSourcePluginOptionsEditorProps,
   onUpdateDatasourceJsonDataOptionSelect,
@@ -9,14 +9,15 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
-import { awsAuthProviderOptions, standardRegions, AwsDataSourceJsonData, AwsDataSourceSecureJsonData } from '.';
+import { awsAuthProviderOptions, standardRegions, AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from '.';
 
 const toOption = (value: string) => ({ value, label: value });
 
-interface Props extends DataSourcePluginOptionsEditorProps<AwsDataSourceJsonData, AwsDataSourceSecureJsonData> {
+interface Props extends DataSourcePluginOptionsEditorProps<AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData> {
   standardRegions?: string[];
   loadRegions?: () => Promise<string[]>;
   defaultEndpoint?: string;
+  children?: React.ReactNode;
 }
 
 export const ConnectionConfig: FC<Props> = (props: Props) => {
@@ -27,7 +28,7 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
       return;
     }
 
-    props.loadRegions().then((regions) => setRegions(regions.map(toOption)));
+    props.loadRegions().then(regions => setRegions(regions.map(toOption)));
   }, [props.loadRegions]);
 
   const options = props.options;
@@ -37,8 +38,7 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
   }
 
   return (
-    <>
-      <h3 className="page-heading">Connection Details</h3>
+    <FieldSet label="Connection Details">
       <InlineField
         label="Authentication Provider"
         labelWidth={28}
@@ -46,10 +46,10 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
       >
         <Select
           className="width-30"
-          value={awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType) || awsAuthProviderOptions[0]}
-          options={awsAuthProviderOptions.filter((opt) => config.awsAllowedAuthProviders.includes(opt.value!))}
+          value={awsAuthProviderOptions.find(p => p.value === options.jsonData.authType) || awsAuthProviderOptions[0]}
+          options={awsAuthProviderOptions.filter(opt => config.awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
-          onChange={(option) => {
+          onChange={option => {
             onUpdateDatasourceJsonDataOptionSelect(props, 'authType')(option);
           }}
         />
@@ -146,13 +146,14 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
       >
         <Select
           className="width-30"
-          value={regions.find((region) => region.value === options.jsonData.defaultRegion)}
+          value={regions.find(region => region.value === options.jsonData.defaultRegion)}
           options={regions}
           defaultValue={options.jsonData.defaultRegion}
           allowCustomValue={true}
           onChange={onUpdateDatasourceJsonDataOptionSelect(props, 'defaultRegion')}
         />
       </InlineField>
-    </>
+      {props.children}
+    </FieldSet>
   );
 };
