@@ -13,14 +13,14 @@ import { awsAuthProviderOptions, standardRegions, AwsAuthDataSourceJsonData, Aws
 
 const toOption = (value: string) => ({ value, label: value });
 
-interface Props extends DataSourcePluginOptionsEditorProps<AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData> {
+export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData> extends DataSourcePluginOptionsEditorProps<J,S> {
   standardRegions?: string[];
   loadRegions?: () => Promise<string[]>;
   defaultEndpoint?: string;
   children?: React.ReactNode;
 }
 
-export const ConnectionConfig: FC<Props> = (props: Props) => {
+export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
 
   useEffect(() => {
@@ -151,6 +151,7 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
           defaultValue={options.jsonData.defaultRegion}
           allowCustomValue={true}
           onChange={onUpdateDatasourceJsonDataOptionSelect(props, 'defaultRegion')}
+          formatCreateLabel={(r) => `Use region: ${r}`}
         />
       </InlineField>
       {props.children}
