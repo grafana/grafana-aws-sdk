@@ -1,5 +1,5 @@
 {
-  "extends": "./node_modules/@grafana/toolkit/src/config/tsconfig.plugin.json",
+  "extends": "@grafana/tsconfig/base.json",
   "include": ["src", "index.js"],
   "compilerOptions": {
     "rootDir": "./src",
