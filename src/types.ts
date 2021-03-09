@@ -11,7 +11,7 @@ export enum AwsAuthType {
   ARN = 'arn',
 }
 
-export interface AwsDataSourceJsonData extends DataSourceJsonData {
+export interface AwsAuthDataSourceJsonData extends DataSourceJsonData {
   authType?: AwsAuthType;
   assumeRoleArn?: string;
   externalId?: string;
@@ -20,7 +20,7 @@ export interface AwsDataSourceJsonData extends DataSourceJsonData {
   endpoint?: string;
 }
 
-export interface AwsDataSourceSecureJsonData {
+export interface AwsAuthDataSourceSecureJsonData {
   accessKey?: string;
   secretKey?: string;
 }
