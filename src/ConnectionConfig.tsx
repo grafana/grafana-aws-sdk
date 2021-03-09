@@ -9,7 +9,12 @@ import {
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
+// Hack for issue: https://github.com/grafana/grafana/issues/26512
+// Can be removed when dependencies are upgraded to 7.5
+import {} from '@emotion/core';
+
 import { awsAuthProviderOptions, standardRegions, AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from '.';
+import { AwsAuthType } from 'types';
 
 const toOption = (value: string) => ({ value, label: value });
 
@@ -37,6 +42,10 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
     profile = options.database;
   }
 
+  // awsAllowedAuthProviders is supported in 7.5+
+  const awsAllowedAuthProviders: Array<AwsAuthType> = ((config as any).awsAllowedAuthProviders) ??
+    []; // ???
+
   return (
     <FieldSet label="Connection Details">
       <InlineField
@@ -47,7 +56,7 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
         <Select
           className="width-30"
           value={awsAuthProviderOptions.find(p => p.value === options.jsonData.authType) || awsAuthProviderOptions[0]}
-          options={awsAuthProviderOptions.filter(opt => config.awsAllowedAuthProviders.includes(opt.value!))}
+          options={awsAuthProviderOptions.filter(opt => awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
           onChange={option => {
             onUpdateDatasourceJsonDataOptionSelect(props, 'authType')(option);
@@ -103,7 +112,7 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
         </>
       )}
 
-      {config.awsAssumeRoleEnabled && (
+      {(config as any).awsAssumeRoleEnabled && (
         <>
           <InlineField
             label="Assume Role ARN"
