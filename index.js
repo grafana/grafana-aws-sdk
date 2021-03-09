@@ -1,8 +1,7 @@
-
 'use strict';
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = require('./index.production.js');
+  module.exports = require('./dist/index.production.js');
 } else {
-  module.exports = require('./index.development.js');
+  module.exports = require('./dist/index.development.js');
 }

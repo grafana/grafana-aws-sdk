@@ -1,9 +1,11 @@
 {
-  "extends": "@grafana/toolkit/src/config/tsconfig.plugin.json",
-  "include": ["src", "types", "index.js"],
+  "extends": "@grafana/tsconfig/base.json",
+  "include": ["src", "index.js"],
   "compilerOptions": {
     "rootDir": "./src",
     "baseUrl": "./src",
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types"],
+    "declaration": true,
+    "outDir": "dist"
   }
 }

@@ -1,12 +1,17 @@
-import { DataSourceJsonData, SelectableValue } from '@grafana/data';
+import { DataSourceJsonData } from '@grafana/data';
 
 export enum AwsAuthType {
   Keys = 'keys',
   Credentials = 'credentials',
   Default = 'default', // was 'arn',
+  EC2IAMRole = 'ec2_iam_role',
+  /**
+   * @deprecated use default
+   */
+  ARN = 'arn',
 }
 
-export interface AwsDataSourceJsonData extends DataSourceJsonData {
+export interface AwsAuthDataSourceJsonData extends DataSourceJsonData {
   authType?: AwsAuthType;
   assumeRoleArn?: string;
   externalId?: string;
@@ -15,13 +20,7 @@ export interface AwsDataSourceJsonData extends DataSourceJsonData {
   endpoint?: string;
 }
 
-export interface AwsDataSourceSecureJsonData {
+export interface AwsAuthDataSourceSecureJsonData {
   accessKey?: string;
   secretKey?: string;
 }
-
-export const awsAuthProviderOptions = [
-  { label: 'AWS SDK Default', value: AwsAuthType.Default },
-  { label: 'Access & secret key', value: AwsAuthType.Keys },
-  { label: 'Credentials file', value: AwsAuthType.Credentials },
-] as Array<SelectableValue<AwsAuthType>>;
