@@ -4,7 +4,7 @@ export enum AwsAuthType {
   Keys = 'keys',
   Credentials = 'credentials',
   Default = 'default', // was 'arn',
-  EC2IAMRole = 'ec2_IAM_role',
+  EC2IAMRole = 'ec2_iam_role',
   /**
    * @deprecated use default
    */
