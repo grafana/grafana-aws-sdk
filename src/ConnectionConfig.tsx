@@ -41,11 +41,27 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   if (profile === undefined) {
     profile = options.database;
   }
+  
+  const currentProvider = awsAuthProviderOptions.find(p => p.value === options.jsonData.authType);
+
+  // Component did mount
+  useEffect(() => {
+    // Make sure a authType exists in the current model
+    if(!currentProvider && awsAuthProviderOptions.length) {
+      props.onOptionsChange({
+        ...options,
+        jsonData: {
+          ...options.jsonData,
+          authType: awsAuthProviderOptions[0].value,
+        },
+      });
+    }
+  }, []);
 
   // awsAllowedAuthProviders is supported in 7.5+
   const awsAllowedAuthProviders: Array<AwsAuthType> = ((config as any).awsAllowedAuthProviders) ??
     [AwsAuthType.Default,AwsAuthType.Keys,AwsAuthType.Credentials];
-    
+
   return (
     <FieldSet label="Connection Details">
       <InlineField
@@ -55,7 +71,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       >
         <Select
           className="width-30"
-          value={awsAuthProviderOptions.find(p => p.value === options.jsonData.authType) || awsAuthProviderOptions[0]}
+          value={ currentProvider || awsAuthProviderOptions[0]}
           options={awsAuthProviderOptions.filter(opt => awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
           onChange={option => {
