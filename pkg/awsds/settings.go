@@ -16,6 +16,7 @@ const (
 	AuthTypeDefault AuthType = iota
 	AuthTypeSharedCreds
 	AuthTypeKeys
+	AuthTypeEC2IAMRole
 )
 
 func (at AuthType) String() string {
@@ -23,9 +24,11 @@ func (at AuthType) String() string {
 	case AuthTypeDefault:
 		return "default"
 	case AuthTypeSharedCreds:
-		return "sharedCreds"
+		return "credentials"
 	case AuthTypeKeys:
 		return "keys"
+	case AuthTypeEC2IAMRole:
+		return "ec2_iam_role"
 	default:
 		panic(fmt.Sprintf("Unrecognized auth type %d", at))
 	}
@@ -53,6 +56,8 @@ func (at *AuthType) UnmarshalJSON(b []byte) error {
 		*at = AuthTypeSharedCreds
 	case "keys":
 		*at = AuthTypeKeys
+	case "ec2_iam_role":
+		*at = AuthTypeEC2IAMRole
 	case "default":
 		fallthrough
 	default:
