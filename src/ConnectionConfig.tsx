@@ -44,8 +44,8 @@ export const ConnectionConfig: FC<Props> = (props: Props) => {
 
   // awsAllowedAuthProviders is supported in 7.5+
   const awsAllowedAuthProviders: Array<AwsAuthType> = ((config as any).awsAllowedAuthProviders) ??
-    []; // ???
-
+    [AwsAuthType.Default,AwsAuthType.Keys,AwsAuthType.Credentials];
+    
   return (
     <FieldSet label="Connection Details">
       <InlineField
