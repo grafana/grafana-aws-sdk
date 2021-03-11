@@ -41,13 +41,15 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
+// AllowedAuthProvidersEnvVar is the string literal for the aws allowed auth providers environment variable
+const AllowedAuthProvidersEnvVar = "AWS_AUTH_AllowedAuthProviders"
 
-const ENV_VAR_AllowedAuthProviders = "AWS_AUTH_AllowedAuthProviders"
-const ENV_VAR_AssumeRoleEnabled = "AWS_AUTH_AssumeRoleEnabled"
+// AssumeRoleEnabledEnvVar is the string literal for the aws assume role enabled environment variable
+const AssumeRoleEnabledEnvVar = "AWS_AUTH_AssumeRoleEnabled"
 
 func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	allowedAuthProviders := []string{}
-	providers := os.Getenv(ENV_VAR_AllowedAuthProviders)
+	providers := os.Getenv(AllowedAuthProvidersEnvVar)
 	for _, authProvider := range strings.Split(providers, ",") {
 		authProvider = strings.TrimSpace(authProvider)
 		if authProvider != "" {
@@ -60,15 +62,15 @@ func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
 
-	assumeRoleEnabledString := os.Getenv(ENV_VAR_AssumeRoleEnabled)
+	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVar)
 	if len(assumeRoleEnabledString) == 0 {
-		plog.Warn("environment variable '%s' missing. falling back to enable assume role", ENV_VAR_AssumeRoleEnabled)
+		plog.Warn("environment variable '%s' missing. falling back to enable assume role", AssumeRoleEnabledEnvVar)
 		assumeRoleEnabledString = "true"
 	}
 
 	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
-		plog.Error("could not parse env variable '%s'", ENV_VAR_AssumeRoleEnabled)
+		plog.Error("could not parse env variable '%s'", AssumeRoleEnabledEnvVar)
 		assumeRoleEnabled = true
 	}
 
