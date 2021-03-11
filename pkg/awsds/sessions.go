@@ -143,12 +143,12 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	}
 
 	var regionCfg *aws.Config
-	if s.Region == defaultRegion {
+	if region == defaultRegion {
 		plog.Warn("Region is set to \"default\", which is unsupported")
-		s.Region = ""
+		region = ""
 	}
-	if s.Region != "" {
-		regionCfg = &aws.Config{Region: aws.String(s.Region)}
+	if region != "" {
+		regionCfg = &aws.Config{Region: aws.String(region)}
 		cfgs = append(cfgs, regionCfg)
 	}
 
@@ -159,19 +159,19 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	switch s.AuthType {
 	case AuthTypeSharedCreds:
 		plog.Debug("Authenticating towards AWS with shared credentials", "profile", s.Profile,
-			"region", s.Region)
+			"region", region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewSharedCredentials("", s.Profile),
 		})
 	case AuthTypeKeys:
-		plog.Debug("Authenticating towards AWS with an access key pair", "region", s.Region)
+		plog.Debug("Authenticating towards AWS with an access key pair", "region", region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewStaticCredentials(s.AccessKey, s.SecretKey, ""),
 		})
 	case AuthTypeDefault:
-		plog.Debug("Authenticating towards AWS with default SDK method", "region", s.Region)
+		plog.Debug("Authenticating towards AWS with default SDK method", "region", region)
 	case AuthTypeEC2IAMRole:
-		plog.Debug("Authenticating towards AWS with IAM Role", "region", s.Region)
+		plog.Debug("Authenticating towards AWS with IAM Role", "region", region)
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
