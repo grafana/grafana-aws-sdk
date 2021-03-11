@@ -35,16 +35,12 @@ type SessionCache struct {
 // NewSessionCache creates a new session cache using the default settings loaded from environment variables
 func NewSessionCache() *SessionCache {
 	authSettings := readAuthSettingsFromEnvironmentVariables()
-	return NewSessionCacheWithSettigns(authSettings)
-}
-
-// NewSessionCacheWithSettigns creates a new session cache using explict settings
-func NewSessionCacheWithSettigns(s *AuthSettings) *SessionCache {
 	return &SessionCache{
 		sessCache:    map[string]envelope{},
-		authSettings: s,
+		authSettings: authSettings,
 	}
 }
+
 
 const ENV_VAR_AllowedAuthProviders = "AWS_AUTH_AllowedAuthProviders"
 const ENV_VAR_AssumeRoleEnabled = "AWS_AUTH_AssumeRoleEnabled"
