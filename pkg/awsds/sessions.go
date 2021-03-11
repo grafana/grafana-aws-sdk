@@ -33,9 +33,9 @@ type SessionCache struct {
 }
 
 // NewSessionCache creates a new session cache using the default settings loaded from environment variables
-func NewSessionCache() SessionCache {
+func NewSessionCache() *SessionCache {
 	authSettings := readAuthSettingsFromEnvironmentVariables()
-	return NewSessionCacheWithSettigns(authSettings)
+	return &NewSessionCacheWithSettigns(authSettings)
 }
 
 // NewSessionCacheWithSettigns creates a new session cache using explict settings
