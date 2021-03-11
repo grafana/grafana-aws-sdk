@@ -101,9 +101,14 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         <>
           <InlineField label="Access Key ID" labelWidth={28}>
             {props.options.secureJsonFields?.accessKey ? (
-              <ButtonGroup className="width-30">
+              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
+              <ButtonGroup style={{ display: 'flex', width: 480 }}>
                 <Input disabled placeholder="Configured" />
-                <ToolbarButton icon="edit" onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')} />
+                <ToolbarButton
+                  icon="edit"
+                  tooltip="Edit Access Key ID"
+                  onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')}
+                />
               </ButtonGroup>
             ) : (
               <Input
@@ -116,9 +121,14 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
           <InlineField label="Secret Access Key" labelWidth={28}>
             {props.options.secureJsonFields?.secretKey ? (
-              <ButtonGroup className="width-30">
+              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
+              <ButtonGroup style={{ display: 'flex', width: 480 }}>
                 <Input disabled placeholder="Configured" />
-                <ToolbarButton icon="edit" onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')} />
+                <ToolbarButton
+                  icon="edit"
+                  tooltip="Edit Secret Access Key"
+                  onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')}
+                />
               </ButtonGroup>
             ) : (
               <Input
