@@ -29,8 +29,13 @@ export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAut
 export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
 
-  const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
+  const options = props.options;
+  let profile = options.jsonData.profile;
+  if (profile === undefined) {
+    profile = options.database;
+  }
 
+  const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
   // Component did mount
   useEffect(() => {
     // Make sure a authType exists in the current model
@@ -52,12 +57,6 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
     props.loadRegions().then((regions) => setRegions(regions.map(toOption)));
   }, [props.loadRegions]);
-
-  const options = props.options;
-  let profile = options.jsonData.profile;
-  if (profile === undefined) {
-    profile = options.database;
-  }
 
   // awsAllowedAuthProviders is supported in 7.5+
   const awsAllowedAuthProviders: Array<AwsAuthType> = (config as any).awsAllowedAuthProviders ?? [
