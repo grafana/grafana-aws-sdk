@@ -18,7 +18,8 @@ import { AwsAuthType } from 'types';
 
 const toOption = (value: string) => ({ value, label: value });
 
-export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData> extends DataSourcePluginOptionsEditorProps<J,S> {
+export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData>
+  extends DataSourcePluginOptionsEditorProps<J, S> {
   standardRegions?: string[];
   loadRegions?: () => Promise<string[]>;
   defaultEndpoint?: string;
@@ -28,26 +29,17 @@ export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAut
 export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
 
-  useEffect(() => {
-    if (!props.loadRegions) {
-      return;
-    }
-
-    props.loadRegions().then(regions => setRegions(regions.map(toOption)));
-  }, [props.loadRegions]);
-
   const options = props.options;
   let profile = options.jsonData.profile;
   if (profile === undefined) {
     profile = options.database;
   }
-  
-  const currentProvider = awsAuthProviderOptions.find(p => p.value === options.jsonData.authType);
 
+  const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
   // Component did mount
   useEffect(() => {
     // Make sure a authType exists in the current model
-    if(!currentProvider && awsAuthProviderOptions.length) {
+    if (!currentProvider && awsAuthProviderOptions.length) {
       props.onOptionsChange({
         ...options,
         jsonData: {
@@ -58,23 +50,34 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
     }
   }, []);
 
+  useEffect(() => {
+    if (!props.loadRegions) {
+      return;
+    }
+
+    props.loadRegions().then((regions) => setRegions(regions.map(toOption)));
+  }, [props.loadRegions]);
+
   // awsAllowedAuthProviders is supported in 7.5+
-  const awsAllowedAuthProviders: Array<AwsAuthType> = ((config as any).awsAllowedAuthProviders) ??
-    [AwsAuthType.Default,AwsAuthType.Keys,AwsAuthType.Credentials];
+  const awsAllowedAuthProviders: Array<AwsAuthType> = (config as any).awsAllowedAuthProviders ?? [
+    AwsAuthType.Default,
+    AwsAuthType.Keys,
+    AwsAuthType.Credentials,
+  ];
 
   return (
     <FieldSet label="Connection Details">
       <InlineField
         label="Authentication Provider"
         labelWidth={28}
-        tooltip="Specify which AWS credentials chain to use. AWS SDK Default is the recommended option for EKS, ECS, or if you've attached an IAM role to your EC2 instance."
+        tooltip="Specify which AWS credentials chain to use."
       >
         <Select
           className="width-30"
-          value={ currentProvider || awsAuthProviderOptions[0]}
-          options={awsAuthProviderOptions.filter(opt => awsAllowedAuthProviders.includes(opt.value!))}
+          value={currentProvider || awsAuthProviderOptions[0]}
+          options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
-          onChange={option => {
+          onChange={(option) => {
             onUpdateDatasourceJsonDataOptionSelect(props, 'authType')(option);
           }}
         />
@@ -98,9 +101,14 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         <>
           <InlineField label="Access Key ID" labelWidth={28}>
             {props.options.secureJsonFields?.accessKey ? (
-              <ButtonGroup className="width-30">
+              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
+              <ButtonGroup style={{ display: 'flex', width: 480 }}>
                 <Input disabled placeholder="Configured" />
-                <ToolbarButton icon="edit" onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')} />
+                <ToolbarButton
+                  icon="edit"
+                  tooltip="Edit Access Key ID"
+                  onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')}
+                />
               </ButtonGroup>
             ) : (
               <Input
@@ -113,9 +121,14 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
           <InlineField label="Secret Access Key" labelWidth={28}>
             {props.options.secureJsonFields?.secretKey ? (
-              <ButtonGroup className="width-30">
+              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
+              <ButtonGroup style={{ display: 'flex', width: 480 }}>
                 <Input disabled placeholder="Configured" />
-                <ToolbarButton icon="edit" onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')} />
+                <ToolbarButton
+                  icon="edit"
+                  tooltip="Edit Secret Access Key"
+                  onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')}
+                />
               </ButtonGroup>
             ) : (
               <Input
@@ -171,7 +184,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       >
         <Select
           className="width-30"
-          value={regions.find(region => region.value === options.jsonData.defaultRegion)}
+          value={regions.find((region) => region.value === options.jsonData.defaultRegion)}
           options={regions}
           defaultValue={options.jsonData.defaultRegion}
           allowCustomValue={true}
