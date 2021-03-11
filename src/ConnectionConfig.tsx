@@ -71,7 +71,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       <InlineField
         label="Authentication Provider"
         labelWidth={28}
-        tooltip="Specify which AWS credentials chain to use. AWS SDK Default is the recommended option for EKS, ECS, or if you've attached an IAM role to your EC2 instance."
+        tooltip="Specify which AWS credentials chain to use."
       >
         <Select
           className="width-30"
