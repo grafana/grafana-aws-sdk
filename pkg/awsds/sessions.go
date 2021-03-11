@@ -41,15 +41,15 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
-// AllowedAuthProvidersEnvVar is the string literal for the aws allowed auth providers environment variable
-const AllowedAuthProvidersEnvVar = "AWS_AUTH_AllowedAuthProviders"
+// AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
+const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 
-// AssumeRoleEnabledEnvVar is the string literal for the aws assume role enabled environment variable
-const AssumeRoleEnabledEnvVar = "AWS_AUTH_AssumeRoleEnabled"
+// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
+const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
 func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	allowedAuthProviders := []string{}
-	providers := os.Getenv(AllowedAuthProvidersEnvVar)
+	providers := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
 	for _, authProvider := range strings.Split(providers, ",") {
 		authProvider = strings.TrimSpace(authProvider)
 		if authProvider != "" {
@@ -62,15 +62,15 @@ func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
 
-	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVar)
+	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
 	if len(assumeRoleEnabledString) == 0 {
-		plog.Warn("environment variable '%s' missing. falling back to enable assume role", AssumeRoleEnabledEnvVar)
+		plog.Warn("environment variable '%s' missing. falling back to enable assume role", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabledString = "true"
 	}
 
 	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
-		plog.Error("could not parse env variable '%s'", AssumeRoleEnabledEnvVar)
+		plog.Error("could not parse env variable '%s'", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabled = true
 	}
 
