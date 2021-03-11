@@ -60,9 +60,15 @@ func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
 
-	assumeRoleEnabled, err := strconv.ParseBool(os.Getenv(ENV_VAR_AssumeRoleEnabled))
+	assumeRoleEnabledString := os.Getenv(ENV_VAR_AssumeRoleEnabled)
+	if len(assumeRoleEnabledString) == 0 {
+		plog.Warn("environment variable '%s' missing. falling back to enable assume role", ENV_VAR_AssumeRoleEnabled)
+		assumeRoleEnabledString = "true"
+	}
+
+	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
-		plog.Warn("could not parse env variable '%s'", ENV_VAR_AssumeRoleEnabled)
+		plog.Error("could not parse env variable '%s'", ENV_VAR_AssumeRoleEnabled)
 		assumeRoleEnabled = true
 	}
 
