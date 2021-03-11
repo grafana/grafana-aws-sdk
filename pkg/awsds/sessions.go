@@ -32,18 +32,26 @@ type SessionCache struct {
 	authSettings  *AuthSettings
 }
 
-// NewSessionCache creates a new session cache
+// NewSessionCache creates a new session cache using the default settings loaded from environment variables
 func NewSessionCache() SessionCache {
 	authSettings := readAuthSettingsFromEnvironmentVariables()
+	return NewSessionCacheWithSettigns(authSettings)
+}
+
+// NewSessionCacheWithSettigns creates a new session cache using explict settings
+func NewSessionCacheWithSettigns(s *AuthSettings) SessionCache {
 	return SessionCache{
 		sessCache:    map[string]envelope{},
-		authSettings: authSettings,
+		authSettings: s,
 	}
 }
 
+const ENV_VAR_AllowedAuthProviders = "AWS_AUTH_AllowedAuthProviders"
+const ENV_VAR_AssumeRoleEnabled = "AWS_AUTH_AssumeRoleEnabled"
+
 func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	allowedAuthProviders := []string{}
-	providers := os.Getenv("ALLOWED_AUTH_PROVIDERS")
+	providers := os.Getenv(ENV_VAR_AllowedAuthProviders)
 	for _, authProvider := range strings.Split(providers, ",") {
 		authProvider = strings.TrimSpace(authProvider)
 		if authProvider != "" {
@@ -56,15 +64,15 @@ func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
 
-	assumeRoleEnabled, err := strconv.ParseBool(os.Getenv("ASSUME_ROLE_ENABLED"))
+	assumeRoleEnabled, err := strconv.ParseBool(os.Getenv(ENV_VAR_AssumeRoleEnabled))
 	if err != nil {
-		plog.Warn("could not parse env variable 'ASSUME_ROLE_ENABLED'")
+		plog.Warn("could not parse env variable '%s'", ENV_VAR_AssumeRoleEnabled)
 		assumeRoleEnabled = true
 	}
 
 	return &AuthSettings{
 		AllowedAuthProviders: allowedAuthProviders,
-		AssumeRoleEnabled: assumeRoleEnabled,
+		AssumeRoleEnabled:    assumeRoleEnabled,
 	}
 }
 

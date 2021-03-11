@@ -58,7 +58,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: roleARN,
 		}
 
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: true})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: true})
 
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.NoError(t, err)
@@ -83,7 +83,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			ExternalID:    externalID,
 		}
 
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: true})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: true})
 
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: false})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"default"}, AssumeRoleEnabled: false})
 
 		sess, err := cache.GetSession(defaultRegion, settings)
 
@@ -123,7 +123,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeDefault,
 		}
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"keys"}})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"keys"}})
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.Error(t, err)
 		require.Nil(t, sess)
@@ -134,7 +134,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeKeys,
 		}
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"keys"}})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"keys"}})
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.NoError(t, err)
 		require.NotNil(t, sess)
@@ -161,7 +161,7 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 			AuthType: AuthTypeEC2IAMRole,
 		}
 
-		cache := NewSessionCache(&AuthSettings{AllowedAuthProviders: []string{"ec2_iam_role"}, AssumeRoleEnabled: true})
+		cache := NewSessionCacheWithSettigns(&AuthSettings{AllowedAuthProviders: []string{"ec2_iam_role"}, AssumeRoleEnabled: true})
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.NoError(t, err)
 		require.NotNil(t, sess)
