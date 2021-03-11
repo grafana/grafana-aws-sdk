@@ -35,12 +35,12 @@ type SessionCache struct {
 // NewSessionCache creates a new session cache using the default settings loaded from environment variables
 func NewSessionCache() *SessionCache {
 	authSettings := readAuthSettingsFromEnvironmentVariables()
-	return &NewSessionCacheWithSettigns(authSettings)
+	return NewSessionCacheWithSettigns(authSettings)
 }
 
 // NewSessionCacheWithSettigns creates a new session cache using explict settings
-func NewSessionCacheWithSettigns(s *AuthSettings) SessionCache {
-	return SessionCache{
+func NewSessionCacheWithSettigns(s *AuthSettings) *SessionCache {
+	return &SessionCache{
 		sessCache:    map[string]envelope{},
 		authSettings: s,
 	}
