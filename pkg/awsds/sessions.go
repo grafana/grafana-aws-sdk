@@ -2,6 +2,8 @@ package awsds
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,10 +33,38 @@ type SessionCache struct {
 }
 
 // NewSessionCache creates a new session cache
-func NewSessionCache(authConfig *AuthSettings) SessionCache {
+func NewSessionCache() SessionCache {
+	authSettings := readAuthSettingsFromEnvironmentVariables()
 	return SessionCache{
 		sessCache:    map[string]envelope{},
-		authSettings: authConfig,
+		authSettings: authSettings,
+	}
+}
+
+func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
+	allowedAuthProviders := []string{}
+	providers := os.Getenv("ALLOWED_AUTH_PROVIDERS")
+	for _, authProvider := range strings.Split(providers, ",") {
+		authProvider = strings.TrimSpace(authProvider)
+		if authProvider != "" {
+			allowedAuthProviders = append(allowedAuthProviders, authProvider)
+		}
+	}
+
+	if len(allowedAuthProviders) == 0 {
+		allowedAuthProviders = []string{"default", "keys", "credentials"}
+		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
+	}
+
+	assumeRoleEnabled, err := strconv.ParseBool(os.Getenv("ASSUME_ROLE_ENABLED"))
+	if err != nil {
+		plog.Warn("could not parse env variable 'ASSUME_ROLE_ENABLED'")
+		assumeRoleEnabled = true
+	}
+
+	return &AuthSettings{
+		AllowedAuthProviders: allowedAuthProviders,
+		AssumeRoleEnabled: assumeRoleEnabled,
 	}
 }
 
