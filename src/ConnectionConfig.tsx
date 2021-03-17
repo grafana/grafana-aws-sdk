@@ -18,6 +18,13 @@ import { AwsAuthType } from 'types';
 
 const toOption = (value: string) => ({ value, label: value });
 
+// awsAllowedAuthProviders is supported in 7.5+
+const awsAllowedAuthProviders: AwsAuthType[] = (config as any).awsAllowedAuthProviders ?? [
+  AwsAuthType.Default,
+  AwsAuthType.Keys,
+  AwsAuthType.Credentials,
+];
+
 export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData>
   extends DataSourcePluginOptionsEditorProps<J, S> {
   standardRegions?: string[];
@@ -36,19 +43,20 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   }
 
   const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
+
   // Component did mount
   useEffect(() => {
     // Make sure a authType exists in the current model
-    if (!currentProvider && awsAuthProviderOptions.length) {
+    if (!currentProvider) {
       props.onOptionsChange({
         ...options,
         jsonData: {
           ...options.jsonData,
-          authType: awsAuthProviderOptions[0].value,
+          authType: awsAllowedAuthProviders[0],
         },
       });
     }
-  }, []);
+  }, [currentProvider, options, props]);
 
   useEffect(() => {
     if (!props.loadRegions) {
@@ -56,14 +64,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
     }
 
     props.loadRegions().then((regions) => setRegions(regions.map(toOption)));
-  }, [props.loadRegions]);
-
-  // awsAllowedAuthProviders is supported in 7.5+
-  const awsAllowedAuthProviders: Array<AwsAuthType> = (config as any).awsAllowedAuthProviders ?? [
-    AwsAuthType.Default,
-    AwsAuthType.Keys,
-    AwsAuthType.Credentials,
-  ];
+  }, [props]);
 
   return (
     <FieldSet label="Connection Details">
@@ -74,7 +75,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       >
         <Select
           className="width-30"
-          value={currentProvider || awsAuthProviderOptions[0]}
+          value={currentProvider}
           options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
           onChange={(option) => {
@@ -107,6 +108,8 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
                 <ToolbarButton
                   icon="edit"
                   tooltip="Edit Access Key ID"
+                  // this can be rewritten to type="button" after upgrading to @grafana/ui@7.5
+                  {...{ type: 'button' }}
                   onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')}
                 />
               </ButtonGroup>
@@ -126,6 +129,8 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
                 <Input disabled placeholder="Configured" />
                 <ToolbarButton
                   icon="edit"
+                  // this can be rewritten to type="button" after upgrading to @grafana/ui@7.5
+                  {...{ type: 'button' }}
                   tooltip="Edit Secret Access Key"
                   onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')}
                 />
