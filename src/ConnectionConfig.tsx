@@ -13,8 +13,13 @@ import { config } from '@grafana/runtime';
 // Can be removed when dependencies are upgraded to 7.5
 import {} from '@emotion/core';
 
-import { awsAuthProviderOptions, standardRegions, AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData } from '.';
-import { AwsAuthType } from 'types';
+import {
+  awsAuthProviderOptions,
+  standardRegions,
+  AwsAuthDataSourceJsonData,
+  AwsAuthDataSourceSecureJsonData,
+  AwsAuthType,
+} from '.';
 
 const toOption = (value: string) => ({ value, label: value });
 
@@ -35,7 +40,7 @@ export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAut
 
 export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
-
+  const { loadRegions, onOptionsChange } = props;
   const options = props.options;
   let profile = options.jsonData.profile;
   if (profile === undefined) {
@@ -47,8 +52,8 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   // Component did mount
   useEffect(() => {
     // Make sure a authType exists in the current model
-    if (!currentProvider) {
-      props.onOptionsChange({
+    if (!currentProvider && awsAllowedAuthProviders.length) {
+      onOptionsChange({
         ...options,
         jsonData: {
           ...options.jsonData,
@@ -56,15 +61,15 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         },
       });
     }
-  }, [currentProvider, options, props]);
+  }, [currentProvider, options, onOptionsChange]);
 
   useEffect(() => {
-    if (!props.loadRegions) {
+    if (!loadRegions) {
       return;
     }
 
-    props.loadRegions().then((regions) => setRegions(regions.map(toOption)));
-  }, [props]);
+    loadRegions().then((regions) => setRegions(regions.map(toOption)));
+  }, [loadRegions]);
 
   return (
     <FieldSet label="Connection Details">
