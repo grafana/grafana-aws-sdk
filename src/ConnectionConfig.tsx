@@ -49,7 +49,6 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
   const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
 
-  // Component did mount
   useEffect(() => {
     // Make sure a authType exists in the current model
     if (!currentProvider && awsAllowedAuthProviders.length) {
