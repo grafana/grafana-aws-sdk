@@ -30,7 +30,7 @@ var permittedHeaders = map[string]struct{}{
 	"Accept-Encoding": {},
 }
 
-type middleware struct {
+type Middleware struct {
 	config *Config
 	next   http.RoundTripper
 }
@@ -48,6 +48,8 @@ type Config struct {
 	AssumeRoleARN string
 	ExternalID    string
 	Region        string
+
+	allowedAuthProviders []string
 }
 
 // The RoundTripperFunc type is an adapter to allow the use of ordinary
@@ -60,6 +62,15 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return rt(r)
 }
 
+func NewMiddleware(config *Config, next http.RoundTripper) *Middleware {
+	config.allowedAuthProviders = awsds.ReadAuthSettingsFromEnvironmentVariables().AllowedAuthProviders
+
+	return &Middleware{
+		config: config,
+		next:   next,
+	}
+}
+
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
@@ -67,14 +78,14 @@ func New(config *Config, next http.RoundTripper) http.RoundTripper {
 		if next == nil {
 			next = http.DefaultTransport
 		}
-		return (&middleware{
+		return (&Middleware{
 			config: config,
 			next:   next,
 		}).exec(r)
 	})
 }
 
-func (m *middleware) exec(req *http.Request) (*http.Response, error) {
+func (m *Middleware) exec(req *http.Request) (*http.Response, error) {
 	_, err := m.signRequest(req)
 	if err != nil {
 		return nil, err
@@ -83,7 +94,7 @@ func (m *middleware) exec(req *http.Request) (*http.Response, error) {
 	return m.next.RoundTrip(req)
 }
 
-func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
+func (m *Middleware) signRequest(req *http.Request) (http.Header, error) {
 	signer, err := m.signer()
 	if err != nil {
 		return nil, err
@@ -103,11 +114,11 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 	return signer.Sign(req, bytes.NewReader(body), m.config.Service, m.config.Region, time.Now().UTC())
 }
 
-func (m *middleware) signer() (*v4.Signer, error) {
+func (m *Middleware) signer() (*v4.Signer, error) {
 	authType := awsds.ToAuthType(m.config.AuthType)
 
 	authTypeAllowed := false
-	for _, provider := range awsds.ReadAuthSettingsFromEnvironmentVariables().AllowedAuthProviders {
+	for _, provider := range m.config.allowedAuthProviders {
 		if provider == authType.String() {
 			authTypeAllowed = true
 			break
