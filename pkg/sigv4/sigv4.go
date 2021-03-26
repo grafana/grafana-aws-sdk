@@ -106,6 +106,18 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 func (m *middleware) signer() (*v4.Signer, error) {
 	authType := awsds.ToAuthType(m.config.AuthType)
 
+	authTypeAllowed := false
+	for _, provider := range awsds.ReadAuthSettingsFromEnvironmentVariables().AllowedAuthProviders {
+		if provider == authType.String() {
+			authTypeAllowed = true
+			break
+		}
+	}
+
+	if !authTypeAllowed {
+		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", authType.String())
+	}
+
 	var c *credentials.Credentials
 	switch authType {
 	case awsds.AuthTypeKeys:
