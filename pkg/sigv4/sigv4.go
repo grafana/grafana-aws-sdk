@@ -10,18 +10,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/private/protocol/rest"
-)
-
-type AuthType string
-
-const (
-	Default     AuthType = "default"
-	Keys        AuthType = "keys"
-	Credentials AuthType = "credentials"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 )
 
 // Host header is likely not necessary here
@@ -41,7 +36,7 @@ type middleware struct {
 }
 
 type Config struct {
-	AuthType string
+	AuthType awsds.AuthType
 
 	Profile string
 
@@ -109,15 +104,24 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 }
 
 func (m *middleware) signer() (*v4.Signer, error) {
-	authType := AuthType(m.config.AuthType)
 
 	var c *credentials.Credentials
-	switch authType {
-	case Keys:
+	switch m.config.AuthType {
+	case awsds.AuthTypeKeys:
 		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
-	case Credentials:
+	case awsds.AuthTypeSharedCreds:
 		c = credentials.NewSharedCredentials("", m.config.Profile)
-	case Default:
+	case awsds.AuthTypeEC2IAMRole:
+		s, err := session.NewSession(&aws.Config{
+			Region: aws.String(m.config.Region),
+		})
+		if err != nil {
+			return nil, err
+		}
+		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
+
+		return v4.NewSigner(c), nil
+	case awsds.AuthTypeDefault:
 		// passing nil credentials will force AWS to allow a more complete credential chain vs the explicit default
 		s, err := session.NewSession(&aws.Config{
 			Region: aws.String(m.config.Region),
@@ -131,7 +135,7 @@ func (m *middleware) signer() (*v4.Signer, error) {
 		}
 
 		return v4.NewSigner(s.Config.Credentials), nil
-	case "":
+	default:
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 
