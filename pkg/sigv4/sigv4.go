@@ -36,7 +36,7 @@ type middleware struct {
 }
 
 type Config struct {
-	AuthType awsds.AuthType
+	AuthType string
 
 	Profile string
 
@@ -104,9 +104,10 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 }
 
 func (m *middleware) signer() (*v4.Signer, error) {
+	authType := awsds.ToAuthType(m.config.AuthType)
 
 	var c *credentials.Credentials
-	switch m.config.AuthType {
+	switch authType {
 	case awsds.AuthTypeKeys:
 		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
 	case awsds.AuthTypeSharedCreds:

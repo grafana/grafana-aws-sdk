@@ -34,6 +34,23 @@ func (at AuthType) String() string {
 	}
 }
 
+func ToAuthType(authType string) AuthType {
+	switch authType {
+	case "credentials", "sharedCreds":
+		return AuthTypeSharedCreds
+	case "keys":
+		return AuthTypeKeys
+	case "default":
+		return AuthTypeDefault
+	case "ec2_iam_role":
+		return AuthTypeEC2IAMRole
+	case "arn":
+		return AuthTypeDefault
+	default:
+		panic(fmt.Sprintf("Unrecognized auth type %s", authType))
+	}
+}
+
 // MarshalJSON marshals the enum as a quoted json string
 func (at *AuthType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
