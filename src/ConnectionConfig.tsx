@@ -8,18 +8,13 @@ import {
   onUpdateDatasourceSecureJsonDataOption,
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
-
 // Hack for issue: https://github.com/grafana/grafana/issues/26512
 // Can be removed when dependencies are upgraded to 7.5
 import {} from '@emotion/core';
 
-import {
-  awsAuthProviderOptions,
-  standardRegions,
-  AwsAuthDataSourceJsonData,
-  AwsAuthDataSourceSecureJsonData,
-  AwsAuthType,
-} from '.';
+import { standardRegions } from './regions';
+import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
+import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
 
