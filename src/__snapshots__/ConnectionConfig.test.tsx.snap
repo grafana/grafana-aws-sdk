@@ -1,0 +1,309 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ConnectionConfig should render component 1`] = `
+<fieldset
+  className="css-lq6a48"
+  data-testid="connection-config"
+>
+  <legend
+    className="css-tgmb6k"
+  >
+    Connection Details
+  </legend>
+  <div
+    className="css-1f5gueu"
+  >
+    <label
+      className="css-7l48qk"
+    >
+      Authentication Provider
+      <div
+        className="css-1vzus6i-Icon"
+        onMouseEnter={[Function]}
+        onMouseLeave={[Function]}
+      >
+        <svg
+          className="css-zt6d2h"
+          fill="currentColor"
+          height={14}
+          viewBox="0 0 24 24"
+          width={14}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12,2A10,10,0,1,0,22,12,10.01114,10.01114,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8.00917,8.00917,0,0,1,12,20Zm0-8.5a1,1,0,0,0-1,1v3a1,1,0,0,0,2,0v-3A1,1,0,0,0,12,11.5Zm0-4a1.25,1.25,0,1,0,1.25,1.25A1.25,1.25,0,0,0,12,7.5Z"
+          />
+        </svg>
+      </div>
+    </label>
+    <div
+      className="width-30 css-11bl7g2-Component"
+      onKeyDown={[Function]}
+    >
+      <div
+        className="css-17rc2pp-input-wrapper"
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+      >
+        <div
+          className="css-1kfautg-grafana-select-value-container"
+        >
+          <div
+            className="css-1c7qxsm"
+          >
+            Choose
+          </div>
+          <div
+            className="css-1mndwhu-Component"
+          >
+            <div
+              className=""
+              style={
+                Object {
+                  "display": "inline-block",
+                }
+              }
+            >
+              <input
+                aria-autocomplete="list"
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                disabled={false}
+                id="react-select-2-input"
+                onBlur={[Function]}
+                onChange={[Function]}
+                onFocus={[Function]}
+                spellCheck="false"
+                style={
+                  Object {
+                    "background": 0,
+                    "border": 0,
+                    "boxSizing": "content-box",
+                    "color": "inherit",
+                    "fontSize": "inherit",
+                    "label": "input",
+                    "opacity": 1,
+                    "outline": 0,
+                    "padding": 0,
+                    "width": "1px",
+                  }
+                }
+                tabIndex="0"
+                type="text"
+                value=""
+              />
+              <div
+                style={
+                  Object {
+                    "height": 0,
+                    "left": 0,
+                    "overflow": "scroll",
+                    "position": "absolute",
+                    "top": 0,
+                    "visibility": "hidden",
+                    "whiteSpace": "pre",
+                  }
+                }
+              >
+                
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="css-pfp0he-input-suffix"
+        >
+          <div
+            className="css-1vzus6i-Icon"
+          >
+            <svg
+              className="css-sr6nr"
+              fill="currentColor"
+              height={16}
+              viewBox="0 0 24 24"
+              width={16}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M17,9.17a1,1,0,0,0-1.41,0L12,12.71,8.46,9.17a1,1,0,0,0-1.41,0,1,1,0,0,0,0,1.42l4.24,4.24a1,1,0,0,0,1.42,0L17,10.59A1,1,0,0,0,17,9.17Z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    className="css-1f5gueu"
+  >
+    <label
+      className="css-7l48qk"
+    >
+      Endpoint
+      <div
+        className="css-1vzus6i-Icon"
+        onMouseEnter={[Function]}
+        onMouseLeave={[Function]}
+      >
+        <svg
+          className="css-zt6d2h"
+          fill="currentColor"
+          height={14}
+          viewBox="0 0 24 24"
+          width={14}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12,2A10,10,0,1,0,22,12,10.01114,10.01114,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8.00917,8.00917,0,0,1,12,20Zm0-8.5a1,1,0,0,0-1,1v3a1,1,0,0,0,2,0v-3A1,1,0,0,0,12,11.5Zm0-4a1.25,1.25,0,1,0,1.25,1.25A1.25,1.25,0,0,0,12,7.5Z"
+          />
+        </svg>
+      </div>
+    </label>
+    <div
+      className="css-1kn3rgh-input-wrapper width-30"
+    >
+      <div
+        className="css-1w5c5dq-input-inputWrapper"
+      >
+        <input
+          className="css-1bjepp-input-input"
+          onChange={[Function]}
+          placeholder="https://{service}.{region}.amazonaws.com"
+          style={
+            Object {
+              "paddingLeft": undefined,
+              "paddingRight": undefined,
+            }
+          }
+          value=""
+        />
+      </div>
+    </div>
+  </div>
+  <div
+    className="css-1f5gueu"
+  >
+    <label
+      className="css-7l48qk"
+    >
+      Default Region
+      <div
+        className="css-1vzus6i-Icon"
+        onMouseEnter={[Function]}
+        onMouseLeave={[Function]}
+      >
+        <svg
+          className="css-zt6d2h"
+          fill="currentColor"
+          height={14}
+          viewBox="0 0 24 24"
+          width={14}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12,2A10,10,0,1,0,22,12,10.01114,10.01114,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8.00917,8.00917,0,0,1,12,20Zm0-8.5a1,1,0,0,0-1,1v3a1,1,0,0,0,2,0v-3A1,1,0,0,0,12,11.5Zm0-4a1.25,1.25,0,1,0,1.25,1.25A1.25,1.25,0,0,0,12,7.5Z"
+          />
+        </svg>
+      </div>
+    </label>
+    <div
+      className="width-30 css-11bl7g2-Component"
+      onKeyDown={[Function]}
+    >
+      <div
+        className="css-17rc2pp-input-wrapper"
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+      >
+        <div
+          className="css-1kfautg-grafana-select-value-container"
+        >
+          <div
+            className="css-1c7qxsm"
+          >
+            Choose
+          </div>
+          <div
+            className="css-1mndwhu-Component"
+          >
+            <div
+              className=""
+              style={
+                Object {
+                  "display": "inline-block",
+                }
+              }
+            >
+              <input
+                aria-autocomplete="list"
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                disabled={false}
+                id="react-select-3-input"
+                onBlur={[Function]}
+                onChange={[Function]}
+                onFocus={[Function]}
+                spellCheck="false"
+                style={
+                  Object {
+                    "background": 0,
+                    "border": 0,
+                    "boxSizing": "content-box",
+                    "color": "inherit",
+                    "fontSize": "inherit",
+                    "label": "input",
+                    "opacity": 1,
+                    "outline": 0,
+                    "padding": 0,
+                    "width": "1px",
+                  }
+                }
+                tabIndex="0"
+                type="text"
+                value=""
+              />
+              <div
+                style={
+                  Object {
+                    "height": 0,
+                    "left": 0,
+                    "overflow": "scroll",
+                    "position": "absolute",
+                    "top": 0,
+                    "visibility": "hidden",
+                    "whiteSpace": "pre",
+                  }
+                }
+              >
+                
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="css-pfp0he-input-suffix"
+        >
+          <div
+            className="css-1vzus6i-Icon"
+          >
+            <svg
+              className="css-sr6nr"
+              fill="currentColor"
+              height={16}
+              viewBox="0 0 24 24"
+              width={16}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M17,9.17a1,1,0,0,0-1.41,0L12,12.71,8.46,9.17a1,1,0,0,0-1.41,0,1,1,0,0,0,0,1.42l4.24,4.24a1,1,0,0,0,1.42,0L17,10.59A1,1,0,0,0,17,9.17Z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</fieldset>
+`;

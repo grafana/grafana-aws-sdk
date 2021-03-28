@@ -66,7 +66,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   }, [loadRegions]);
 
   return (
-    <FieldSet label="Connection Details">
+    <FieldSet label="Connection Details" data-testid="connection-config">
       <InlineField
         label="Authentication Provider"
         labelWidth={28}
