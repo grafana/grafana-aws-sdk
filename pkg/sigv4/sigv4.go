@@ -31,7 +31,7 @@ var permittedHeaders = map[string]struct{}{
 }
 
 var (
-	authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
+	authSettings *awsds.AuthSettings = nil
 )
 
 type middleware struct {
@@ -67,6 +67,10 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
+	if authSettings == nil {
+		authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
+	}
+
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		if next == nil {
 			next = http.DefaultTransport
