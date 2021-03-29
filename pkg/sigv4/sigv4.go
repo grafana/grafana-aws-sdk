@@ -10,18 +10,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/private/protocol/rest"
-)
-
-type AuthType string
-
-const (
-	Default     AuthType = "default"
-	Keys        AuthType = "keys"
-	Credentials AuthType = "credentials"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 )
 
 // Host header is likely not necessary here
@@ -34,6 +29,10 @@ var permittedHeaders = map[string]struct{}{
 	"Accept":          {},
 	"Accept-Encoding": {},
 }
+
+var (
+	authSettings *awsds.AuthSettings = nil
+)
 
 type middleware struct {
 	config *Config
@@ -68,6 +67,11 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
+	// Need to delay fetching auth settings until env vars have had a chance to propagate
+	if authSettings == nil {
+		authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
+	}
+
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		if next == nil {
 			next = http.DefaultTransport
@@ -109,16 +113,41 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 }
 
 func (m *middleware) signer() (*v4.Signer, error) {
-	authType := AuthType(m.config.AuthType)
+	authType := awsds.ToAuthType(m.config.AuthType)
+
+	authTypeAllowed := false
+	for _, provider := range authSettings.AllowedAuthProviders {
+		if provider == authType.String() {
+			authTypeAllowed = true
+			break
+		}
+	}
+
+	if !authTypeAllowed {
+		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
+	}
+
+	if m.config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
+		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
+	}
 
 	var c *credentials.Credentials
 	switch authType {
-	case Keys:
+	case awsds.AuthTypeKeys:
 		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
-	case Credentials:
+	case awsds.AuthTypeSharedCreds:
 		c = credentials.NewSharedCredentials("", m.config.Profile)
-	case Default:
-		// passing nil credentials will force AWS to allow a more complete credential chain vs the explicit default
+	case awsds.AuthTypeEC2IAMRole:
+		s, err := session.NewSession(&aws.Config{
+			Region: aws.String(m.config.Region),
+		})
+		if err != nil {
+			return nil, err
+		}
+		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
+
+		return v4.NewSigner(c), nil
+	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
 			Region: aws.String(m.config.Region),
 		})
@@ -131,7 +160,16 @@ func (m *middleware) signer() (*v4.Signer, error) {
 		}
 
 		return v4.NewSigner(s.Config.Credentials), nil
-	case "":
+	default:
+		if m.config.AssumeRoleARN != "" {
+			s, err := session.NewSession(&aws.Config{
+				Region: aws.String(m.config.Region),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+		}
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 

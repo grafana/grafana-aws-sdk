@@ -34,10 +34,9 @@ type SessionCache struct {
 
 // NewSessionCache creates a new session cache using the default settings loaded from environment variables
 func NewSessionCache() *SessionCache {
-	authSettings := readAuthSettingsFromEnvironmentVariables()
 	return &SessionCache{
 		sessCache:    map[string]envelope{},
-		authSettings: authSettings,
+		authSettings: ReadAuthSettingsFromEnvironmentVariables(),
 	}
 }
 
@@ -47,7 +46,7 @@ const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 // AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
 const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
-func readAuthSettingsFromEnvironmentVariables() *AuthSettings {
+func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	allowedAuthProviders := []string{}
 	providers := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
 	for _, authProvider := range strings.Split(providers, ",") {
