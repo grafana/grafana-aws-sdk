@@ -8,9 +8,6 @@ import {
   onUpdateDatasourceSecureJsonDataOption,
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
-// Hack for issue: https://github.com/grafana/grafana/issues/26512
-// Can be removed when dependencies are upgraded to 7.5
-import {} from '@emotion/core';
 
 import { standardRegions } from './regions';
 import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
@@ -18,8 +15,7 @@ import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
 
-// awsAllowedAuthProviders is supported in 7.5+
-const awsAllowedAuthProviders: AwsAuthType[] = (config as any).awsAllowedAuthProviders ?? [
+const awsAllowedAuthProviders = (config.awsAllowedAuthProviders as AwsAuthType[]) ?? [
   AwsAuthType.Default,
   AwsAuthType.Keys,
   AwsAuthType.Credentials,
@@ -103,14 +99,12 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         <>
           <InlineField label="Access Key ID" labelWidth={28}>
             {props.options.secureJsonFields?.accessKey ? (
-              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
-              <ButtonGroup style={{ display: 'flex', width: 480 }}>
+              <ButtonGroup className="width-30">
                 <Input disabled placeholder="Configured" />
                 <ToolbarButton
                   icon="edit"
                   tooltip="Edit Access Key ID"
-                  // this can be rewritten to type="button" after upgrading to @grafana/ui@7.5
-                  {...{ type: 'button' }}
+                  type="button"
                   onClick={onUpdateDatasourceResetOption(props as any, 'accessKey')}
                 />
               </ButtonGroup>
@@ -125,13 +119,11 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
           <InlineField label="Secret Access Key" labelWidth={28}>
             {props.options.secureJsonFields?.secretKey ? (
-              // styling can be replaced with 'className="width-30"' when the plugin starts using @grafana/ui@7.5
-              <ButtonGroup style={{ display: 'flex', width: 480 }}>
+              <ButtonGroup className="width-30">
                 <Input disabled placeholder="Configured" />
                 <ToolbarButton
                   icon="edit"
-                  // this can be rewritten to type="button" after upgrading to @grafana/ui@7.5
-                  {...{ type: 'button' }}
+                  type="button"
                   tooltip="Edit Secret Access Key"
                   onClick={onUpdateDatasourceResetOption(props as any, 'secretKey')}
                 />
