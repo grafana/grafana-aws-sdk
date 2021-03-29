@@ -31,7 +31,7 @@ var permittedHeaders = map[string]struct{}{
 }
 
 var (
-	allowedAuthProviders = awsds.ReadAuthSettingsFromEnvironmentVariables().AllowedAuthProviders
+	authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
 )
 
 type middleware struct {
@@ -111,7 +111,7 @@ func (m *middleware) signer() (*v4.Signer, error) {
 	authType := awsds.ToAuthType(m.config.AuthType)
 
 	authTypeAllowed := false
-	for _, provider := range allowedAuthProviders {
+	for _, provider := range authSettings.AllowedAuthProviders {
 		if provider == authType.String() {
 			authTypeAllowed = true
 			break
@@ -120,6 +120,10 @@ func (m *middleware) signer() (*v4.Signer, error) {
 
 	if !authTypeAllowed {
 		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", authType.String())
+	}
+
+	if m.config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
+		return nil, fmt.Errorf("attempting to use assume role (ARN) which is not enabled")
 	}
 
 	var c *credentials.Credentials
@@ -139,7 +143,6 @@ func (m *middleware) signer() (*v4.Signer, error) {
 
 		return v4.NewSigner(c), nil
 	case awsds.AuthTypeDefault:
-		// passing nil credentials will force AWS to allow a more complete credential chain vs the explicit default
 		s, err := session.NewSession(&aws.Config{
 			Region: aws.String(m.config.Region),
 		})
@@ -153,6 +156,15 @@ func (m *middleware) signer() (*v4.Signer, error) {
 
 		return v4.NewSigner(s.Config.Credentials), nil
 	default:
+		if m.config.AssumeRoleARN != "" {
+			s, err := session.NewSession(&aws.Config{
+				Region: aws.String(m.config.Region),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+		}
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 
