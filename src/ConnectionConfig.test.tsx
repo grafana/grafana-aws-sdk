@@ -96,11 +96,45 @@ describe('ConnectionConfig', () => {
     expect(screen.getByText('Secret Access Key')).toBeInTheDocument();
   });
 
-  // it('should show secret field if auth type is keys', async () => {
-  //   (config as any).awsAllowedAuthProviders = ['tjena'];
-  //   const props = getProps({ options: { jsonData: { authType: AwsAuthType.Credentials } } });
-  //   render(<ConnectionConfig {...props} />);
-  //   await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
-  //   expect(screen.getByText('Credentials file')).toBeInTheDocument();
-  // });
+  it('should render endpoint if skipEndpoint prop is missing', async () => {
+    const props = getProps();
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.getByText('Endpoint')).toBeInTheDocument();
+  });
+
+  it('should render endpoint if skipEndpoint prop is set to false', async () => {
+    const props = getProps({ skipEndpoint: false });
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.queryByText('Endpoint')).toBeInTheDocument();
+  });
+
+  it('should not render endpoint if skipEndpoint prop is set to true', async () => {
+    const props = getProps({ skipEndpoint: true });
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.queryByText('Endpoint')).not.toBeInTheDocument();
+  });
+
+  it('should render default header if skipHeader prop is missing', async () => {
+    const props = getProps();
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.queryByText('Connection Details')).toBeInTheDocument();
+  });
+
+  it('should render default header if skipHeader prop is set to false', async () => {
+    const props = getProps({ skipHeader: false });
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.queryByText('Connection Details')).toBeInTheDocument();
+  });
+
+  it('should not render default header if skipHeader prop is set to true', async () => {
+    const props = getProps({ skipHeader: true });
+    render(<ConnectionConfig {...props} />);
+    await waitFor(() => expect(screen.getByTestId('connection-config')).toBeInTheDocument());
+    expect(screen.queryByText('Connection Details')).not.toBeInTheDocument();
+  });
 });

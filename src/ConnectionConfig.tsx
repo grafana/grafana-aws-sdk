@@ -30,12 +30,14 @@ export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAut
   standardRegions?: string[];
   loadRegions?: () => Promise<string[]>;
   defaultEndpoint?: string;
+  skipHeader?: boolean;
+  skipEndpoint?: boolean;
   children?: React.ReactNode;
 }
 
 export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
-  const { loadRegions, onOptionsChange } = props;
+  const { loadRegions, onOptionsChange, skipHeader = false, skipEndpoint = false } = props;
   const options = props.options;
   let profile = options.jsonData.profile;
   if (profile === undefined) {
@@ -66,7 +68,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   }, [loadRegions]);
 
   return (
-    <FieldSet label="Connection Details" data-testid="connection-config">
+    <FieldSet label={skipHeader ? '' : 'Connection Details'} data-testid="connection-config">
       <InlineField
         label="Authentication Provider"
         labelWidth={28}
@@ -173,14 +175,16 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
           </InlineField>
         </>
       )}
-      <InlineField label="Endpoint" labelWidth={28} tooltip="Optionally, specify a custom endpoint for the service">
-        <Input
-          className="width-30"
-          placeholder={props.defaultEndpoint ?? 'https://{service}.{region}.amazonaws.com'}
-          value={options.jsonData.endpoint || ''}
-          onChange={onUpdateDatasourceJsonDataOption(props, 'endpoint')}
-        />
-      </InlineField>
+      {!skipEndpoint && (
+        <InlineField label="Endpoint" labelWidth={28} tooltip="Optionally, specify a custom endpoint for the service">
+          <Input
+            className="width-30"
+            placeholder={props.defaultEndpoint ?? 'https://{service}.{region}.amazonaws.com'}
+            value={options.jsonData.endpoint || ''}
+            onChange={onUpdateDatasourceJsonDataOption(props, 'endpoint')}
+          />
+        </InlineField>
+      )}
       <InlineField
         label="Default Region"
         labelWidth={28}
