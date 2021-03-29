@@ -124,11 +124,11 @@ func (m *middleware) signer() (*v4.Signer, error) {
 	}
 
 	if !authTypeAllowed {
-		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", authType.String())
+		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
 	}
 
 	if m.config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
-		return nil, fmt.Errorf("attempting to use assume role (ARN) which is not enabled")
+		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
 	}
 
 	var c *credentials.Credentials
