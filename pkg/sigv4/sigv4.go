@@ -67,6 +67,7 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(config *Config, next http.RoundTripper) http.RoundTripper {
+	// Need to delay fetching auth settings until env vars have had a chance to propagate
 	if authSettings == nil {
 		authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
 	}
