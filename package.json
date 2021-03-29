@@ -20,7 +20,7 @@
   "author": "Grafana Labs <team@grafana.com> (https://grafanap.com)",
   "license": "Apache-2.0",
   "dependencies": {
-    "@grafana/data": "7.5.0",
+    "@grafana/data": "7.4.0",
     "@grafana/runtime": "7.5.0",
     "@grafana/ui": "7.5.0"
   },

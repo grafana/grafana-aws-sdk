@@ -13,7 +13,6 @@ const getProps = (propOverrides?: object) => {
   const props: ConnectionConfigProps<AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData> = {
     options: {
       id: 21,
-      typeName: '',
       orgId: 1,
       name: 'aws-plugin-name',
       type: 'aws',
