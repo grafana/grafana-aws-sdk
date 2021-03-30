@@ -19,12 +19,10 @@
   "repository": "github:grafana/grafana-aws-sdk",
   "author": "Grafana Labs <team@grafana.com> (https://grafanap.com)",
   "license": "Apache-2.0",
-  "dependencies": {
-    "@grafana/data": "7.4.0",
-    "@grafana/runtime": "7.5.0",
-    "@grafana/ui": "7.5.0"
-  },
   "devDependencies": {
+    "@grafana/data": "^7.5.0",
+    "@grafana/runtime": "^7.5.0",
+    "@grafana/ui": "^7.5.0",
     "@babel/preset-env": "^7.13.12",
     "@babel/preset-react": "^7.13.13",
     "@babel/preset-typescript": "^7.13.0",

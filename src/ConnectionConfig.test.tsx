@@ -16,6 +16,7 @@ const getProps = (propOverrides?: object) => {
       orgId: 1,
       name: 'aws-plugin-name',
       type: 'aws',
+      typeName: 'aws-plugin-type',
       basicAuth: false,
       basicAuthUser: '',
       basicAuthPassword: '',
