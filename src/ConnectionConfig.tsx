@@ -7,19 +7,12 @@ import {
   onUpdateDatasourceJsonDataOption,
   onUpdateDatasourceSecureJsonDataOption,
 } from '@grafana/data';
-import { config } from '@grafana/runtime';
 
 import { standardRegions } from './regions';
 import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
 import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
-
-const awsAllowedAuthProviders = (config.awsAllowedAuthProviders as AwsAuthType[]) ?? [
-  AwsAuthType.Default,
-  AwsAuthType.Keys,
-  AwsAuthType.Credentials,
-];
 
 export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData>
   extends DataSourcePluginOptionsEditorProps<J, S> {
@@ -29,11 +22,21 @@ export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAut
   skipHeader?: boolean;
   skipEndpoint?: boolean;
   children?: React.ReactNode;
+  allowedAuthProviders: string[];
+  assumeRoleEnabled: boolean;
 }
 
 export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionConfigProps) => {
   const [regions, setRegions] = useState((props.standardRegions || standardRegions).map(toOption));
-  const { loadRegions, onOptionsChange, skipHeader = false, skipEndpoint = false } = props;
+  const {
+    loadRegions,
+    onOptionsChange,
+    assumeRoleEnabled,
+    allowedAuthProviders,
+    skipHeader = false,
+    skipEndpoint = false,
+  } = props;
+  const providers = allowedAuthProviders as AwsAuthType[];
   const options = props.options;
   let profile = options.jsonData.profile;
   if (profile === undefined) {
@@ -44,12 +47,12 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
 
   useEffect(() => {
     // Make sure a authType exists in the current model
-    if (!currentProvider && awsAllowedAuthProviders.length) {
+    if (!currentProvider && providers.length) {
       onOptionsChange({
         ...options,
         jsonData: {
           ...options.jsonData,
-          authType: awsAllowedAuthProviders[0],
+          authType: providers[0],
         },
       });
     }
@@ -73,7 +76,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         <Select
           className="width-30"
           value={currentProvider}
-          options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
+          options={awsAuthProviderOptions.filter((opt) => providers.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
           onChange={(option) => {
             onUpdateDatasourceJsonDataOptionSelect(props, 'authType')(option);
@@ -139,7 +142,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         </>
       )}
 
-      {(config as any).awsAssumeRoleEnabled && (
+      {assumeRoleEnabled && (
         <>
           <InlineField
             label="Assume Role ARN"

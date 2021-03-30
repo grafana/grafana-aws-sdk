@@ -5,10 +5,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
 import { ConnectionConfig, ConnectionConfigProps } from './ConnectionConfig';
 
-jest.mock('@grafana/runtime', () => ({
-  config: { awsAllowedAuthProviders: ['ec2_iam_role', 'keys'] },
-}));
-
 const getProps = (propOverrides?: object) => {
   const props: ConnectionConfigProps<AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData> = {
     options: {
@@ -46,6 +42,8 @@ const getProps = (propOverrides?: object) => {
         secretKey: '',
       },
     },
+    assumeRoleEnabled: true,
+    allowedAuthProviders: [AwsAuthType.EC2IAMRole, AwsAuthType.Keys],
     onOptionsChange: jest.fn(),
   };
 
