@@ -9,7 +9,7 @@ import {
 } from '@grafana/data';
 
 import { standardRegions } from './regions';
-import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType, Window } from './types';
+import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
 import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
