@@ -26,7 +26,7 @@ const buildCjsPackage = ({ env }) => {
         },
       },
     ],
-    external: ['react', '@grafana/data', '@grafana/ui', '@grafana/runtime'],
+    external: ['react', '@grafana/data', '@grafana/ui'],
     plugins: [
       typescript({
         rollupCommonJSResolveHack: false,
