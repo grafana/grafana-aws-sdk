@@ -7,19 +7,12 @@ import {
   onUpdateDatasourceJsonDataOption,
   onUpdateDatasourceSecureJsonDataOption,
 } from '@grafana/data';
-import { config } from '@grafana/runtime';
 
 import { standardRegions } from './regions';
 import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
 import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
-
-const awsAllowedAuthProviders = (config.awsAllowedAuthProviders as AwsAuthType[]) ?? [
-  AwsAuthType.Default,
-  AwsAuthType.Keys,
-  AwsAuthType.Credentials,
-];
 
 export interface ConnectionConfigProps<J = AwsAuthDataSourceJsonData, S = AwsAuthDataSourceSecureJsonData>
   extends DataSourcePluginOptionsEditorProps<J, S> {
@@ -39,6 +32,14 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
   if (profile === undefined) {
     profile = options.database;
   }
+
+  const settings = window.grafanaBootData.settings;
+  const awsAllowedAuthProviders = settings.awsAllowedAuthProviders ?? [
+    AwsAuthType.Default,
+    AwsAuthType.Keys,
+    AwsAuthType.Credentials,
+  ];
+  const awsAssumeRoleEnabled = settings.awsAssumeRoleEnabled ?? true;
 
   const currentProvider = awsAuthProviderOptions.find((p) => p.value === options.jsonData.authType);
 
@@ -139,7 +140,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         </>
       )}
 
-      {(config as any).awsAssumeRoleEnabled && (
+      {awsAssumeRoleEnabled && (
         <>
           <InlineField
             label="Assume Role ARN"
