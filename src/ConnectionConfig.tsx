@@ -9,7 +9,7 @@ import {
 } from '@grafana/data';
 
 import { standardRegions } from './regions';
-import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
+import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType, Window } from './types';
 import { awsAuthProviderOptions } from './providers';
 
 const toOption = (value: string) => ({ value, label: value });
@@ -33,7 +33,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
     profile = options.database;
   }
 
-  const settings = window.grafanaBootData.settings;
+  const settings = (window as any).grafanaBootData.settings;
   const awsAllowedAuthProviders = settings.awsAllowedAuthProviders ?? [
     AwsAuthType.Default,
     AwsAuthType.Keys,

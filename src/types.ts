@@ -24,14 +24,3 @@ export interface AwsAuthDataSourceSecureJsonData {
   accessKey?: string;
   secretKey?: string;
 }
-
-declare global {
-  interface Window {
-    grafanaBootData: {
-      settings: {
-        awsAllowedAuthProviders?: AwsAuthType[];
-        awsAssumeRoleEnabled?: boolean;
-      };
-    };
-  }
-}
