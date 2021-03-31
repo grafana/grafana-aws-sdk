@@ -28,6 +28,11 @@ var permittedHeaders = map[string]struct{}{
 	"User-Agent":      {},
 	"Accept":          {},
 	"Accept-Encoding": {},
+	"Content-Type":    {},
+	"Content-Length":  {},
+	"securitytenant":  {},
+	"sgtenant":        {},
+	"kbn-xsrf":        {},
 }
 
 var (
