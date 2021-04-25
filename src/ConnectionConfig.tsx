@@ -11,6 +11,7 @@ import {
 import { standardRegions } from './regions';
 import { AwsAuthDataSourceJsonData, AwsAuthDataSourceSecureJsonData, AwsAuthType } from './types';
 import { awsAuthProviderOptions } from './providers';
+import { selectors } from './selectors';
 
 const toOption = (value: string) => ({ value, label: value });
 
@@ -72,7 +73,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         tooltip="Specify which AWS credentials chain to use."
       >
         <Select
-          className="width-30"
+          className="width-30 aws-config-authType"
           value={currentProvider}
           options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
           defaultValue={options.jsonData.authType}
@@ -114,6 +115,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
                 className="width-30"
                 value={options.secureJsonData?.accessKey ?? ''}
                 onChange={onUpdateDatasourceSecureJsonDataOption(props, 'accessKey')}
+                aria-label={selectors.components.ConfigEditor.AccessKey.input}
               />
             )}
           </InlineField>
@@ -134,6 +136,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
                 className="width-30"
                 value={options.secureJsonData?.secretKey ?? ''}
                 onChange={onUpdateDatasourceSecureJsonDataOption(props, 'secretKey')}
+                aria-label={selectors.components.ConfigEditor.SecretKey.input}
               />
             )}
           </InlineField>
@@ -184,7 +187,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         tooltip="Specify the region, such as for US West (Oregon) use ` us-west-2 ` as the region."
       >
         <Select
-          className="width-30"
+          className="width-30 aws-config-defaultRegion"
           value={regions.find((region) => region.value === options.jsonData.defaultRegion)}
           options={regions}
           defaultValue={options.jsonData.defaultRegion}

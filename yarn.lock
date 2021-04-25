@@ -1201,6 +1201,17 @@
     typescript "4.1.2"
     yaml "^1.8.3"
 
+"@grafana/e2e-selectors@^7.5.4":
+  version "7.5.4"
+  resolved "https://registry.yarnpkg.com/@grafana/e2e-selectors/-/e2e-selectors-7.5.4.tgz#44121d239aee59da61a0f73b58c18b90824a1bc0"
+  integrity sha512-/yLS8qPxvg46dQVunAu75SDm7MFVOPd2jnqphSQUeax455QWrb/6TXEyfePZlP0U6rXNLLaZrxk+IZ8qrgWCdw==
+  dependencies:
+    "@grafana/tsconfig" "^1.0.0-rc1"
+    commander "5.0.0"
+    execa "4.0.0"
+    typescript "4.1.2"
+    yaml "^1.8.3"
+
 "@grafana/eslint-config@2.3.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@grafana/eslint-config/-/eslint-config-2.3.0.tgz#2d053d488854e2fcbaa1ebc0ed4c0258fc014aa4"
