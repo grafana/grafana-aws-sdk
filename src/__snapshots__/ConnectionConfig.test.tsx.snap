@@ -37,7 +37,7 @@ exports[`ConnectionConfig should render component 1`] = `
       </div>
     </label>
     <div
-      className="width-30 css-11bl7g2-Component"
+      className="width-30 aws-config-authType css-11bl7g2-Component"
       onKeyDown={[Function]}
     >
       <div
@@ -208,7 +208,7 @@ exports[`ConnectionConfig should render component 1`] = `
       </div>
     </label>
     <div
-      className="width-30 css-11bl7g2-Component"
+      className="width-30 aws-config-defaultRegion css-11bl7g2-Component"
       onKeyDown={[Function]}
     >
       <div
