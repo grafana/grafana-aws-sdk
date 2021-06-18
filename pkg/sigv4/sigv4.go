@@ -2,6 +2,7 @@ package sigv4
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -42,6 +43,8 @@ var (
 type middleware struct {
 	config *Config
 	next   http.RoundTripper
+
+	signer *v4.Signer
 }
 
 type Config struct {
@@ -98,9 +101,12 @@ func (m *middleware) exec(req *http.Request) (*http.Response, error) {
 }
 
 func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
-	signer, err := m.signer()
-	if err != nil {
-		return nil, err
+	if m.signer == nil {
+		signer, err := newSigner(m.config)
+		if err != nil {
+			return nil, err
+		}
+		m.signer = signer
 	}
 
 	body, err := replaceBody(req)
@@ -114,11 +120,15 @@ func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
 
 	stripHeaders(req)
 
-	return signer.Sign(req, bytes.NewReader(body), m.config.Service, m.config.Region, time.Now().UTC())
+	return m.signer.Sign(req, bytes.NewReader(body), m.config.Service, m.config.Region, time.Now().UTC())
 }
 
-func (m *middleware) signer() (*v4.Signer, error) {
-	authType := awsds.ToAuthType(m.config.AuthType)
+func newSigner(config *Config) (*v4.Signer, error) {
+	if config == nil {
+		return nil, errors.New("configuration must be provided")
+	}
+
+	authType := awsds.ToAuthType(config.AuthType)
 
 	authTypeAllowed := false
 	for _, provider := range authSettings.AllowedAuthProviders {
@@ -132,61 +142,60 @@ func (m *middleware) signer() (*v4.Signer, error) {
 		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
 	}
 
-	if m.config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
+	if config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
 	}
 
 	var c *credentials.Credentials
 	switch authType {
 	case awsds.AuthTypeKeys:
-		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
+		c = credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
 	case awsds.AuthTypeSharedCreds:
-		c = credentials.NewSharedCredentials("", m.config.Profile)
+		c = credentials.NewSharedCredentials("", config.Profile)
 	case awsds.AuthTypeEC2IAMRole:
 		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(m.config.Region),
+			Region: aws.String(config.Region),
 		})
 		if err != nil {
 			return nil, err
 		}
-		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
+		c = credentials.NewCredentials(
+			&ec2rolecreds.EC2RoleProvider{
+				Client:       ec2metadata.New(s),
+				ExpiryWindow: stscreds.DefaultDuration,
+			},
+		)
 
 		return v4.NewSigner(c), nil
 	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(m.config.Region),
+			Region: aws.String(config.Region),
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		if m.config.AssumeRoleARN != "" {
-			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+		if config.AssumeRoleARN != "" {
+			return v4.NewSigner(stscreds.NewCredentials(s, config.AssumeRoleARN)), nil
 		}
 
 		return v4.NewSigner(s.Config.Credentials), nil
 	default:
-		if m.config.AssumeRoleARN != "" {
-			s, err := session.NewSession(&aws.Config{
-				Region: aws.String(m.config.Region),
-			})
-			if err != nil {
-				return nil, err
-			}
-			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
-		}
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 
-	if m.config.AssumeRoleARN != "" {
-		s, err := session.NewSession(&aws.Config{
-			Region:      aws.String(m.config.Region),
-			Credentials: c},
+	if config.AssumeRoleARN != "" {
+		s, err := session.NewSession(
+			&aws.Config{
+				Region:      aws.String(config.Region),
+				Credentials: c,
+			},
 		)
 		if err != nil {
 			return nil, err
 		}
-		return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+
+		return v4.NewSigner(stscreds.NewCredentials(s, config.AssumeRoleARN)), nil
 	}
 
 	return v4.NewSigner(c), nil
@@ -196,10 +205,12 @@ func replaceBody(req *http.Request) ([]byte, error) {
 	if req.Body == nil {
 		return []byte{}, nil
 	}
+
 	payload, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Body = ioutil.NopCloser(bytes.NewReader(payload))
 	return payload, nil
 }
