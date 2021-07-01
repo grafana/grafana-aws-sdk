@@ -151,6 +151,18 @@ func (m *middleware) signer() (*v4.Signer, error) {
 		}
 		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
 
+		if m.config.AssumeRoleARN != "" {
+			s, err = session.NewSession(&aws.Config{
+				CredentialsChainVerboseErrors: aws.Bool(true),
+				Region:                        aws.String(m.config.Region),
+				Credentials:                   c,
+			})
+			if err != nil {
+				return nil, err
+			}
+			c = stscreds.NewCredentials(s, m.config.AssumeRoleARN)
+		}
+
 		return v4.NewSigner(c), nil
 	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
