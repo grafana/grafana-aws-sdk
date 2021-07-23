@@ -98,8 +98,9 @@ type AWSDatasourceSettings struct {
 	DefaultRegion string `json:"defaultRegion"`
 
 	// Loaded from DecryptedSecureJSONData (not the json object)
-	AccessKey string `json:"-"`
-	SecretKey string `json:"-"`
+	AccessKey    string `json:"-"`
+	SecretKey    string `json:"-"`
+	SessionToken string `json:"-"`
 }
 
 // LoadSettings will read and validate Settings from the DataSourceConfg
