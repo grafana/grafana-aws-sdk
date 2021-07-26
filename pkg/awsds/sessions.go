@@ -173,7 +173,7 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	case AuthTypeKeys:
 		plog.Debug("Authenticating towards AWS with an access key pair", "region", region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewStaticCredentials(s.AccessKey, s.SecretKey, ""),
+			Credentials: credentials.NewStaticCredentials(s.AccessKey, s.SecretKey, s.SessionToken),
 		})
 	case AuthTypeDefault:
 		plog.Debug("Authenticating towards AWS with default SDK method", "region", region)
