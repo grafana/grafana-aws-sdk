@@ -121,6 +121,7 @@ func (s *AWSDatasourceSettings) Load(config backend.DataSourceInstanceSettings) 
 
 	s.AccessKey = config.DecryptedSecureJSONData["accessKey"]
 	s.SecretKey = config.DecryptedSecureJSONData["secretKey"]
+	s.SessionToken = config.DecryptedSecureJSONData["sessionToken"]
 
 	return nil
 }

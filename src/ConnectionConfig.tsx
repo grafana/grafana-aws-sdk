@@ -137,6 +137,26 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
               />
             )}
           </InlineField>
+
+          <InlineField label="Session Token" labelWidth={28}>
+            {props.options.secureJsonFields?.sessionToken ? (
+              <ButtonGroup className="width-30">
+                <Input disabled placeholder="Configured" />
+                <ToolbarButton
+                  icon="edit"
+                  type="button"
+                  tooltip="Edit Session Token"
+                  onClick={onUpdateDatasourceResetOption(props as any, 'sessionToken')}
+                />
+              </ButtonGroup>
+            ) : (
+              <Input
+                className="width-30"
+                value={options.secureJsonData?.sessionToken ?? ''}
+                onChange={onUpdateDatasourceSecureJsonDataOption(props, 'sessionToken')}
+              />
+            )}
+          </InlineField>
         </>
       )}
 

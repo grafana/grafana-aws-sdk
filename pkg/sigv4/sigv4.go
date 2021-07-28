@@ -51,8 +51,9 @@ type Config struct {
 
 	Service string
 
-	AccessKey string
-	SecretKey string
+	AccessKey    string
+	SecretKey    string
+	SessionToken string
 
 	AssumeRoleARN string
 	ExternalID    string
@@ -139,7 +140,7 @@ func (m *middleware) signer() (*v4.Signer, error) {
 	var c *credentials.Credentials
 	switch authType {
 	case awsds.AuthTypeKeys:
-		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, "")
+		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, m.config.SessionToken)
 	case awsds.AuthTypeSharedCreds:
 		c = credentials.NewSharedCredentials("", m.config.Profile)
 	case awsds.AuthTypeEC2IAMRole:

@@ -37,10 +37,12 @@ const getProps = (propOverrides?: object) => {
       secureJsonFields: {
         accessKey: false,
         secretKey: false,
+        sessionToken: false,
       },
       secureJsonData: {
         accessKey: '',
         secretKey: '',
+        sessionToken: '',
       },
     },
     onOptionsChange: jest.fn(),
