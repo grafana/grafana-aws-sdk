@@ -23,4 +23,5 @@ export interface AwsAuthDataSourceJsonData extends DataSourceJsonData {
 export interface AwsAuthDataSourceSecureJsonData {
   accessKey?: string;
   secretKey?: string;
+  sessionToken?: string;
 }
