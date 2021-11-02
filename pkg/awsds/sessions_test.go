@@ -1,7 +1,6 @@
 package awsds
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -122,8 +121,6 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: roleARN,
 		}
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		a:=os.Getenv(AssumeRoleEnabledEnvVarKeyName)
-		fmt.Printf(a)
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(defaultRegion, settings)
 		require.NoError(t, err)
@@ -166,17 +163,17 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 	})
 
 	t.Run("Fallback is used when AllowedAuthProviders env var is missing", func(t *testing.T) {
-		defaultAuthProviders := []AuthType{ AuthTypeDefault, AuthTypeKeys, AuthTypeSharedCreds }
+		defaultAuthProviders := []AuthType{AuthTypeDefault, AuthTypeKeys, AuthTypeSharedCreds}
 		for _, provider := range defaultAuthProviders {
 			resetEnvironmentVariables()
 			settings := AWSDatasourceSettings{
 				AuthType: provider,
-			}	
+			}
 			cache := NewSessionCache()
 			sess, err := cache.GetSession(defaultRegion, settings)
 			require.NoError(t, err)
 			require.NotNil(t, sess)
-		} 
+		}
 	})
 }
 
