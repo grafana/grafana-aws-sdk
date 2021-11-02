@@ -1,4 +1,5 @@
-//+build mage
+//go:build mage
+// +build mage
 
 package main
 
@@ -20,7 +21,18 @@ func Lint() error {
 	if err := sh.RunV("golangci-lint", "run", "./..."); err != nil {
 		return err
 	}
-	if err := sh.RunV("revive", "-formatter", "stylish", "-config", "scripts/configs/revive.toml", "./..."); err != nil {
+	return nil
+}
+
+// Drone signs the Drone configuration file
+// This needs to be run everytime the drone.yml file is modified
+// See https://github.com/grafana/deployment_tools/blob/master/docs/infrastructure/drone/signing.md for more info
+func Drone() error {
+	if err := sh.RunV("drone", "lint"); err != nil {
+		return err
+	}
+
+	if err := sh.RunV("drone", "--server", "https://drone.grafana.net", "sign", "--save", "grafana/grafana-plugin-sdk-go"); err != nil {
 		return err
 	}
 
