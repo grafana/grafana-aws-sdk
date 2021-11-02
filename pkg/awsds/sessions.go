@@ -233,3 +233,11 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 
 	return sess, nil
 }
+
+func GetSessionWithDefaultRegion(sessionCache *SessionCache, settings AWSDatasourceSettings) (*session.Session, error) {
+	region := settings.DefaultRegion
+	if settings.Region != "" {
+		region = settings.Region
+	}
+	return sessionCache.GetSession(region, settings)
+}
