@@ -13,18 +13,20 @@ import (
 	"github.com/grafana/sqlds/v2"
 )
 
-// AWSDatasource stores a cache of:
-// - config: base configuration per datasource (only datasource ID)
-// - db: database connection per datasource and connection args
-// - driver: driver instance per datasource and connection args
-// - api: API instace per datasource and connection args
-// - sessionCache: cache used to create connections
+// AWSDatasource stores a cache of several instances.
+// Each Map will depend on the datasource ID (and connection options):
+// - config: Base configuration. It will be used as base to populate datasource settings.
+//           It does not depend on connection options (only one per datasource)
+// - api: API instace with the common methods to contact the data source API.
+// - driver: Abstraction on top the upstream sql.Driver. Defined to handle multiple connections.
+// - db: Upstream database (sql.DB).
+// - sessionCache: AWS cache. This is not a Map since it does not depend on the datasource.
 type AWSDatasource struct {
-	config       sync.Map
-	db           sync.Map
-	driver       sync.Map
-	api          sync.Map
 	sessionCache *awsds.SessionCache
+	config       sync.Map
+	api          sync.Map
+	driver       sync.Map
+	db           sync.Map
 }
 
 func New(config backend.DataSourceInstanceSettings) *AWSDatasource {
