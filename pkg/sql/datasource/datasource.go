@@ -1,0 +1,168 @@
+package datasource
+
+import (
+	"database/sql"
+	"fmt"
+	"sync"
+
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
+	"github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
+	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/sqlds/v2"
+)
+
+// AWSDatasource stores a cache of:
+// - config: base configuration per datasource (only datasource ID)
+// - db: database connection per datasource and connection args
+// - driver: driver instance per datasource and connection args
+// - api: API instace per datasource and connection args
+// - sessionCache: cache used to create connections
+type AWSDatasource struct {
+	config       sync.Map
+	db           sync.Map
+	driver       sync.Map
+	api          sync.Map
+	sessionCache *awsds.SessionCache
+}
+
+func New(config backend.DataSourceInstanceSettings) *AWSDatasource {
+	ds := &AWSDatasource{sessionCache: awsds.NewSessionCache()}
+	ds.config.Store(config.ID, config)
+	return ds
+}
+
+func (d *AWSDatasource) storeDB(id int64, args sqlds.Options, db *sql.DB) {
+	key := connectionKey(id, args)
+	d.db.Store(key, db)
+}
+
+func (d *AWSDatasource) loadDB(id int64, args sqlds.Options) (*sql.DB, bool) {
+	key := connectionKey(id, args)
+	db, dbExists := d.db.Load(key)
+	dr, driverExists := d.driver.Load(key)
+	if dbExists && driverExists && !dr.(driver.Driver).Closed() {
+		return db.(*sql.DB), true
+	}
+	return nil, false
+}
+
+func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.Settings, dr driver.Driver) (*sql.DB, error) {
+	db, err := dr.OpenDB()
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
+	}
+	s.storeDB(id, args, db)
+
+	return db, nil
+}
+
+func (d *AWSDatasource) storeAPI(id int64, args sqlds.Options, dsAPI api.AWSAPI) {
+	key := connectionKey(id, args)
+	d.api.Store(key, dsAPI)
+}
+
+func (d *AWSDatasource) loadAPI(id int64, args sqlds.Options) (api.AWSAPI, bool) {
+	key := connectionKey(id, args)
+	dsAPI, exists := d.api.Load(key)
+	if exists {
+		return dsAPI.(api.AWSAPI), true
+	}
+	return nil, false
+}
+
+func (s *AWSDatasource) createAPI(id int64, args sqlds.Options, settings models.Settings, loader api.Loader) (api.AWSAPI, error) {
+	api, err := loader(s.sessionCache, settings)
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to create client", err)
+	}
+	s.storeAPI(id, args, api)
+	return api, err
+}
+
+func (d *AWSDatasource) storeDriver(id int64, args sqlds.Options, dr interface{}) {
+	key := connectionKey(id, args)
+	d.driver.Store(key, dr)
+}
+
+func (s *AWSDatasource) createDriver(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI, loader driver.Loader) (driver.Driver, error) {
+	dr, err := loader(dsAPI)
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to create client", err)
+	}
+	s.storeDriver(id, args, dr)
+
+	return dr, nil
+}
+
+func (d *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings models.Settings) error {
+	config, ok := d.config.Load(id)
+	if !ok {
+		return fmt.Errorf("unable to find stored configuration for datasource %d", id)
+	}
+	err := settings.Load(config.(backend.DataSourceInstanceSettings))
+	if err != nil {
+		return fmt.Errorf("error reading settings: %s", err.Error())
+	}
+	settings.Apply(args)
+	return nil
+}
+
+// GetDB returns a *sql.DB. When called multiple times with the same id and options, it
+// will return a cached version of the DB. The first time, it will use the loader
+// functions to initialize the required settings, API and driver and finally create a DB.
+func (s *AWSDatasource) GetDB(
+	id int64,
+	options sqlds.Options,
+	settingsLoader models.Loader,
+	apiLoader api.Loader,
+	driverLoader driver.Loader,
+) (*sql.DB, error) {
+	cachedDB, exists := s.loadDB(id, options)
+	if exists {
+		return cachedDB, nil
+	}
+
+	// First connection
+	settings := settingsLoader()
+	err := s.parseSettings(id, options, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	dsAPI, err := s.createAPI(id, options, settings, apiLoader)
+	if err != nil {
+		return nil, err
+	}
+
+	dr, err := s.createDriver(id, options, settings, dsAPI, driverLoader)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.createDB(id, options, settings, dr)
+}
+
+// GetAPI returns an API interface. When called multiple times with the same id and options, it
+// will return a cached version of the API. The first time, it will use the loader
+// functions to initialize the required settings and API.
+func (s *AWSDatasource) GetAPI(
+	id int64,
+	options sqlds.Options,
+	settingsLoader models.Loader,
+	apiLoader api.Loader,
+) (api.AWSAPI, error) {
+	cachedAPI, exists := s.loadAPI(id, options)
+	if exists {
+		return cachedAPI, nil
+	}
+
+	// create new api
+	settings := settingsLoader()
+	err := s.parseSettings(id, options, settings)
+	if err != nil {
+		return nil, err
+	}
+	return s.createAPI(id, options, settings, apiLoader)
+}

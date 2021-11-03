@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/sqlds/v2"
 	"github.com/jpillora/backoff"
@@ -42,6 +44,13 @@ type Resources interface {
 	Regions(aws.Context) ([]string, error)
 	Databases(aws.Context, sqlds.Options) ([]string, error)
 }
+
+type AWSAPI interface {
+	SQL
+	Resources
+}
+
+type Loader func(cache *awsds.SessionCache, settings models.Settings) (AWSAPI, error)
 
 var (
 	backoffMin = 200 * time.Millisecond
