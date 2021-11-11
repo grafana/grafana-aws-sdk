@@ -35,7 +35,7 @@ func ParseBody(body io.ReadCloser) (sqlds.Options, error) {
 	return reqBody, nil
 }
 
-func SendResources(rw http.ResponseWriter, res []string, err error) {
+func SendResources(rw http.ResponseWriter, res interface{}, err error) {
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		Write(rw, []byte(err.Error()))

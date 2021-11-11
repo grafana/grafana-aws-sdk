@@ -15,13 +15,18 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	config := backend.DataSourceInstanceSettings{
-		ID: 100,
-	}
-	ds := New(config)
+	ds := New()
 	if ds.sessionCache == nil {
 		t.Errorf("missing initialization")
 	}
+}
+
+func TestStoreConfig(t *testing.T) {
+	config := backend.DataSourceInstanceSettings{
+		ID: 100,
+	}
+	ds := &AWSDatasource{}
+	ds.StoreConfig(config)
 	if _, ok := ds.config.Load(config.ID); !ok {
 		t.Errorf("missing config")
 	}

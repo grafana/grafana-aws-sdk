@@ -29,10 +29,13 @@ type AWSDatasource struct {
 	db           sync.Map
 }
 
-func New(config backend.DataSourceInstanceSettings) *AWSDatasource {
+func New() *AWSDatasource {
 	ds := &AWSDatasource{sessionCache: awsds.NewSessionCache()}
-	ds.config.Store(config.ID, config)
 	return ds
+}
+
+func (d *AWSDatasource) StoreConfig(config backend.DataSourceInstanceSettings) {
+	d.config.Store(config.ID, config)
 }
 
 func (d *AWSDatasource) storeDB(id int64, args sqlds.Options, db *sql.DB) {
