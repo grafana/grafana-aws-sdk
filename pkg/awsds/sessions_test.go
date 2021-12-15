@@ -1,6 +1,8 @@
 package awsds
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -219,4 +222,19 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 func resetEnvironmentVariables() {
 	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
 	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
+}
+
+func TestWithUserAgent(t *testing.T) {
+	cfg := aws.Config{}
+	session := &session.Session{
+		Config: &cfg,
+	}
+	WithUserAgent(session, "Athena")
+	req := &request.Request{
+		HTTPRequest: httptest.NewRequest(http.MethodGet, "/upper?word=abc", nil),
+	}
+	session.Handlers.Send.Run(req)
+
+	res := req.HTTPRequest.Header.Get("User-Agent")
+	assert.Contains(t, res, "Athena/dev")
 }
