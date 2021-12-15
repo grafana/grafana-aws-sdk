@@ -21,12 +21,12 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestStoreConfig(t *testing.T) {
+func TestInit(t *testing.T) {
 	config := backend.DataSourceInstanceSettings{
 		ID: 100,
 	}
 	ds := &AWSDatasource{}
-	ds.StoreConfig(config)
+	ds.Init(config)
 	if _, ok := ds.config.Load(config.ID); !ok {
 		t.Errorf("missing config")
 	}
@@ -255,10 +255,11 @@ func TestGetDB(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	ds.config.Store(id, backend.DataSourceInstanceSettings{ID: id})
+	config := backend.DataSourceInstanceSettings{ID: id}
+	ds.Init(config)
 	key := connectionKey(id, args)
 
-	res, err := ds.GetDB(id, args, fakeSettingsLoader, fakeAPILoader, fakeDriverLoader)
+	res, err := ds.GetDB(config.ID, args, fakeSettingsLoader, fakeAPILoader, fakeDriverLoader)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -275,7 +276,8 @@ func TestGetAPI(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	ds.config.Store(id, backend.DataSourceInstanceSettings{ID: id})
+	config := backend.DataSourceInstanceSettings{ID: id}
+	ds.Init(config)
 	key := connectionKey(id, args)
 
 	api, err := ds.GetAPI(id, args, fakeSettingsLoader, fakeAPILoader)
