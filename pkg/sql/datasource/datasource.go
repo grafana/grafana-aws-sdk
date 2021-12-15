@@ -34,7 +34,7 @@ func New() *AWSDatasource {
 	return ds
 }
 
-func (d *AWSDatasource) StoreConfig(config backend.DataSourceInstanceSettings) {
+func (d *AWSDatasource) storeConfig(config backend.DataSourceInstanceSettings) {
 	d.config.Store(config.ID, config)
 }
 
@@ -104,7 +104,7 @@ func (s *AWSDatasource) createDriver(id int64, args sqlds.Options, settings mode
 func (d *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings models.Settings) error {
 	config, ok := d.config.Load(id)
 	if !ok {
-		return fmt.Errorf("unable to find stored configuration for datasource %d", id)
+		return fmt.Errorf("unable to find stored configuration for datasource %d. Initialize it first", id)
 	}
 	err := settings.Load(config.(backend.DataSourceInstanceSettings))
 	if err != nil {
@@ -112,6 +112,11 @@ func (d *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings mod
 	}
 	settings.Apply(args)
 	return nil
+}
+
+// Init stores the data source configuration. It's needed for the GetDB and GetAPI functions
+func (s *AWSDatasource) Init(config backend.DataSourceInstanceSettings) {
+	s.storeConfig(config)
 }
 
 // GetDB returns a *sql.DB. When called multiple times with the same id and options, it
