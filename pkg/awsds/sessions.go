@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
@@ -240,4 +241,10 @@ func GetSessionWithDefaultRegion(sessionCache *SessionCache, settings AWSDatasou
 		region = settings.Region
 	}
 	return sessionCache.GetSession(region, settings)
+}
+
+func WithUserAgent(sess *session.Session, name string) {
+	sess.Handlers.Send.PushFront(func(r *request.Request) {
+		r.HTTPRequest.Header.Set("User-Agent", GetUserAgentString(name))
+	})
 }
