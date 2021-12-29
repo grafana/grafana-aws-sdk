@@ -68,11 +68,11 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
     <FieldSet label={skipHeader ? '' : 'Connection Details'} data-testid="connection-config">
       <InlineField
         label="Authentication Provider"
-        aria-label="Authentication Provider"
         labelWidth={28}
         tooltip="Specify which AWS credentials chain to use."
       >
         <Select
+          aria-label="Authentication Provider selection"
           className="width-30"
           value={currentProvider}
           options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
@@ -181,11 +181,11 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       )}
       <InlineField
         label="Default Region"
-        aria-label="Default Region"
         labelWidth={28}
         tooltip="Specify the region, such as for US West (Oregon) use ` us-west-2 ` as the region."
       >
         <Select
+          aria-label="Default Region selection"
           className="width-30"
           value={regions.find((region) => region.value === options.jsonData.defaultRegion)}
           options={regions}
