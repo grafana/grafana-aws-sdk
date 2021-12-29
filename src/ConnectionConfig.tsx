@@ -68,6 +68,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
     <FieldSet label={skipHeader ? '' : 'Connection Details'} data-testid="connection-config">
       <InlineField
         label="Authentication Provider"
+        aria-label="Authentication Provider"
         labelWidth={28}
         tooltip="Specify which AWS credentials chain to use."
       >
@@ -180,6 +181,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
       )}
       <InlineField
         label="Default Region"
+        aria-label="Default Region"
         labelWidth={28}
         tooltip="Specify the region, such as for US West (Oregon) use ` us-west-2 ` as the region."
       >
