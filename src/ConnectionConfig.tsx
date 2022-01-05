@@ -72,7 +72,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         tooltip="Specify which AWS credentials chain to use."
       >
         <Select
-          aria-label="Authentication Provider selection"
+          aria-label="Authentication Provider"
           className="width-30"
           value={currentProvider}
           options={awsAuthProviderOptions.filter((opt) => awsAllowedAuthProviders.includes(opt.value!))}
@@ -185,7 +185,7 @@ export const ConnectionConfig: FC<ConnectionConfigProps> = (props: ConnectionCon
         tooltip="Specify the region, such as for US West (Oregon) use ` us-west-2 ` as the region."
       >
         <Select
-          aria-label="Default Region selection"
+          aria-label="Default Region"
           className="width-30"
           value={regions.find((region) => region.value === options.jsonData.defaultRegion)}
           options={regions}
