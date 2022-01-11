@@ -49,46 +49,6 @@ func (f *fakeDriver) OpenDB() (*sql.DB, error) {
 	return f.db, nil
 }
 
-func TestLoadDB(t *testing.T) {
-	db := &sql.DB{}
-	tests := []struct {
-		description string
-		driver      *fakeDriver
-		res         *sql.DB
-	}{
-		{
-			description: "it should return a stored db",
-			driver:      &fakeDriver{db: db},
-			res:         db,
-		},
-		{
-			description: "it should not return a db if the connection has been closed",
-			driver:      &fakeDriver{closed: true, db: db},
-			res:         nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			id := int64(1)
-			args := sqlds.Options{}
-			key := connectionKey(id, args)
-			ds := &AWSDatasource{}
-			if tt.driver.db != nil {
-				ds.db.Store(key, tt.driver.db)
-				ds.driver.Store(key, tt.driver)
-			}
-			res, exists := ds.loadDB(id, args)
-			if res != tt.res {
-				t.Errorf("unexpected result %v", res)
-			}
-			if tt.res != nil && !exists {
-				t.Errorf("should return true")
-			}
-		})
-	}
-}
-
 type fakeAPI struct {
 	api.AWSAPI
 }
@@ -229,7 +189,6 @@ func TestCreateDB(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	key := connectionKey(id, args)
 	db := &sql.DB{}
 	dr := &fakeDriver{db: db}
 	settings := &fakeSettings{}
@@ -240,10 +199,6 @@ func TestCreateDB(t *testing.T) {
 	}
 	if res != db {
 		t.Errorf("unexpected result db %v", res)
-	}
-	cachedDB, ok := ds.db.Load(key)
-	if !ok || cachedDB != db {
-		t.Errorf("unexpected cached db %v", cachedDB)
 	}
 }
 
@@ -257,7 +212,6 @@ func TestGetDB(t *testing.T) {
 	ds := &AWSDatasource{}
 	config := backend.DataSourceInstanceSettings{ID: id}
 	ds.Init(config)
-	key := connectionKey(id, args)
 
 	res, err := ds.GetDB(config.ID, args, fakeSettingsLoader, fakeAPILoader, fakeDriverLoader)
 	if err != nil {
@@ -265,10 +219,6 @@ func TestGetDB(t *testing.T) {
 	}
 	if res == nil {
 		t.Errorf("unexpected result db %v", res)
-	}
-	cachedDB, ok := ds.db.Load(key)
-	if !ok || cachedDB == nil {
-		t.Errorf("unexpected cached db %v", cachedDB)
 	}
 }
 

@@ -26,7 +26,6 @@ type AWSDatasource struct {
 	config       sync.Map
 	api          sync.Map
 	driver       sync.Map
-	db           sync.Map
 }
 
 func New() *AWSDatasource {
@@ -38,27 +37,11 @@ func (d *AWSDatasource) storeConfig(config backend.DataSourceInstanceSettings) {
 	d.config.Store(config.ID, config)
 }
 
-func (d *AWSDatasource) storeDB(id int64, args sqlds.Options, db *sql.DB) {
-	key := connectionKey(id, args)
-	d.db.Store(key, db)
-}
-
-func (d *AWSDatasource) loadDB(id int64, args sqlds.Options) (*sql.DB, bool) {
-	key := connectionKey(id, args)
-	db, dbExists := d.db.Load(key)
-	dr, driverExists := d.driver.Load(key)
-	if dbExists && driverExists && !dr.(driver.Driver).Closed() {
-		return db.(*sql.DB), true
-	}
-	return nil, false
-}
-
 func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.Settings, dr driver.Driver) (*sql.DB, error) {
 	db, err := dr.OpenDB()
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
 	}
-	s.storeDB(id, args, db)
 
 	return db, nil
 }
@@ -119,9 +102,8 @@ func (s *AWSDatasource) Init(config backend.DataSourceInstanceSettings) {
 	s.storeConfig(config)
 }
 
-// GetDB returns a *sql.DB. When called multiple times with the same id and options, it
-// will return a cached version of the DB. The first time, it will use the loader
-// functions to initialize the required settings, API and driver and finally create a DB.
+// GetDB returns a *sql.DB. It will use the loader functions to initialize the required
+// settings, API and driver and finally create a DB.
 func (s *AWSDatasource) GetDB(
 	id int64,
 	options sqlds.Options,
@@ -129,12 +111,6 @@ func (s *AWSDatasource) GetDB(
 	apiLoader api.Loader,
 	driverLoader driver.Loader,
 ) (*sql.DB, error) {
-	cachedDB, exists := s.loadDB(id, options)
-	if exists {
-		return cachedDB, nil
-	}
-
-	// First connection
 	settings := settingsLoader()
 	err := s.parseSettings(id, options, settings)
 	if err != nil {
