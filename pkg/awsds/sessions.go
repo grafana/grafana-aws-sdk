@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -103,30 +104,36 @@ var newEC2RoleCredentials = func(sess *session.Session) *credentials.Credentials
 	return credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(sess), ExpiryWindow: stscreds.DefaultDuration})
 }
 
-// GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
-func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*session.Session, error) {
-	if region == "" || region == defaultRegion {
-		region = s.Region
-	}
+type SessionConfig struct {
+	Settings      AWSDatasourceSettings
+	Config        backend.DataSourceInstanceSettings
+	UserAgentName *string
+}
 
+// GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
+func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
+	if c.Settings.Region == "" && c.Settings.DefaultRegion != "" {
+		// DefaultRegion is deprecated, Region should be used instead
+		c.Settings.Region = c.Settings.DefaultRegion
+	}
 	authTypeAllowed := false
 	for _, provider := range sc.authSettings.AllowedAuthProviders {
-		if provider == s.AuthType.String() {
+		if provider == c.Settings.AuthType.String() {
 			authTypeAllowed = true
 			break
 		}
 	}
 	if !authTypeAllowed {
-		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", s.AuthType.String())
+		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
 	}
 
-	if s.AssumeRoleARN != "" && !sc.authSettings.AssumeRoleEnabled {
+	if c.Settings.AssumeRoleARN != "" && !sc.authSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
 	bldr := strings.Builder{}
 	for i, s := range []string{
-		s.AuthType.String(), s.AccessKey, s.Profile, s.AssumeRoleARN, region, s.Endpoint,
+		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
 	} {
 		if i != 0 {
 			bldr.WriteString(":")
@@ -144,49 +151,60 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	}
 	sc.sessCacheLock.RUnlock()
 
+	opts, err := c.Config.HTTPClientOptions()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := httpclient.New(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	cfgs := []*aws.Config{
 		{
 			CredentialsChainVerboseErrors: aws.Bool(true),
+			HTTPClient:                    client,
 		},
 	}
 
 	var regionCfg *aws.Config
-	if region == defaultRegion {
+	if c.Settings.Region == defaultRegion {
 		plog.Warn("Region is set to \"default\", which is unsupported")
-		region = ""
+		c.Settings.Region = ""
 	}
-	if region != "" {
-		regionCfg = &aws.Config{Region: aws.String(region)}
+	if c.Settings.Region != "" {
+		regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 		cfgs = append(cfgs, regionCfg)
 	}
 
-	if s.Endpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(s.Endpoint)})
+	if c.Settings.Endpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
 	}
 
-	switch s.AuthType {
+	switch c.Settings.AuthType {
 	case AuthTypeSharedCreds:
-		plog.Debug("Authenticating towards AWS with shared credentials", "profile", s.Profile,
-			"region", region)
+		plog.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
+			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewSharedCredentials("", s.Profile),
+			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
-		plog.Debug("Authenticating towards AWS with an access key pair", "region", region)
+		plog.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewStaticCredentials(s.AccessKey, s.SecretKey, s.SessionToken),
+			Credentials: credentials.NewStaticCredentials(c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.SessionToken),
 		})
 	case AuthTypeDefault:
-		plog.Debug("Authenticating towards AWS with default SDK method", "region", region)
+		plog.Debug("Authenticating towards AWS with default SDK method", "region", c.Settings.Region)
 	case AuthTypeEC2IAMRole:
-		plog.Debug("Authenticating towards AWS with IAM Role", "region", region)
+		plog.Debug("Authenticating towards AWS with IAM Role", "region", c.Settings.Region)
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
 		}
 		cfgs = append(cfgs, &aws.Config{Credentials: newEC2RoleCredentials(sess)})
 	default:
-		panic(fmt.Sprintf("Unrecognized authType: %d", s.AuthType))
+		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
 	sess, err := newSession(cfgs...)
 	if err != nil {
@@ -195,21 +213,21 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 
 	duration := stscreds.DefaultDuration
 	expiration := time.Now().UTC().Add(duration)
-	if s.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
+	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
-		plog.Debug("Trying to assume role in AWS", "arn", s.AssumeRoleARN)
+		plog.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
 		cfgs := []*aws.Config{
 			{
 				CredentialsChainVerboseErrors: aws.Bool(true),
 			},
 			{
-				Credentials: newSTSCredentials(sess, s.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
+				Credentials: newSTSCredentials(sess, c.Settings.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
 					// Not sure if this is necessary, overlaps with p.Duration and is undocumented
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
-					if s.ExternalID != "" {
-						p.ExternalID = aws.String(s.ExternalID)
+					if c.Settings.ExternalID != "" {
+						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
 				}),
 			},
@@ -223,6 +241,12 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 		}
 	}
 
+	if c.UserAgentName != nil {
+		sess.Handlers.Send.PushFront(func(r *request.Request) {
+			r.HTTPRequest.Header.Set("User-Agent", GetUserAgentString(*c.UserAgentName))
+		})
+	}
+
 	plog.Debug("Successfully created AWS session")
 
 	sc.sessCacheLock.Lock()
@@ -233,18 +257,4 @@ func (sc *SessionCache) GetSession(region string, s AWSDatasourceSettings) (*ses
 	sc.sessCacheLock.Unlock()
 
 	return sess, nil
-}
-
-func GetSessionWithDefaultRegion(sessionCache *SessionCache, settings AWSDatasourceSettings) (*session.Session, error) {
-	region := settings.DefaultRegion
-	if settings.Region != "" {
-		region = settings.Region
-	}
-	return sessionCache.GetSession(region, settings)
-}
-
-func WithUserAgent(sess *session.Session, name string) {
-	sess.Handlers.Send.PushFront(func(r *request.Request) {
-		r.HTTPRequest.Header.Set("User-Agent", GetUserAgentString(name))
-	})
 }
