@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -17,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,7 +65,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
 		require.NotNil(t, sess)
 		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
@@ -87,7 +89,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
 		require.NotNil(t, sess)
 		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
@@ -110,7 +112,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.Error(t, err)
 		require.Nil(t, sess)
 		expectedError := "attempting to use assume role (ARN) which is disabled in grafana.ini"
@@ -125,7 +127,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		}
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
 		require.NotNil(t, sess)
 		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
@@ -147,7 +149,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		}
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.Error(t, err)
 		require.Nil(t, sess)
 		assert.Equal(t, `attempting to use an auth type that is not allowed: "default"`, err.Error())
@@ -160,7 +162,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		}
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys")
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
 		require.NotNil(t, sess)
 	})
@@ -173,7 +175,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 				AuthType: provider,
 			}
 			cache := NewSessionCache()
-			sess, err := cache.GetSession(defaultRegion, settings)
+			sess, err := cache.GetSession(SessionConfig{Settings: settings})
 			require.NoError(t, err)
 			require.NotNil(t, sess)
 		}
@@ -204,7 +206,7 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
 
 		cache := NewSessionCache()
-		sess, err := cache.GetSession(defaultRegion, settings)
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
 		require.NotNil(t, sess)
 
@@ -225,16 +227,33 @@ func resetEnvironmentVariables() {
 }
 
 func TestWithUserAgent(t *testing.T) {
-	cfg := aws.Config{}
-	session := &session.Session{
-		Config: &cfg,
-	}
-	WithUserAgent(session, "Athena")
+	resetEnvironmentVariables()
+	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
+	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
+	cache := NewSessionCache()
+	sess, err := cache.GetSession(SessionConfig{UserAgentName: aws.String("Athena")})
+	require.NoError(t, err)
+	require.NotNil(t, sess)
 	req := &request.Request{
 		HTTPRequest: httptest.NewRequest(http.MethodGet, "/upper?word=abc", nil),
 	}
-	session.Handlers.Send.Run(req)
+	sess.Handlers.Send.Run(req)
 
 	res := req.HTTPRequest.Header.Get("User-Agent")
 	assert.Contains(t, res, "Athena/dev")
+}
+
+func TestWithCustomHTTPClient(t *testing.T) {
+	resetEnvironmentVariables()
+	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
+	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
+	cache := NewSessionCache()
+	sess, err := cache.GetSession(SessionConfig{
+		Config: backend.DataSourceInstanceSettings{
+			JSONData: []byte(`{"timeout":123}`),
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, sess)
+	assert.Equal(t, time.Duration(123*time.Second), sess.Config.HTTPClient.Timeout)
 }
