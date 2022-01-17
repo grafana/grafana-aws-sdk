@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -249,11 +248,9 @@ func TestWithCustomHTTPClient(t *testing.T) {
 	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
 	cache := NewSessionCache()
 	sess, err := cache.GetSession(SessionConfig{
-		Config: backend.DataSourceInstanceSettings{
-			JSONData: []byte(`{"timeout":123}`),
-		},
+		HTTPClient: &http.Client{Timeout: 123},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, sess)
-	assert.Equal(t, time.Duration(123*time.Second), sess.Config.HTTPClient.Timeout)
+	assert.Equal(t, time.Duration(123), sess.Config.HTTPClient.Timeout)
 }

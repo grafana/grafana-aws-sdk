@@ -2,6 +2,7 @@ package awsds
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -106,7 +106,7 @@ var newEC2RoleCredentials = func(sess *session.Session) *credentials.Credentials
 
 type SessionConfig struct {
 	Settings      AWSDatasourceSettings
-	Config        backend.DataSourceInstanceSettings
+	HTTPClient    *http.Client
 	UserAgentName *string
 }
 
@@ -151,20 +151,10 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 	sc.sessCacheLock.RUnlock()
 
-	opts, err := c.Config.HTTPClientOptions()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := httpclient.New(opts)
-	if err != nil {
-		return nil, err
-	}
-
 	cfgs := []*aws.Config{
 		{
 			CredentialsChainVerboseErrors: aws.Bool(true),
-			HTTPClient:                    client,
+			HTTPClient:                    c.HTTPClient,
 		},
 	}
 
