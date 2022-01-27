@@ -168,10 +168,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, regionCfg)
 	}
 
-	if c.Settings.Endpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
-	}
-
 	switch c.Settings.AuthType {
 	case AuthTypeSharedCreds:
 		plog.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
@@ -196,6 +192,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
+
+	if c.Settings.Endpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+	}
+
 	sess, err := newSession(cfgs...)
 	if err != nil {
 		return nil, err
