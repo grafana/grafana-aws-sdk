@@ -197,8 +197,18 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 	}
 
 	t.Run("Credentials are created", func(t *testing.T) {
+		credentialCfgs := []*aws.Config{}
+		newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
+			cfg := aws.Config{}
+			cfg.MergeIn(cfgs...)
+			credentialCfgs = append(credentialCfgs, &cfg)
+			return &session.Session{
+				Config: &cfg,
+			}, nil
+		}
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeEC2IAMRole,
+			Endpoint: "foo",
 		}
 
 		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "ec2_iam_role")
@@ -217,6 +227,13 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 			return true
 		}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
 		assert.Empty(t, diff)
+
+		// Endpoint should be added to final session but not configuration session
+		require.Equal(t, 2, len(credentialCfgs))
+		require.Nil(t, credentialCfgs[0].Endpoint)
+		require.NotNil(t, credentialCfgs[1].Endpoint)
+		require.NotNil(t, sess.Config.Endpoint)
+		require.Equal(t, "foo", *sess.Config.Endpoint)
 	})
 }
 
