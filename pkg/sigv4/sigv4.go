@@ -56,7 +56,10 @@ type Config struct {
 
 func (c Config) asSha256() string {
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", c)))
+	_, err := h.Write([]byte(fmt.Sprintf("%v", c)))
+	if err != nil {
+		return ""
+	}
 
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
