@@ -79,11 +79,18 @@ type Logger interface {
 
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
-func New(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
+func New(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
+	return newRoundTripper(cfg, next, &nopLogger{})
+}
+
+func NewWithLogger(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
+	return newRoundTripper(cfg, next, logger)
+}
+
+func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
-
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		if next == nil {
 			next = http.DefaultTransport
@@ -278,4 +285,18 @@ func validateConfig(cfg *Config) error {
 	}
 
 	return nil
+}
+
+type nopLogger struct {
+	Logger
+}
+
+func (l *nopLogger) Log(_ ...interface{}) {
+
+}
+func (l *nopLogger) LogRequest(_ *http.Request, _ ...interface{}) {
+
+}
+func (l *nopLogger) VerboseMode() bool {
+	return false
 }

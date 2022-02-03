@@ -14,14 +14,14 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("Can't create new middleware without valid auth type", func(t *testing.T) {
-		rt, err := New(&Config{}, nil, &fakeLogger{})
+		rt, err := New(&Config{}, nil)
 		require.Error(t, err)
 		require.Nil(t, rt)
 
 	})
 	t.Run("Can create new middleware with any valid auth type", func(t *testing.T) {
 		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn"} {
-			rt, err := New(&Config{AuthType: authType}, nil, &fakeLogger{})
+			rt, err := New(&Config{AuthType: authType}, nil)
 
 			require.NoError(t, err)
 			require.NotNil(t, rt)
@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can sign a request", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{}, &fakeLogger{})
+		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -58,7 +58,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can sign a request with extra headers which are not signed", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{}, &fakeLogger{})
+		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -89,7 +89,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Signed request overwrites existing Authorization header", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{}, &fakeLogger{})
+		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -113,7 +113,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can't sign a request without valid credentials", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
-		rt, err := New(cfg, &fakeTransport{}, &fakeLogger{})
+		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -127,6 +127,26 @@ func TestNew(t *testing.T) {
 		require.Nil(t, res)
 	})
 
+	t.Run("Will log requests during signing if configured", func(t *testing.T) {
+		cfg := &Config{AuthType: "ec2_iam_role"}
+		logger := &fakeLogger{}
+		rt, err := NewWithLogger(cfg, &fakeTransport{}, logger)
+		require.NoError(t, err)
+		require.NotNil(t, rt)
+		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
+		require.NoError(t, err)
+
+		// mock signer
+		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{}))
+
+		res, err := rt.RoundTrip(r)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+
+		require.Equal(t, 2, len(logger.requestsLogged))
+		require.Equal(t, r, logger.requestsLogged[0])
+		require.Equal(t, res.Request, logger.requestsLogged[1])
+	})
 }
 
 func TestConfig(t *testing.T) {
@@ -235,14 +255,17 @@ func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 type fakeLogger struct {
 	Logger
+
+	requestsLogged []*http.Request
 }
 
 func (l *fakeLogger) Log(_ ...interface{}) {
 
 }
-func (l *fakeLogger) LogRequest(_ *http.Request, _ ...interface{}) {
-
+func (l *fakeLogger) LogRequest(req *http.Request, _ ...interface{}) {
+	l.requestsLogged = append(l.requestsLogged, req)
 }
+
 func (l *fakeLogger) VerboseMode() bool {
 	return false
 }
