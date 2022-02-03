@@ -149,8 +149,6 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 
 	_, err = m.signer.Sign(req, body, m.config.Service, m.config.Region, time.Now().UTC())
 
-	origReq.Header.Del("Authorization")
-
 	copyHeaderWithoutOverwrite(req.Header, origReq.Header)
 
 	return req, err
