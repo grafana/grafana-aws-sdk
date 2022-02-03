@@ -65,13 +65,13 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
 	if len(assumeRoleEnabledString) == 0 {
-		plog.Warn("environment variable '%s' missing. falling back to enable assume role", AssumeRoleEnabledEnvVarKeyName)
+		plog.Warn("environment variable missing. falling back to enable assume role", "variable", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabledString = "true"
 	}
 
 	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
-		plog.Error("could not parse env variable '%s'", AssumeRoleEnabledEnvVarKeyName)
+		plog.Error("could not parse env variable", "variable", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabled = true
 	}
 

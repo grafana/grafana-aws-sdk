@@ -2,10 +2,12 @@ package sigv4
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,32 +18,24 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/private/protocol/rest"
+
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 )
 
-// Host header is likely not necessary here
-// (see https://github.com/golang/go/blob/cad6d1fef5147d31e94ee83934c8609d3ad150b7/src/net/http/request.go#L92)
-// but adding for completeness
-var permittedHeaders = map[string]struct{}{
-	"Host":            {},
-	"Uber-Trace-Id":   {},
-	"User-Agent":      {},
-	"Accept":          {},
-	"Accept-Encoding": {},
-	"Content-Type":    {},
-	"Content-Length":  {},
-	"securitytenant":  {},
-	"sgtenant":        {},
-	"kbn-xsrf":        {},
-}
-
 var (
-	authSettings *awsds.AuthSettings = nil
+	signerCache = struct {
+		cache map[string]*v4.Signer
+		sync.RWMutex
+	}{
+		cache: make(map[string]*v4.Signer),
+	}
 )
 
 type middleware struct {
+	signer *v4.Signer
 	config *Config
 	next   http.RoundTripper
+	logger Logger
 }
 
 type Config struct {
@@ -60,6 +54,13 @@ type Config struct {
 	Region        string
 }
 
+func (c Config) asSha256() string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", c)))
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 // The RoundTripperFunc type is an adapter to allow the use of ordinary
 // functions as RoundTrippers. If f is a function with the appropriate
 // signature, RoundTripperFunc(f) is a RoundTripper that calls f.
@@ -70,57 +71,107 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return rt(r)
 }
 
+type Logger interface {
+	Log(args ...interface{})
+	LogRequest(req *http.Request, args ...interface{})
+	VerboseMode() bool
+}
+
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
-func New(config *Config, next http.RoundTripper) http.RoundTripper {
-	// Need to delay fetching auth settings until env vars have had a chance to propagate
-	if authSettings == nil {
-		authSettings = awsds.ReadAuthSettingsFromEnvironmentVariables()
+func New(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
+	if err := validateConfig(cfg); err != nil {
+		return nil, err
 	}
 
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		if next == nil {
 			next = http.DefaultTransport
 		}
-		return (&middleware{
-			config: config,
+
+		var signer *v4.Signer
+		cached, cacheHit := cachedSigner(cfg)
+		if cacheHit {
+			signer = cached
+		} else {
+			var err error
+			signer, err = createSigner(cfg, logger)
+			if err != nil {
+				return nil, err
+			}
+			signerCache.Lock()
+			signerCache.cache[cfg.asSha256()] = signer
+			signerCache.Unlock()
+		}
+
+		m := &middleware{
+			config: cfg,
 			next:   next,
-		}).exec(r)
-	})
+			logger: logger,
+			signer: signer,
+		}
+
+		return m.exec(r)
+	}), nil
 }
 
-func (m *middleware) exec(req *http.Request) (*http.Response, error) {
-	_, err := m.signRequest(req)
+func (m *middleware) exec(origReq *http.Request) (*http.Response, error) {
+	m.logger.LogRequest(origReq, "stage", "pre-signature")
+
+	req, err := m.createSignedRequest(origReq)
 	if err != nil {
 		return nil, err
 	}
+
+	m.logger.LogRequest(req, "stage", "post-signature")
 
 	return m.next.RoundTrip(req)
 }
 
-func (m *middleware) signRequest(req *http.Request) (http.Header, error) {
-	signer, err := m.signer()
+func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, error) {
+	req, err := http.NewRequest(origReq.Method, origReq.URL.String(), origReq.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := replaceBody(req)
-	if err != nil {
-		return nil, err
+	body := bytes.NewReader([]byte{})
+	if req.Body != nil {
+		b, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		body = bytes.NewReader(b)
 	}
 
 	if strings.Contains(req.URL.RawPath, "%2C") {
 		req.URL.RawPath = rest.EscapePath(req.URL.RawPath, false)
 	}
 
-	stripHeaders(req)
+	_, err = m.signer.Sign(req, body, m.config.Service, m.config.Region, time.Now().UTC())
 
-	return signer.Sign(req, bytes.NewReader(body), m.config.Service, m.config.Region, time.Now().UTC())
+	origReq.Header.Del("Authorization")
+
+	copyHeaderWithoutOverwrite(req.Header, origReq.Header)
+
+	return req, err
 }
 
-func (m *middleware) signer() (*v4.Signer, error) {
-	authType := awsds.ToAuthType(m.config.AuthType)
+func cachedSigner(cfg *Config) (*v4.Signer, bool) {
+	signerCache.RLock()
+	defer signerCache.RUnlock()
+	if cached, exists := signerCache.cache[cfg.asSha256()]; exists {
+		return cached, true
+	}
+	return nil, false
+}
 
+func createSigner(cfg *Config, logger Logger) (*v4.Signer, error) {
+	authType, err := awsds.ToAuthType(cfg.AuthType)
+	if err != nil {
+		return nil, err
+	}
+
+	authSettings := awsds.ReadAuthSettingsFromEnvironmentVariables()
 	authTypeAllowed := false
 	for _, provider := range authSettings.AllowedAuthProviders {
 		if provider == authType.String() {
@@ -133,94 +184,100 @@ func (m *middleware) signer() (*v4.Signer, error) {
 		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
 	}
 
-	if m.config.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
+	if cfg.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
+	}
+
+	var signerOpts = func(s *v4.Signer) {
+		if logger.VerboseMode() {
+			s.Logger = logger
+			s.Debug = aws.LogDebugWithSigning
+		}
 	}
 
 	var c *credentials.Credentials
 	switch authType {
 	case awsds.AuthTypeKeys:
-		c = credentials.NewStaticCredentials(m.config.AccessKey, m.config.SecretKey, m.config.SessionToken)
+		c = credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, cfg.SessionToken)
 	case awsds.AuthTypeSharedCreds:
-		c = credentials.NewSharedCredentials("", m.config.Profile)
+		c = credentials.NewSharedCredentials("", cfg.Profile)
 	case awsds.AuthTypeEC2IAMRole:
 		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(m.config.Region),
+			Region: aws.String(cfg.Region),
 		})
 		if err != nil {
 			return nil, err
 		}
 		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
 
-		if m.config.AssumeRoleARN != "" {
+		if cfg.AssumeRoleARN != "" {
 			s, err = session.NewSession(&aws.Config{
 				CredentialsChainVerboseErrors: aws.Bool(true),
-				Region:                        aws.String(m.config.Region),
+				Region:                        aws.String(cfg.Region),
 				Credentials:                   c,
 			})
 			if err != nil {
 				return nil, err
 			}
-			c = stscreds.NewCredentials(s, m.config.AssumeRoleARN)
+			c = stscreds.NewCredentials(s, cfg.AssumeRoleARN)
 		}
 
-		return v4.NewSigner(c), nil
+		return v4.NewSigner(c, signerOpts), nil
 	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(m.config.Region),
+			Region: aws.String(cfg.Region),
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		if m.config.AssumeRoleARN != "" {
-			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+		if cfg.AssumeRoleARN != "" {
+			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 		}
 
-		return v4.NewSigner(s.Config.Credentials), nil
+		return v4.NewSigner(s.Config.Credentials, signerOpts), nil
 	default:
-		if m.config.AssumeRoleARN != "" {
+		if cfg.AssumeRoleARN != "" {
 			s, err := session.NewSession(&aws.Config{
-				Region: aws.String(m.config.Region),
+				Region: aws.String(cfg.Region),
 			})
 			if err != nil {
 				return nil, err
 			}
-			return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 		}
 		return nil, fmt.Errorf("invalid SigV4 auth type")
 	}
 
-	if m.config.AssumeRoleARN != "" {
+	if cfg.AssumeRoleARN != "" {
 		s, err := session.NewSession(&aws.Config{
-			Region:      aws.String(m.config.Region),
+			Region:      aws.String(cfg.Region),
 			Credentials: c},
 		)
 		if err != nil {
 			return nil, err
 		}
-		return v4.NewSigner(stscreds.NewCredentials(s, m.config.AssumeRoleARN)), nil
+		return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 	}
 
-	return v4.NewSigner(c), nil
+	return v4.NewSigner(c, signerOpts), nil
 }
 
-func replaceBody(req *http.Request) ([]byte, error) {
-	if req.Body == nil {
-		return []byte{}, nil
-	}
-	payload, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
-	}
-	req.Body = ioutil.NopCloser(bytes.NewReader(payload))
-	return payload, nil
-}
-
-func stripHeaders(req *http.Request) {
-	for h := range req.Header {
-		if _, exists := permittedHeaders[h]; !exists {
-			req.Header.Del(h)
+func copyHeaderWithoutOverwrite(dst, src http.Header) {
+	for k, vv := range src {
+		if _, ok := dst[k]; !ok {
+			for _, v := range vv {
+				dst.Add(k, v)
+			}
 		}
 	}
+}
+
+func validateConfig(cfg *Config) error {
+	_, err := awsds.ToAuthType(cfg.AuthType)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

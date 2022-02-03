@@ -34,20 +34,20 @@ func (at AuthType) String() string {
 	}
 }
 
-func ToAuthType(authType string) AuthType {
+func ToAuthType(authType string) (AuthType, error) {
 	switch authType {
 	case "credentials", "sharedCreds":
-		return AuthTypeSharedCreds
+		return AuthTypeSharedCreds, nil
 	case "keys":
-		return AuthTypeKeys
+		return AuthTypeKeys, nil
 	case "default":
-		return AuthTypeDefault
+		return AuthTypeDefault, nil
 	case "ec2_iam_role":
-		return AuthTypeEC2IAMRole
+		return AuthTypeEC2IAMRole, nil
 	case "arn":
-		return AuthTypeDefault
+		return AuthTypeDefault, nil
 	default:
-		panic(fmt.Sprintf("Unrecognized auth type %s", authType))
+		return AuthTypeDefault, fmt.Errorf("invalid auth type: %s", authType)
 	}
 }
 
