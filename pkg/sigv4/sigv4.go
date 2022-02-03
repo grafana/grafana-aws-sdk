@@ -91,6 +91,10 @@ func NewWithLogger(cfg *Config, next http.RoundTripper, logger Logger) (http.Rou
 }
 
 func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
+	if logger == nil {
+		return nil, fmt.Errorf("no logger implementation provided")
+	}
+
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
