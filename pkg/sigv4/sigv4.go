@@ -23,12 +23,7 @@ import (
 )
 
 var (
-	signerCache = struct {
-		cache map[string]*v4.Signer
-		sync.RWMutex
-	}{
-		cache: make(map[string]*v4.Signer),
-	}
+	signerCache sync.Map
 )
 
 type middleware struct {
@@ -113,9 +108,7 @@ func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.R
 			if err != nil {
 				return nil, err
 			}
-			signerCache.Lock()
-			signerCache.cache[cfg.asSha256()] = signer
-			signerCache.Unlock()
+			signerCache.Store(cfg.asSha256(), signer)
 		}
 
 		m := &middleware{
@@ -169,10 +162,8 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 }
 
 func cachedSigner(cfg *Config) (*v4.Signer, bool) {
-	signerCache.RLock()
-	defer signerCache.RUnlock()
-	if cached, exists := signerCache.cache[cfg.asSha256()]; exists {
-		return cached, true
+	if cached, exists := signerCache.Load(cfg.asSha256()); exists {
+		return cached.(*v4.Signer), true
 	}
 	return nil, false
 }

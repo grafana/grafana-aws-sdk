@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{}))
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestNew(t *testing.T) {
 		r.Header.Add("Foo", "Bar")
 
 		// mock signer
-		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{}))
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestNew(t *testing.T) {
 		r.Header.Add("Authorization", "test")
 
 		// mock signer
-		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{}))
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -120,7 +120,7 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{noCredentials: true}))
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{noCredentials: true})))
 
 		res, err := rt.RoundTrip(r)
 		require.Error(t, err)
@@ -137,7 +137,7 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.cache[cfg.asSha256()] = v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{}))
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
