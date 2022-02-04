@@ -53,14 +53,14 @@ type Config struct {
 	Region        string
 }
 
-func (c Config) asSha256() string {
+func (c Config) asSha256() (string, error) {
 	h := sha256.New()
 	_, err := h.Write([]byte(fmt.Sprintf("%v", c)))
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return fmt.Sprintf("%x", h.Sum(nil))
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 // The RoundTripperFunc type is an adapter to allow the use of ordinary
@@ -94,7 +94,12 @@ func New(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
 			if err != nil {
 				return nil, err
 			}
-			signerCache.Store(cfg.asSha256(), signer)
+
+			sha, err := cfg.asSha256()
+			if err != nil {
+				return nil, err
+			}
+			signerCache.Store(sha, signer)
 		}
 
 		m := &middleware{
@@ -147,7 +152,12 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 }
 
 func cachedSigner(cfg *Config) (*v4.Signer, bool) {
-	if cached, exists := signerCache.Load(cfg.asSha256()); exists {
+	sha, err := cfg.asSha256()
+	if err != nil {
+		return nil, false
+	}
+
+	if cached, exists := signerCache.Load(sha); exists {
 		return cached.(*v4.Signer), true
 	}
 	return nil, false

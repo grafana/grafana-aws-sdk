@@ -39,7 +39,9 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -69,7 +71,9 @@ func TestNew(t *testing.T) {
 		r.Header.Add("Foo", "Bar")
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -100,7 +104,9 @@ func TestNew(t *testing.T) {
 		r.Header.Add("Authorization", "test")
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -122,14 +128,16 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{noCredentials: true})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{noCredentials: true})))
 
 		res, err := rt.RoundTrip(r)
 		require.Error(t, err)
 		require.Nil(t, res)
 	})
 
-	t.Run("Will log requests during signing if level is debug", func(t *testing.T) {
+	t.Run("Will log requests during signing if level is trace", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
@@ -138,7 +146,7 @@ func TestNew(t *testing.T) {
 			plog = origLogger
 		})
 
-		fakeLogger := &fakeLogger{level: log.Debug}
+		fakeLogger := &fakeLogger{level: log.Trace}
 		plog = fakeLogger
 
 		rt, err := New(cfg, &fakeTransport{})
@@ -148,7 +156,9 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -178,7 +188,9 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 
 		// mock signer
-		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+		sha, err := cfg.asSha256()
+		require.NoError(t, err)
+		signerCache.Store(sha, v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
 
 		res, err := rt.RoundTrip(r)
 		require.NoError(t, err)
@@ -190,7 +202,7 @@ func TestNew(t *testing.T) {
 
 func TestConfig(t *testing.T) {
 	t.Run("SHA generation is consistent", func(t *testing.T) {
-		cfg1 := &Config{
+		cfg := &Config{
 			AuthType:      "A",
 			Profile:       "B",
 			Service:       "C",
@@ -202,7 +214,12 @@ func TestConfig(t *testing.T) {
 			Region:        "I",
 		}
 
-		sha1, sha2 := cfg1.asSha256(), cfg1.asSha256()
+		sha1, err := cfg.asSha256()
+		require.NoError(t, err)
+
+		sha2, err := cfg.asSha256()
+		require.NoError(t, err)
+
 		require.Equal(t, sha1, sha2)
 	})
 
@@ -231,7 +248,12 @@ func TestConfig(t *testing.T) {
 			AuthType:      "A",
 		}
 
-		sha1, sha2 := cfg1.asSha256(), cfg2.asSha256()
+		sha1, err := cfg1.asSha256()
+		require.NoError(t, err)
+
+		sha2, err := cfg2.asSha256()
+		require.NoError(t, err)
+
 		require.Equal(t, sha1, sha2)
 	})
 
@@ -260,12 +282,19 @@ func TestConfig(t *testing.T) {
 			Region:        "I",
 		}
 
-		sha1, sha2 := cfg1.asSha256(), cfg2.asSha256()
+		sha1, err := cfg1.asSha256()
+		require.NoError(t, err)
+
+		sha2, err := cfg2.asSha256()
+		require.NoError(t, err)
+
 		require.NotEqual(t, sha1, sha2)
 
 		cfg2.AuthType = "A"
 
-		sha2 = cfg2.asSha256()
+		sha2, err = cfg2.asSha256()
+		require.NoError(t, err)
+
 		require.Equal(t, sha1, sha2)
 	})
 }
