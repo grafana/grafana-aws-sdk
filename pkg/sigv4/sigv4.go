@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -24,13 +28,13 @@ import (
 
 var (
 	signerCache sync.Map
+	plog        = backend.Logger
 )
 
 type middleware struct {
 	signer *v4.Signer
 	config *Config
 	next   http.RoundTripper
-	logger Logger
 }
 
 type Config struct {
@@ -69,27 +73,9 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return rt(r)
 }
 
-type Logger interface {
-	Log(args ...interface{})
-	LogRequest(req *http.Request, args ...interface{})
-	VerboseMode() bool
-}
-
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
 func New(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
-	return newRoundTripper(cfg, next, &nopLogger{})
-}
-
-func NewWithLogger(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
-	return newRoundTripper(cfg, next, logger)
-}
-
-func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.RoundTripper, error) {
-	if logger == nil {
-		return nil, fmt.Errorf("no logger implementation provided")
-	}
-
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
@@ -104,7 +90,7 @@ func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.R
 			signer = cached
 		} else {
 			var err error
-			signer, err = createSigner(cfg, logger)
+			signer, err = createSigner(cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -114,7 +100,6 @@ func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.R
 		m := &middleware{
 			config: cfg,
 			next:   next,
-			logger: logger,
 			signer: signer,
 		}
 
@@ -123,19 +108,17 @@ func newRoundTripper(cfg *Config, next http.RoundTripper, logger Logger) (http.R
 }
 
 func (m *middleware) exec(origReq *http.Request) (*http.Response, error) {
-	m.logger.LogRequest(origReq, "stage", "pre-signature")
-
 	req, err := m.createSignedRequest(origReq)
 	if err != nil {
 		return nil, err
 	}
 
-	m.logger.LogRequest(req, "stage", "post-signature")
-
 	return m.next.RoundTrip(req)
 }
 
 func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, error) {
+	logRequest(origReq, "stage", "pre-signature")
+
 	req, err := http.NewRequest(origReq.Method, origReq.URL.String(), origReq.Body)
 	if err != nil {
 		return nil, err
@@ -158,6 +141,8 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 
 	copyHeaderWithoutOverwrite(req.Header, origReq.Header)
 
+	logRequest(req, "stage", "post-signature")
+
 	return req, err
 }
 
@@ -168,7 +153,7 @@ func cachedSigner(cfg *Config) (*v4.Signer, bool) {
 	return nil, false
 }
 
-func createSigner(cfg *Config, logger Logger) (*v4.Signer, error) {
+func createSigner(cfg *Config) (*v4.Signer, error) {
 	authType, err := awsds.ToAuthType(cfg.AuthType)
 	if err != nil {
 		return nil, err
@@ -192,8 +177,8 @@ func createSigner(cfg *Config, logger Logger) (*v4.Signer, error) {
 	}
 
 	var signerOpts = func(s *v4.Signer) {
-		if logger.VerboseMode() {
-			s.Logger = logger
+		if plog.Level() == log.Debug {
+			s.Logger = awsLoggerAdapter{}
 			s.Debug = aws.LogDebugWithSigning
 		}
 	}
@@ -285,16 +270,21 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
-type nopLogger struct {
-	Logger
+func logRequest(req *http.Request, args ...interface{}) {
+	if plog.Level() != log.Debug {
+		return
+	}
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		plog.Error("Unable to dump request", "err", err)
+	}
+	plog.Debug("Request dump", append([]interface{}{"dump", string(dump)}, args...)...)
 }
 
-func (l *nopLogger) Log(_ ...interface{}) {
-
+type awsLoggerAdapter struct {
+	logger log.Logger
 }
-func (l *nopLogger) LogRequest(_ *http.Request, _ ...interface{}) {
 
-}
-func (l *nopLogger) VerboseMode() bool {
-	return false
+func (a awsLoggerAdapter) Log(args ...interface{}) {
+	a.logger.Info("AWS debug log", args...)
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 
@@ -127,10 +129,19 @@ func TestNew(t *testing.T) {
 		require.Nil(t, res)
 	})
 
-	t.Run("Will log requests during signing if configured", func(t *testing.T) {
+	t.Run("Will log requests during signing if level is debug", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
-		logger := &fakeLogger{}
-		rt, err := NewWithLogger(cfg, &fakeTransport{}, logger)
+
+		// Mock logger
+		origLogger := plog
+		t.Cleanup(func() {
+			plog = origLogger
+		})
+
+		fakeLogger := &fakeLogger{level: log.Debug}
+		plog = fakeLogger
+
+		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -143,9 +154,37 @@ func TestNew(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, res)
 
-		require.Equal(t, 2, len(logger.requestsLogged))
-		require.Equal(t, r, logger.requestsLogged[0])
-		require.Equal(t, res.Request, logger.requestsLogged[1])
+		require.Equal(t, 2, len(fakeLogger.logs))
+		require.Equal(t, "Request dump", fakeLogger.logs[0])
+		require.Equal(t, "Request dump", fakeLogger.logs[1])
+	})
+
+	t.Run("Will not log requests during signing if level is not debug", func(t *testing.T) {
+		cfg := &Config{AuthType: "ec2_iam_role"}
+
+		// Mock logger
+		origLogger := plog
+		t.Cleanup(func() {
+			plog = origLogger
+		})
+
+		fakeLogger := &fakeLogger{level: log.Info}
+		plog = fakeLogger
+
+		rt, err := New(cfg, &fakeTransport{})
+		require.NoError(t, err)
+		require.NotNil(t, rt)
+		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
+		require.NoError(t, err)
+
+		// mock signer
+		signerCache.Store(cfg.asSha256(), v4.NewSigner(credentials.NewCredentials(&mockCredentialsProvider{})))
+
+		res, err := rt.RoundTrip(r)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+
+		require.Empty(t, fakeLogger.logs)
 	})
 }
 
@@ -254,18 +293,16 @@ func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 type fakeLogger struct {
-	Logger
+	log.Logger
 
-	requestsLogged []*http.Request
+	level log.Level
+	logs  []string
 }
 
-func (l *fakeLogger) Log(_ ...interface{}) {
-
-}
-func (l *fakeLogger) LogRequest(req *http.Request, _ ...interface{}) {
-	l.requestsLogged = append(l.requestsLogged, req)
+func (l *fakeLogger) Debug(msg string, _ ...interface{}) {
+	l.logs = append(l.logs, msg)
 }
 
-func (l *fakeLogger) VerboseMode() bool {
-	return false
+func (l *fakeLogger) Level() log.Level {
+	return l.level
 }
