@@ -53,6 +53,10 @@ type Config struct {
 	Region        string
 }
 
+type Opts struct {
+	verboseMode bool
+}
+
 func (c Config) asSha256() (string, error) {
 	h := sha256.New()
 	_, err := h.Write([]byte(fmt.Sprintf("%v", c)))
@@ -75,10 +79,23 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
-func New(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
+func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
+	var sigv4Opts Opts
+	switch len(opts) {
+	case 0:
+		sigv4Opts = Opts{
+			verboseMode: false,
+		}
+	case 1:
+		sigv4Opts = opts[0]
+	default:
+		return nil, fmt.Errorf("only empty or one Opts is valid as an argument")
+	}
+
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
+
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		if next == nil {
 			next = http.DefaultTransport
@@ -90,7 +107,7 @@ func New(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
 			signer = cached
 		} else {
 			var err error
-			signer, err = createSigner(cfg)
+			signer, err = createSigner(cfg, sigv4Opts.verboseMode)
 			if err != nil {
 				return nil, err
 			}
@@ -163,7 +180,7 @@ func cachedSigner(cfg *Config) (*v4.Signer, bool) {
 	return nil, false
 }
 
-func createSigner(cfg *Config) (*v4.Signer, error) {
+func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 	authType, err := awsds.ToAuthType(cfg.AuthType)
 	if err != nil {
 		return nil, err
@@ -187,7 +204,7 @@ func createSigner(cfg *Config) (*v4.Signer, error) {
 	}
 
 	var signerOpts = func(s *v4.Signer) {
-		if plog.Level() == log.Trace {
+		if verboseMode {
 			s.Logger = awsLoggerAdapter{}
 			s.Debug = aws.LogDebugWithSigning
 		}
@@ -296,5 +313,5 @@ type awsLoggerAdapter struct {
 }
 
 func (a awsLoggerAdapter) Log(args ...interface{}) {
-	a.logger.Info("AWS debug log", args...)
+	a.logger.Debug("[AWS debug log]", args...)
 }
