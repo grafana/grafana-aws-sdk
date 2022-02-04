@@ -177,7 +177,7 @@ func createSigner(cfg *Config) (*v4.Signer, error) {
 	}
 
 	var signerOpts = func(s *v4.Signer) {
-		if plog.Level() == log.Debug {
+		if plog.Level() == log.Trace {
 			s.Logger = awsLoggerAdapter{}
 			s.Debug = aws.LogDebugWithSigning
 		}
@@ -271,7 +271,7 @@ func validateConfig(cfg *Config) error {
 }
 
 func logRequest(req *http.Request, args ...interface{}) {
-	if plog.Level() != log.Debug {
+	if plog.Level() != log.Trace {
 		return
 	}
 	dump, err := httputil.DumpRequest(req, true)
