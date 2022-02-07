@@ -35,6 +35,8 @@ type middleware struct {
 	signer *v4.Signer
 	config *Config
 	next   http.RoundTripper
+
+	verboseMode bool
 }
 
 type Config struct {
@@ -120,9 +122,10 @@ func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, 
 		}
 
 		m := &middleware{
-			config: cfg,
-			next:   next,
-			signer: signer,
+			config:      cfg,
+			next:        next,
+			signer:      signer,
+			verboseMode: sigv4Opts.VerboseMode,
 		}
 
 		return m.exec(r)
@@ -139,7 +142,7 @@ func (m *middleware) exec(origReq *http.Request) (*http.Response, error) {
 }
 
 func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, error) {
-	logRequest(origReq, "stage", "pre-signature")
+	m.logRequest(origReq, "stage", "pre-signature")
 
 	req, err := http.NewRequest(origReq.Method, origReq.URL.String(), origReq.Body)
 	if err != nil {
@@ -163,7 +166,7 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 
 	copyHeaderWithoutOverwrite(req.Header, origReq.Header)
 
-	logRequest(req, "stage", "post-signature")
+	m.logRequest(req, "stage", "post-signature")
 
 	return req, err
 }
@@ -297,8 +300,8 @@ func validateConfig(cfg *Config) error {
 	return nil
 }
 
-func logRequest(req *http.Request, args ...interface{}) {
-	if plog.Level() != log.Trace {
+func (m *middleware) logRequest(req *http.Request, args ...interface{}) {
+	if !m.verboseMode {
 		return
 	}
 	dump, err := httputil.DumpRequest(req, true)
@@ -313,5 +316,5 @@ type awsLoggerAdapter struct {
 }
 
 func (a awsLoggerAdapter) Log(args ...interface{}) {
-	a.logger.Debug("[AWS debug log]", args...)
+	a.logger.Debug("[AWS SigV4 log]", "args", args)
 }
