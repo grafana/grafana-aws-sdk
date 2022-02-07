@@ -54,7 +54,7 @@ type Config struct {
 }
 
 type Opts struct {
-	verboseMode bool
+	VerboseMode bool
 }
 
 func (c Config) asSha256() (string, error) {
@@ -84,7 +84,7 @@ func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, 
 	switch len(opts) {
 	case 0:
 		sigv4Opts = Opts{
-			verboseMode: false,
+			VerboseMode: false,
 		}
 	case 1:
 		sigv4Opts = opts[0]
@@ -107,7 +107,7 @@ func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, 
 			signer = cached
 		} else {
 			var err error
-			signer, err = createSigner(cfg, sigv4Opts.verboseMode)
+			signer, err = createSigner(cfg, sigv4Opts.VerboseMode)
 			if err != nil {
 				return nil, err
 			}
@@ -205,7 +205,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 
 	var signerOpts = func(s *v4.Signer) {
 		if verboseMode {
-			s.Logger = awsLoggerAdapter{}
+			s.Logger = awsLoggerAdapter{logger: plog}
 			s.Debug = aws.LogDebugWithSigning
 		}
 	}
