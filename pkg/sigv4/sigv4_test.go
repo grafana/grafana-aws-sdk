@@ -137,7 +137,7 @@ func TestNew(t *testing.T) {
 		require.Nil(t, res)
 	})
 
-	t.Run("Will log requests during signing if level is trace", func(t *testing.T) {
+	t.Run("Will log requests during signing if verboseMode is true", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
@@ -146,10 +146,10 @@ func TestNew(t *testing.T) {
 			plog = origLogger
 		})
 
-		fakeLogger := &fakeLogger{level: log.Trace}
+		fakeLogger := &fakeLogger{}
 		plog = fakeLogger
 
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: true})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -169,7 +169,7 @@ func TestNew(t *testing.T) {
 		require.Equal(t, "Request dump", fakeLogger.logs[1])
 	})
 
-	t.Run("Will not log requests during signing if level is not debug", func(t *testing.T) {
+	t.Run("Will not log requests during signing if verboseMode is false", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
@@ -178,10 +178,10 @@ func TestNew(t *testing.T) {
 			plog = origLogger
 		})
 
-		fakeLogger := &fakeLogger{level: log.Info}
+		fakeLogger := &fakeLogger{}
 		plog = fakeLogger
 
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: false})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -324,14 +324,9 @@ func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 type fakeLogger struct {
 	log.Logger
 
-	level log.Level
-	logs  []string
+	logs []string
 }
 
 func (l *fakeLogger) Debug(msg string, _ ...interface{}) {
 	l.logs = append(l.logs, msg)
-}
-
-func (l *fakeLogger) Level() log.Level {
-	return l.level
 }
