@@ -1,7 +1,6 @@
 package awsds
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -142,20 +141,13 @@ func TestNewSession_AssumeRole(t *testing.T) {
 
 	t.Run("Assume role is enabled with an opt-in region", func(t *testing.T) {
 		resetEnvironmentVariables()
-		prevF := newSTSCredentials
+		fakeNewSTSCredentials := newSTSCredentials
 		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
 			sess := c.(*session.Session)
-			if *sess.Config.Region != "us-east-1" {
-				// Verify that we are using the well-known region
-				t.Errorf(fmt.Sprintf("unexpected region %s", *sess.Config.Region))
-			}
-			p := &stscreds.AssumeRoleProvider{RoleARN: roleARN}
-			for _, o := range options {
-				o(p)
-			}
-
-			return credentials.NewCredentials(p)
+			// Verify that we are using the well-known region
+			assert.Equal(t, *sess.Config.Region, "us-east-1")
+			return fakeNewSTSCredentials(c, roleARN, options...)
 		}
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: "test",
@@ -165,7 +157,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
-		newSTSCredentials = prevF
+		newSTSCredentials = fakeNewSTSCredentials
 
 		require.NoError(t, err)
 		require.NotNil(t, sess)
