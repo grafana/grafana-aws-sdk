@@ -164,8 +164,15 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		c.Settings.Region = ""
 	}
 	if c.Settings.Region != "" {
-		regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
-		cfgs = append(cfgs, regionCfg)
+		if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
+			// When assuming a role, the real region is set later in a new session
+			// so we use a well-known region here (not opt-in) to obtain valid credentials
+			regionCfg = &aws.Config{Region: aws.String("us-east-1")}
+			cfgs = append(cfgs, regionCfg)
+		} else {
+			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
+			cfgs = append(cfgs, regionCfg)
+		}
 	}
 
 	switch c.Settings.AuthType {
@@ -213,6 +220,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 				CredentialsChainVerboseErrors: aws.Bool(true),
 			},
 			{
+				// The previous session is used to obtain STS Credentials
 				Credentials: newSTSCredentials(sess, c.Settings.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
 					// Not sure if this is necessary, overlaps with p.Duration and is undocumented
 					p.Expiry.SetExpiration(expiration, 0)
@@ -223,7 +231,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 				}),
 			},
 		}
-		if regionCfg != nil {
+
+		if c.Settings.Region != "" {
+			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)
 		}
 		sess, err = newSession(cfgs...)
