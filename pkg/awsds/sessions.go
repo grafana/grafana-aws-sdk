@@ -154,7 +154,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	cfgs := []*aws.Config{
 		{
 			CredentialsChainVerboseErrors: aws.Bool(true),
-			HTTPClient:                    c.HTTPClient,
 		},
 	}
 
