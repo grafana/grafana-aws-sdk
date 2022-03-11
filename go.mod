@@ -11,3 +11,5 @@ require (
 	github.com/magefile/mage v1.11.0
 	github.com/stretchr/testify v1.7.0
 )
+
+replace github.com/grafana/sqlds/v2 => ../sqlds

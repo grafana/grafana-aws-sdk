@@ -88,3 +88,34 @@ func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error
 		}
 	}
 }
+
+func WaitOnQueryID(ctx context.Context, queryID string, db sqlds.AsyncDB) error {
+	backoffInstance := backoff.Backoff{
+		Min:    backoffMin,
+		Max:    backoffMax,
+		Factor: 2,
+	}
+	for {
+		finished, _, err := db.QueryStatus(ctx, queryID)
+		if err != nil {
+			return err
+		}
+		if finished {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			err := ctx.Err()
+			if errors.Is(err, context.Canceled) {
+				err := db.CancelQuery(context.Background(), queryID)
+				if err != nil {
+					return err
+				}
+			}
+			log.DefaultLogger.Debug("request failed", "query ID", queryID, "error", err)
+			return err
+		case <-time.After(backoffInstance.Duration()):
+			continue
+		}
+	}
+}
