@@ -62,7 +62,7 @@ func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error
 	backoffInstance := backoff.Backoff{
 		Min:    backoffMin,
 		Max:    backoffMax,
-		Factor: 2,
+		Factor: 1.1,
 	}
 	for {
 		status, err := api.Status(ctx, output)
