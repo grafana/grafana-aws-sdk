@@ -163,6 +163,31 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		require.NotNil(t, sess)
 		assert.Equal(t, "me-south-1", *sess.Config.Region)
 	})
+
+	t.Run("Assume role is enabled with a gov region", func(t *testing.T) {
+		resetEnvironmentVariables()
+		fakeNewSTSCredentials := newSTSCredentials
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			sess := c.(*session.Session)
+			// Verify that we are using the well-known region
+			assert.Equal(t, *sess.Config.Region, "us-gov-east-1")
+			return fakeNewSTSCredentials(c, roleARN, options...)
+		}
+		settings := AWSDatasourceSettings{
+			AssumeRoleARN: "test",
+			Region:        "us-gov-east-1",
+		}
+		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
+		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
+		newSTSCredentials = fakeNewSTSCredentials
+
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		assert.Equal(t, "us-gov-east-1", *sess.Config.Region)
+	})
 }
 
 func TestNewSession_AllowedAuthProviders(t *testing.T) {
