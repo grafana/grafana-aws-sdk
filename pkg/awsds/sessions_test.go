@@ -146,7 +146,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
 			sess := c.(*session.Session)
 			// Verify that we are using the well-known region
-			assert.Equal(t, *sess.Config.Region, "us-east-1")
+			assert.Equal(t, "us-east-1", *sess.Config.Region)
 			return fakeNewSTSCredentials(c, roleARN, options...)
 		}
 		settings := AWSDatasourceSettings{
@@ -171,7 +171,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
 			sess := c.(*session.Session)
 			// Verify that we are using the well-known region
-			assert.Equal(t, *sess.Config.Region, "us-gov-east-1")
+			assert.Equal(t, "us-gov-east-1", *sess.Config.Region)
 			return fakeNewSTSCredentials(c, roleARN, options...)
 		}
 		settings := AWSDatasourceSettings{
