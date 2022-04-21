@@ -32,7 +32,7 @@ func Drone() error {
 		return err
 	}
 
-	if err := sh.RunV("drone", "--server", "https://drone.grafana.net", "sign", "--save", "grafana/grafana-plugin-sdk-go"); err != nil {
+	if err := sh.RunV("drone", "--server", "https://drone.grafana.net", "sign", "--save", "grafana/grafana-aws-sdk"); err != nil {
 		return err
 	}
 
