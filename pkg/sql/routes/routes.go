@@ -35,17 +35,28 @@ func ParseBody(body io.ReadCloser) (sqlds.Options, error) {
 	return reqBody, nil
 }
 
+func marshalError(rw http.ResponseWriter, err error, code int) {
+	rw.WriteHeader(code)
+	errBytes, err := json.Marshal(err.Error())
+	if err != nil {
+		log.DefaultLogger.Error(err.Error())
+		rw.WriteHeader(http.StatusInternalServerError)
+		jsonErr, _ := json.Marshal(err)
+		Write(rw, jsonErr)
+		return
+	}
+	Write(rw, errBytes)
+}
+
 func SendResources(rw http.ResponseWriter, res interface{}, err error) {
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
-		Write(rw, []byte(err.Error()))
+		marshalError(rw, err, http.StatusBadRequest)
 		return
 	}
 	bytes, err := json.Marshal(res)
 	if err != nil {
-		log.DefaultLogger.Error(err.Error())
-		rw.WriteHeader(http.StatusInternalServerError)
-		Write(rw, []byte(err.Error()))
+		marshalError(rw, err, http.StatusInternalServerError)
 		return
 	}
 	rw.Header().Add("Content-Type", "application/json")
@@ -60,8 +71,7 @@ func (r *ResourceHandler) regions(rw http.ResponseWriter, req *http.Request) {
 func (r *ResourceHandler) databases(rw http.ResponseWriter, req *http.Request) {
 	reqBody, err := ParseBody(req.Body)
 	if err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
-		Write(rw, []byte(err.Error()))
+		marshalError(rw, err, http.StatusBadRequest)
 		return
 	}
 	res, err := r.API.Databases(req.Context(), reqBody)
