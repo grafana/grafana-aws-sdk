@@ -54,7 +54,6 @@ func marshalError(rw http.ResponseWriter, err error, code int) {
 
 func SendResources(rw http.ResponseWriter, res interface{}, err error) {
 	if err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
 		marshalError(rw, err, http.StatusBadRequest)
 		return
 	}
