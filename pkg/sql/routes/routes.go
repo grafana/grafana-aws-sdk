@@ -36,7 +36,6 @@ func ParseBody(body io.ReadCloser) (sqlds.Options, error) {
 }
 
 func marshalError(rw http.ResponseWriter, err error, code int) {
-	rw.WriteHeader(code)
 	errBytes, marshalErr := json.Marshal(err.Error())
 	if marshalErr != nil {
 		log.DefaultLogger.Debug(err.Error())
@@ -49,6 +48,7 @@ func marshalError(rw http.ResponseWriter, err error, code int) {
 		Write(rw, jsonErr)
 		return
 	}
+	rw.WriteHeader(code)
 	Write(rw, errBytes)
 }
 
