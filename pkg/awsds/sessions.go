@@ -146,7 +146,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	bldr := strings.Builder{}
 	for i, s := range []string{
-		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
+		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint, c.Settings.ExternalID,
 	} {
 		if i != 0 {
 			bldr.WriteString(":")
