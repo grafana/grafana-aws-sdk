@@ -20,8 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-var plog = backend.Logger
-
 type envelope struct {
 	session    *session.Session
 	expiration time.Time
@@ -60,18 +58,18 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 	if len(allowedAuthProviders) == 0 {
 		allowedAuthProviders = []string{"default", "keys", "credentials"}
-		plog.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
+		backend.Logger.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
 
 	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
 	if len(assumeRoleEnabledString) == 0 {
-		plog.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
+		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabledString = "true"
 	}
 
 	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
-		plog.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
+		backend.Logger.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
 		assumeRoleEnabled = true
 	}
 
@@ -173,7 +171,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	var regionCfg *aws.Config
 	if c.Settings.Region == defaultRegion {
-		plog.Warn("Region is set to \"default\", which is unsupported")
+		backend.Logger.Warn("Region is set to \"default\", which is unsupported")
 		c.Settings.Region = ""
 	}
 	if c.Settings.Region != "" {
@@ -190,20 +188,20 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	switch c.Settings.AuthType {
 	case AuthTypeSharedCreds:
-		plog.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
+		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
-		plog.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
+		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewStaticCredentials(c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.SessionToken),
 		})
 	case AuthTypeDefault:
-		plog.Debug("Authenticating towards AWS with default SDK method", "region", c.Settings.Region)
+		backend.Logger.Debug("Authenticating towards AWS with default SDK method", "region", c.Settings.Region)
 	case AuthTypeEC2IAMRole:
-		plog.Debug("Authenticating towards AWS with IAM Role", "region", c.Settings.Region)
+		backend.Logger.Debug("Authenticating towards AWS with IAM Role", "region", c.Settings.Region)
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
@@ -226,7 +224,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	expiration := time.Now().UTC().Add(duration)
 	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
-		plog.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
+		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
 		cfgs := []*aws.Config{
 			{
@@ -261,7 +259,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		})
 	}
 
-	plog.Debug("Successfully created AWS session")
+	backend.Logger.Debug("Successfully created AWS session")
 
 	sc.sessCacheLock.Lock()
 	sc.sessCache[cacheKey] = envelope{

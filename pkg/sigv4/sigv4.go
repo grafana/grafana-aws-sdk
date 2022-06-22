@@ -28,7 +28,6 @@ import (
 
 var (
 	signerCache sync.Map
-	plog        = backend.Logger
 )
 
 type middleware struct {
@@ -208,7 +207,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 
 	var signerOpts = func(s *v4.Signer) {
 		if verboseMode {
-			s.Logger = awsLoggerAdapter{logger: plog}
+			s.Logger = awsLoggerAdapter{logger: backend.Logger}
 			s.Debug = aws.LogDebugWithSigning
 		}
 	}
@@ -306,9 +305,9 @@ func (m *middleware) logRequest(req *http.Request, args ...interface{}) {
 	}
 	dump, err := httputil.DumpRequest(req, true)
 	if err != nil {
-		plog.Error("Unable to dump request", "err", err)
+		backend.Logger.Error("Unable to dump request", "err", err)
 	}
-	plog.Debug("Request dump", append([]interface{}{"dump", string(dump)}, args...)...)
+	backend.Logger.Debug("Request dump", append([]interface{}{"dump", string(dump)}, args...)...)
 }
 
 type awsLoggerAdapter struct {

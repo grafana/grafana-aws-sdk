@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -141,13 +142,13 @@ func TestNew(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
-		origLogger := plog
+		origLogger := backend.Logger
 		t.Cleanup(func() {
-			plog = origLogger
+			backend.Logger = origLogger
 		})
 
 		fakeLogger := &fakeLogger{}
-		plog = fakeLogger
+		backend.Logger = fakeLogger
 
 		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: true})
 		require.NoError(t, err)
@@ -173,13 +174,13 @@ func TestNew(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
-		origLogger := plog
+		origLogger := backend.Logger
 		t.Cleanup(func() {
-			plog = origLogger
+			backend.Logger = origLogger
 		})
 
 		fakeLogger := &fakeLogger{}
-		plog = fakeLogger
+		backend.Logger = fakeLogger
 
 		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: false})
 		require.NoError(t, err)
