@@ -57,7 +57,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	for _, authProvider := range strings.Split(providers, ",") {
 		authProvider = strings.TrimSpace(authProvider)
 		if authProvider != "" {
-			allowedAuthProviders = append(authSettings.AllowedAuthProviders, authProvider)
+			allowedAuthProviders = append(allowedAuthProviders, authProvider)
 		}
 	}
 
