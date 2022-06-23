@@ -84,7 +84,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	if sessionDurationString != "" {
 		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
 		if err != nil {
-			backend.Logger.Error(fmt.Sprintf("could not parse '%s'", SessionDurationEnvVarKeyName), err)
+			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
 		} else {
 			authSettings.SessionDuration = &sessionDuration
 		}
