@@ -48,7 +48,7 @@ const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
 // SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
-const SessionDurationEnvVarKeyName = "AWS_SESSION_DURATION"
+const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
 
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
