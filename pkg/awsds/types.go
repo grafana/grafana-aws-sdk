@@ -1,6 +1,8 @@
 package awsds
 
 import (
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
@@ -11,4 +13,5 @@ type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*sessio
 type AuthSettings struct {
 	AllowedAuthProviders []string
 	AssumeRoleEnabled    bool
+	SessionDuration      *time.Duration
 }

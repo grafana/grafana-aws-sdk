@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -46,7 +47,11 @@ const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 // AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
 const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
+// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
+const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
+
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
+	authSettings := &AuthSettings{}
 	allowedAuthProviders := []string{}
 	providers := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
 	for _, authProvider := range strings.Split(providers, ",") {
@@ -60,6 +65,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		allowedAuthProviders = []string{"default", "keys", "credentials"}
 		backend.Logger.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
 	}
+	authSettings.AllowedAuthProviders = allowedAuthProviders
 
 	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
 	if len(assumeRoleEnabledString) == 0 {
@@ -67,16 +73,24 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		assumeRoleEnabledString = "true"
 	}
 
-	assumeRoleEnabled, err := strconv.ParseBool(assumeRoleEnabledString)
+	var err error
+	authSettings.AssumeRoleEnabled, err = strconv.ParseBool(assumeRoleEnabledString)
 	if err != nil {
 		backend.Logger.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
-		assumeRoleEnabled = true
+		authSettings.AssumeRoleEnabled = true
 	}
 
-	return &AuthSettings{
-		AllowedAuthProviders: allowedAuthProviders,
-		AssumeRoleEnabled:    assumeRoleEnabled,
+	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
+	if sessionDurationString != "" {
+		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
+		if err != nil {
+			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
+		} else {
+			authSettings.SessionDuration = &sessionDuration
+		}
 	}
+
+	return authSettings
 }
 
 // Session factory.
@@ -221,6 +235,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	duration := stscreds.DefaultDuration
+	if sc.authSettings.SessionDuration != nil {
+		duration = *sc.authSettings.SessionDuration
+	}
 	expiration := time.Now().UTC().Add(duration)
 	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS

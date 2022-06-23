@@ -56,7 +56,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	duration := stscreds.DefaultDuration
 
 	t.Run("Without external ID", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		const roleARN = "test"
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
@@ -78,7 +78,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	})
 
 	t.Run("With external ID", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		const roleARN = "test"
 		const externalID = "external"
 		settings := AWSDatasourceSettings{
@@ -102,8 +102,31 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		assert.Empty(t, diff)
 	})
 
+	t.Run("With custom duration", func(t *testing.T) {
+		defer unsetEnvironmentVariables()
+		const roleARN = "test"
+		settings := AWSDatasourceSettings{
+			AssumeRoleARN: roleARN,
+		}
+		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
+		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		os.Setenv(SessionDurationEnvVarKeyName, "20m")
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
+			RoleARN:  roleARN,
+			Duration: 1200000000000, //20 minutes in nanoseconds count
+		})
+		diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
+			return true
+		}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
+		assert.Empty(t, diff)
+	})
+
 	t.Run("Assume role not enabled", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		const roleARN = "test"
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
@@ -119,7 +142,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	})
 
 	t.Run("Assume role is enabled when AssumeRoleEnabled env var is missing", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		const roleARN = "test"
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
@@ -140,7 +163,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	})
 
 	t.Run("Assume role is enabled with an opt-in region", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		fakeNewSTSCredentials := newSTSCredentials
 		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
@@ -165,7 +188,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 	})
 
 	t.Run("Assume role is enabled with a gov region", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		fakeNewSTSCredentials := newSTSCredentials
 		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
@@ -192,7 +215,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 
 func TestNewSession_AllowedAuthProviders(t *testing.T) {
 	t.Run("Not allowed auth type is used", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeDefault,
 		}
@@ -205,7 +228,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 	})
 
 	t.Run("Allowed auth type is used", func(t *testing.T) {
-		resetEnvironmentVariables()
+		defer unsetEnvironmentVariables()
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeKeys,
 		}
@@ -219,7 +242,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 	t.Run("Fallback is used when AllowedAuthProviders env var is missing", func(t *testing.T) {
 		defaultAuthProviders := []AuthType{AuthTypeDefault, AuthTypeKeys, AuthTypeSharedCreds}
 		for _, provider := range defaultAuthProviders {
-			resetEnvironmentVariables()
+			defer unsetEnvironmentVariables()
 			settings := AWSDatasourceSettings{
 				AuthType: provider,
 			}
@@ -272,7 +295,6 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 		expCreds := credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{
 			Client: newEC2Metadata(nil), ExpiryWindow: stscreds.DefaultDuration,
 		})
-
 		diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
 			return true
 		}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
@@ -287,13 +309,14 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 	})
 }
 
-func resetEnvironmentVariables() {
+func unsetEnvironmentVariables() {
 	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
 	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
+	os.Unsetenv(SessionDurationEnvVarKeyName)
 }
 
 func TestWithUserAgent(t *testing.T) {
-	resetEnvironmentVariables()
+	defer unsetEnvironmentVariables()
 	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
 	cache := NewSessionCache()
@@ -310,7 +333,7 @@ func TestWithUserAgent(t *testing.T) {
 }
 
 func TestWithCustomHTTPClient(t *testing.T) {
-	resetEnvironmentVariables()
+	defer unsetEnvironmentVariables()
 	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
 	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
 	cache := NewSessionCache()
