@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"os"
@@ -156,16 +157,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
-	bldr := strings.Builder{}
-	for i, s := range []string{
-		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
-	} {
-		if i != 0 {
-			bldr.WriteString(":")
-		}
-		bldr.WriteString(strings.ReplaceAll(s, ":", `\:`))
-	}
-	cacheKey := bldr.String()
+	settingsStr := fmt.Sprintf("%v", c.Settings)
+	hashedSettings := sha256.Sum256([]byte(settingsStr))
+	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
 	sc.sessCacheLock.RLock()
 	if env, ok := sc.sessCache[cacheKey]; ok {

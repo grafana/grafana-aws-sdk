@@ -88,11 +88,13 @@ func TestLoadAPI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
 			ds := &AWSDatasource{}
-			key := connectionKey(tt.id, tt.args)
+			settings := &fakeSettings{}
+
+			key := connectionKey(tt.id, tt.args, settings)
 			if tt.api != nil {
 				ds.api.Store(key, tt.api)
 			}
-			res, exists := ds.loadAPI(tt.id, tt.args)
+			res, exists := ds.loadAPI(tt.id, tt.args, settings)
 			if res != tt.res && (res != nil || tt.res != nil) {
 				t.Errorf("unexpected result %v", res)
 			}
@@ -136,27 +138,26 @@ func TestParseSettings(t *testing.T) {
 	}
 }
 
-func fakeAPILoader(cache *awsds.SessionCache, settings models.Settings) (api.AWSAPI, error) {
-	return fakeAPI{}, nil
-}
-
 func TestCreateAPI(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	key := connectionKey(id, args)
 	settings := &fakeSettings{}
-
+	fakeApi := fakeAPI{}
+	loadedApi := false
+	var fakeAPILoader = func(cache *awsds.SessionCache, settings models.Settings) (api.AWSAPI, error) {
+		loadedApi = true
+		return fakeApi, nil
+	}
 	api, err := ds.createAPI(id, args, settings, fakeAPILoader)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if !cmp.Equal(api, fakeAPI{}) {
-		t.Errorf("unexpected result api %v", cmp.Diff(api, fakeAPI{}))
+	if !cmp.Equal(api, fakeApi) {
+		t.Errorf("unexpected result api %v", cmp.Diff(api, fakeApi))
 	}
-	cachedAPI, ok := ds.api.Load(key)
-	if !ok || !cmp.Equal(cachedAPI, fakeAPI{}) {
-		t.Errorf("unexpected cached api %v", cmp.Diff(cachedAPI, fakeAPI{}))
+	if loadedApi != true {
+		t.Errorf("did not call load api")
 	}
 }
 
@@ -168,9 +169,9 @@ func TestCreateDriver(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	key := connectionKey(id, args)
-	api := fakeAPI{}
 	settings := &fakeSettings{}
+	key := connectionKey(id, args, settings)
+	api := fakeAPI{}
 
 	dr, err := ds.createDriver(id, args, settings, api, fakeDriverLoader)
 	if err != nil {
@@ -212,7 +213,9 @@ func TestGetDB(t *testing.T) {
 	ds := &AWSDatasource{}
 	config := backend.DataSourceInstanceSettings{ID: id}
 	ds.Init(config)
-
+	var fakeAPILoader = func(cache *awsds.SessionCache, settings models.Settings) (api.AWSAPI, error) {
+		return &fakeAPI{}, nil
+	}
 	res, err := ds.GetDB(config.ID, args, fakeSettingsLoader, fakeAPILoader, fakeDriverLoader)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
@@ -228,17 +231,54 @@ func TestGetAPI(t *testing.T) {
 	ds := &AWSDatasource{}
 	config := backend.DataSourceInstanceSettings{ID: id}
 	ds.Init(config)
-	key := connectionKey(id, args)
+	fakeApi := fakeAPI{}
+	timesApiLoaded := 0
+	var fakeAPILoader = func(cache *awsds.SessionCache, settings models.Settings) (api.AWSAPI, error) {
+		timesApiLoaded = timesApiLoaded + 1
+		return fakeApi, nil
+	}
 
+	// calls create api if the api does not exist for a particular id
 	api, err := ds.GetAPI(id, args, fakeSettingsLoader, fakeAPILoader)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
-	if !cmp.Equal(api, fakeAPI{}) {
-		t.Errorf("unexpected result api %v", cmp.Diff(api, fakeAPI{}))
+
+	if !cmp.Equal(api, fakeApi) {
+		t.Errorf("unexpected result api %v", cmp.Diff(api, fakeApi))
 	}
-	cachedAPI, ok := ds.api.Load(key)
-	if !ok || !cmp.Equal(cachedAPI, fakeAPI{}) {
-		t.Errorf("unexpected cached api %v", cmp.Diff(cachedAPI, fakeAPI{}))
+
+	if timesApiLoaded != 1 {
+		t.Errorf("did not call api loader once as expected")
+	}
+
+	// returns a cached api if settings haven't changed
+	maybeCachedApi, err := ds.GetAPI(id, args, fakeSettingsLoader, fakeAPILoader)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	if !cmp.Equal(maybeCachedApi, fakeApi) {
+		t.Errorf("unexpected result api %v", cmp.Diff(maybeCachedApi, fakeApi))
+	}
+
+	if timesApiLoaded != 1 {
+		t.Errorf("did not call api loader once as expected after cache")
+	}
+
+	// creates a new api if settings change
+	newArgs := sqlds.Options{"foo": "notBar"}
+
+	hopefullyNotCached, err := ds.GetAPI(id, newArgs, fakeSettingsLoader, fakeAPILoader)
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
+
+	if !cmp.Equal(hopefullyNotCached, fakeApi) {
+		t.Errorf("unexpected result api %v", cmp.Diff(hopefullyNotCached, fakeApi))
+	}
+
+	if timesApiLoaded != 2 {
+		t.Errorf("did not call api loader twice as expected after settings change")
 	}
 }
