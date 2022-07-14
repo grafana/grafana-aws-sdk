@@ -211,6 +211,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
+		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewStaticCredentials(c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.SessionToken),
 		})
