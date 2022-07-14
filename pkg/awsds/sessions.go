@@ -157,8 +157,17 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
-	settingsStr := fmt.Sprintf("%v", c.Settings)
-	hashedSettings := sha256.Sum256([]byte(settingsStr))
+	bldr := strings.Builder{}
+	for i, s := range []string{
+		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
+	} {
+		if i != 0 {
+			bldr.WriteString(":")
+		}
+		bldr.WriteString(strings.ReplaceAll(s, ":", `\:`))
+	}
+
+	hashedSettings := sha256.Sum256([]byte(bldr.String()))
 	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
 	sc.sessCacheLock.RLock()
@@ -202,7 +211,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
-		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewStaticCredentials(c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.SessionToken),
 		})
