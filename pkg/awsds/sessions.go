@@ -188,7 +188,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	var regionCfg *aws.Config
 	if c.Settings.Region == defaultRegion {
-		backend.Logger.Warn("Region is set to \"default\", which is unsupported")
+		backend.Logger.Warn("Region is set to \"default\", which is unsupported, please use sqlModels.DefaultKey")
 		c.Settings.Region = ""
 	}
 	if c.Settings.Region != "" {
