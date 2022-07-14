@@ -46,13 +46,13 @@ func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.S
 	return db, nil
 }
 
-func (d *AWSDatasource) storeAPI(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI) {
-	key := connectionKey(id, args, settings)
+func (d *AWSDatasource) storeAPI(id int64, args sqlds.Options, dsAPI api.AWSAPI) {
+	key := connectionKey(id, args)
 	d.api.Store(key, dsAPI)
 }
 
-func (d *AWSDatasource) loadAPI(id int64, args sqlds.Options, settings models.Settings) (api.AWSAPI, bool) {
-	key := connectionKey(id, args, settings)
+func (d *AWSDatasource) loadAPI(id int64, args sqlds.Options) (api.AWSAPI, bool) {
+	key := connectionKey(id, args)
 	dsAPI, exists := d.api.Load(key)
 	if exists {
 		return dsAPI.(api.AWSAPI), true
@@ -65,12 +65,12 @@ func (s *AWSDatasource) createAPI(id int64, args sqlds.Options, settings models.
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}
-	s.storeAPI(id, args, settings, api)
+	s.storeAPI(id, args, api)
 	return api, err
 }
 
-func (d *AWSDatasource) storeDriver(id int64, args sqlds.Options, settings models.Settings, dr interface{}) {
-	key := connectionKey(id, args, settings)
+func (d *AWSDatasource) storeDriver(id int64, args sqlds.Options, dr interface{}) {
+	key := connectionKey(id, args)
 	d.driver.Store(key, dr)
 }
 
@@ -79,7 +79,7 @@ func (s *AWSDatasource) createDriver(id int64, args sqlds.Options, settings mode
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}
-	s.storeDriver(id, args, settings, dr)
+	s.storeDriver(id, args, dr)
 
 	return dr, nil
 }
@@ -139,16 +139,16 @@ func (s *AWSDatasource) GetAPI(
 	settingsLoader models.Loader,
 	apiLoader api.Loader,
 ) (api.AWSAPI, error) {
+	cachedAPI, exists := s.loadAPI(id, options)
+	if exists {
+		return cachedAPI, nil
+	}
+
+	// create new api
 	settings := settingsLoader()
 	err := s.parseSettings(id, options, settings)
 	if err != nil {
 		return nil, err
 	}
-
-	cachedAPI, exists := s.loadAPI(id, options, settings)
-	if exists {
-		return cachedAPI, nil
-	}
-
 	return s.createAPI(id, options, settings, apiLoader)
 }
