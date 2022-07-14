@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"os"
@@ -158,14 +159,16 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	bldr := strings.Builder{}
 	for i, s := range []string{
-		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
+		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
 	} {
 		if i != 0 {
 			bldr.WriteString(":")
 		}
 		bldr.WriteString(strings.ReplaceAll(s, ":", `\:`))
 	}
-	cacheKey := bldr.String()
+
+	hashedSettings := sha256.Sum256([]byte(bldr.String()))
+	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
 	sc.sessCacheLock.RLock()
 	if env, ok := sc.sessCache[cacheKey]; ok {
