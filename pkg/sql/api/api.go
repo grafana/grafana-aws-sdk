@@ -17,6 +17,9 @@ var (
 	ExecuteError = errors.New("error executing query")
 	StatusError  = errors.New("error getting query query status")
 	StopError    = errors.New("error stopping query")
+
+	backoffMin = 200 * time.Millisecond
+	backoffMax = 10 * time.Minute
 )
 
 type ExecuteQueryInput struct {
@@ -51,11 +54,6 @@ type AWSAPI interface {
 }
 
 type Loader func(cache *awsds.SessionCache, settings models.Settings) (AWSAPI, error)
-
-var (
-	backoffMin = 200 * time.Millisecond
-	backoffMax = 10 * time.Minute
-)
 
 // WaitOnQuery polls the datasource api until the query finishes, returning an error if it failed.
 func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error {
@@ -96,11 +94,11 @@ func WaitOnQueryID(ctx context.Context, queryID string, db sqlds.AsyncDB) error 
 		Factor: 2,
 	}
 	for {
-		finished, _, err := db.QueryStatus(ctx, queryID)
+		status, err := db.QueryStatus(ctx, queryID)
 		if err != nil {
 			return err
 		}
-		if finished {
+		if status.Finished() {
 			return nil
 		}
 		select {
