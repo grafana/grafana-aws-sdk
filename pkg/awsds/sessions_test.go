@@ -265,7 +265,7 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 	newEC2Metadata = func(p client.ConfigProvider, cfgs ...*aws.Config) *ec2metadata.EC2Metadata {
 		return nil
 	}
-	newEC2RoleCredentials = func(sess *session.Session) *credentials.Credentials {
+	newRemoteCredentials = func(sess *session.Session) *credentials.Credentials {
 		return credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: newEC2Metadata(nil), ExpiryWindow: stscreds.DefaultDuration})
 	}
 
