@@ -6,15 +6,14 @@ import (
 	"fmt"
 
 	sqlAPI "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
-	"github.com/grafana/sqlds/v2"
 )
 
 // Implements "*sql.DB"
 type Conn struct {
-	db sqlds.AsyncDB
+	db sqlAPI.AsyncDB
 }
 
-func NewConnection(db sqlds.AsyncDB) *Conn {
+func NewConnection(db sqlAPI.AsyncDB) *Conn {
 	return &Conn{db: db}
 }
 
@@ -49,7 +48,11 @@ func (c *Conn) QueryContext(ctx context.Context, query string, args []driver.Nam
 	return c.db.GetRows(ctx, queryID)
 }
 
-func (c *Conn) Ping(ctx context.Context) error {
+func (c *Conn) Ping() error {
+	return c.db.Ping(context.Background())
+}
+
+func (c *Conn) PingContext(ctx context.Context) error {
 	return c.db.Ping(ctx)
 }
 

@@ -47,7 +47,7 @@ func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.S
 	return db, nil
 }
 
-func (s *AWSDatasource) createAsyncDB(id int64, args sqlds.Options, settings models.Settings, dr asyncDriver.Driver) (sqlds.AsyncDB, error) {
+func (s *AWSDatasource) createAsyncDB(id int64, args sqlds.Options, settings models.Settings, dr asyncDriver.Driver) (api.AsyncDB, error) {
 	db, err := dr.GetAsyncDB()
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
@@ -158,7 +158,7 @@ func (s *AWSDatasource) GetAsyncDB(
 	settingsLoader models.Loader,
 	apiLoader api.Loader,
 	driverLoader asyncDriver.Loader,
-) (sqlds.AsyncDB, error) {
+) (api.AsyncDB, error) {
 	// TODO: Reuse stuff from GetDB
 	settings := settingsLoader()
 	err := s.parseSettings(id, options, settings)
