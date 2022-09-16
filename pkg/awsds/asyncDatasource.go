@@ -1,4 +1,4 @@
-package datasource
+package awsds
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -16,24 +15,24 @@ import (
 )
 
 type AsyncAWSDatasource struct {
-	sqldatasource
-	asyncDB              api.AsyncDB
+	*sqlds.SqlDatasource
+	asyncDB              AsyncDB
 	connSettings         backend.DataSourceInstanceSettings
-	driver               api.AsyncDriver
+	driver               AsyncDriver
 	sqldsQueryDataHander backend.QueryDataHandlerFunc
 }
 
-func NewAsyncAWSDatasource(driver api.AsyncDriver) *AsyncAWSDatasource {
+func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
 	sqlDs := sqlds.NewDatasource(driver)
 	return &AsyncAWSDatasource{
-		sqldatasource:        sqlDs,
+		SqlDatasource:        sqlDs,
 		driver:               driver,
 		sqldsQueryDataHander: sqlDs.QueryData,
 	}
 }
 
 func getQueryFlow(query backend.DataQuery) string {
-	q, _ := api.GetQuery(query)
+	q, _ := GetQuery(query)
 	if q.Meta.QueryFlow == "async" {
 		return "async"
 	}
@@ -43,17 +42,24 @@ func getQueryFlow(query backend.DataQuery) string {
 func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	var err error
 	ds.connSettings = settings
-	ds.asyncDB, err = ds.driver.GetAsyncDB(settings)
+	ds.asyncDB, err = ds.driver.GetAsyncDB(settings, nil)
 	if err != nil {
 		return nil, err
 	}
-	return ds.sqldatasource.NewDatasource(settings)
+	return ds.SqlDatasource.NewDatasource(settings)
 }
 
 func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	// TODO: figure out how to get this
 	syncExectionEnabled := false
+	for _, query := range req.Queries {
+		if getQueryFlow(query) == "sync" {
+			syncExectionEnabled = true
+			break
+		}
+	}
+
 	_, isFromAlert := req.Headers["FromAlert"]
+	backend.Logger.Info("querying", "enabled", syncExectionEnabled, "fromAlert", isFromAlert)
 	if syncExectionEnabled || isFromAlert {
 		return ds.sqldsQueryDataHander.QueryData(ctx, req)
 	}
@@ -92,7 +98,7 @@ type queryMeta struct {
 // handleQuery will call query, and attempt to reconnect if the query failed
 func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.DataQuery, datasourceUID string) (data.Frames, error) {
 	// Convert the backend.DataQuery into a Query object
-	q, err := api.GetQuery(req)
+	q, err := GetQuery(req)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
@@ -104,7 +110,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	}
 
 	// Apply the default FillMode, overwritting it if the query specifies it
-	driverSettings := ds.sqldatasource.DriverSettings()
+	driverSettings := ds.SqlDatasource.DriverSettings()
 	fillMode := driverSettings.FillMode
 	if q.FillMissing != nil {
 		fillMode = q.FillMissing
@@ -174,14 +180,6 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	return res, err
 }
 
-func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *api.AsyncQuery) (data.Frames, error) {
+func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery) (data.Frames, error) {
 	return sqlds.QueryDB(ctx, conn, converters, fillMode, &q.Query, sql.NamedArg{Name: "queryID", Value: q.QueryID})
-}
-
-type sqldatasource interface {
-	NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error)
-	Dispose()
-	QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error)
-	CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error)
-	DriverSettings() sqlds.DriverSettings
 }

@@ -87,7 +87,7 @@ func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error
 	}
 }
 
-func WaitOnQueryID(ctx context.Context, queryID string, db AsyncDB) error {
+func WaitOnQueryID(ctx context.Context, queryID string, db awsds.AsyncDB) error {
 	backoffInstance := backoff.Backoff{
 		Min:    backoffMin,
 		Max:    backoffMax,

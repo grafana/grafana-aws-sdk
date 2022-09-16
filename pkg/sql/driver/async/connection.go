@@ -5,15 +5,16 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	sqlAPI "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 )
 
 // Implements "*sql.DB"
 type Conn struct {
-	db sqlAPI.AsyncDB
+	db awsds.AsyncDB
 }
 
-func NewConnection(db sqlAPI.AsyncDB) *Conn {
+func NewConnection(db awsds.AsyncDB) *Conn {
 	return &Conn{db: db}
 }
 
@@ -41,7 +42,7 @@ func (c *Conn) QueryContext(ctx context.Context, query string, args []driver.Nam
 		return nil, err
 	}
 
-	if err := sqlAPI.WaitOnQueryID(ctx, queryID, c.db); err != nil {
+	if err := api.WaitOnQueryID(ctx, queryID, c.db); err != nil {
 		return nil, err
 	}
 
