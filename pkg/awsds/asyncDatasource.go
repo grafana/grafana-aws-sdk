@@ -46,7 +46,8 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 	if err != nil {
 		return nil, err
 	}
-	return ds.SqlDatasource.NewDatasource(settings)
+	_, err = ds.SqlDatasource.NewDatasource(settings)
+	return ds, err
 }
 
 func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
@@ -59,7 +60,6 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	}
 
 	_, isFromAlert := req.Headers["FromAlert"]
-	backend.Logger.Info("querying", "enabled", syncExectionEnabled, "fromAlert", isFromAlert)
 	if syncExectionEnabled || isFromAlert {
 		return ds.sqldsQueryDataHander.QueryData(ctx, req)
 	}
@@ -72,11 +72,11 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 
 	// Execute each query and store the results by query RefID
 	for _, q := range req.Queries {
+		wg.Add(1)
 		go func(query backend.DataQuery) {
 			var frames data.Frames
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, getDatasourceUID(*req.PluginContext.DataSourceInstanceSettings))
-
 			response.Set(query.RefID, backend.DataResponse{
 				Frames: frames,
 				Error:  err,
