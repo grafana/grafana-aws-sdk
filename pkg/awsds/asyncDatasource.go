@@ -15,7 +15,7 @@ import (
 )
 
 type AsyncAWSDatasource struct {
-	*sqlds.SqlDatasource
+	*sqlds.SQLDatasource
 	asyncDB              AsyncDB
 	connSettings         backend.DataSourceInstanceSettings
 	driver               AsyncDriver
@@ -25,7 +25,7 @@ type AsyncAWSDatasource struct {
 func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
 	sqlDs := sqlds.NewDatasource(driver)
 	return &AsyncAWSDatasource{
-		SqlDatasource:        sqlDs,
+		SQLDatasource:        sqlDs,
 		driver:               driver,
 		sqldsQueryDataHander: sqlDs.QueryData,
 	}
@@ -46,7 +46,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 	if err != nil {
 		return nil, err
 	}
-	_, err = ds.SqlDatasource.NewDatasource(settings)
+	_, err = ds.SQLDatasource.NewDatasource(settings)
 	return ds, err
 }
 
@@ -110,7 +110,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	}
 
 	// Apply the default FillMode, overwritting it if the query specifies it
-	driverSettings := ds.SqlDatasource.DriverSettings()
+	driverSettings := ds.SQLDatasource.DriverSettings()
 	fillMode := driverSettings.FillMode
 	if q.FillMissing != nil {
 		fillMode = q.FillMissing
