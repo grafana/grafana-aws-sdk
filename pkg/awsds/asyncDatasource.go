@@ -149,11 +149,11 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	conn, err := ds.driver.Connect(ds.connSettings, q.ConnectionArgs)
+	_, db, _, err := ds.GetDBConnectionFromQuery(&q.Query, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
-	res, err := queryAsync(ctx, conn, ds.driver.Converters(), fillMode, q)
+	res, err := queryAsync(ctx, db, ds.driver.Converters(), fillMode, q)
 	if err == nil || errors.Is(err, sqlds.ErrorNoResults) {
 		if len(res) == 0 {
 			res = append(res, &data.Frame{})
@@ -162,22 +162,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		return res, nil
 	}
 
-	if !errors.Is(err, sqlds.ErrorQuery) {
-		return nil, err
-	}
-
-	conn, err = ds.driver.Connect(ds.connSettings, q.ConnectionArgs)
-	if err != nil {
-		return getErrorFrameFromQuery(q), err
-	}
-	res, err = queryAsync(ctx, conn, ds.driver.Converters(), fillMode, q)
-	if err == nil || errors.Is(err, sqlds.ErrorNoResults) {
-		if len(res) == 0 {
-			res = append(res, &data.Frame{})
-		}
-		res[0].Meta.Custom = customMeta
-	}
-	return res, err
+	return getErrorFrameFromQuery(q), err
 }
 
 func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery) (data.Frames, error) {
