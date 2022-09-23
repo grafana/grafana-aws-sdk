@@ -58,6 +58,8 @@ func (c *Conn) PingContext(ctx context.Context) error {
 }
 
 func (c *Conn) Begin() (driver.Tx, error) {
+	// Ignore that the wrapped call is deprecated
+	// nolint:staticcheck
 	return c.db.Begin()
 }
 
