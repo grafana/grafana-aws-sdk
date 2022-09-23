@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.9
 	github.com/google/go-cmp v0.5.8
 	github.com/grafana/grafana-plugin-sdk-go v0.134.0
-	github.com/grafana/sqlds/v2 v2.3.7
+	github.com/grafana/sqlds/v2 v2.3.9
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.13.0
 	github.com/stretchr/testify v1.7.2
@@ -66,5 +66,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/grafana/sqlds/v2 => ../sqlds
