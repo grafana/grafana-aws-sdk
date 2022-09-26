@@ -116,12 +116,6 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
-	if driverSettings.Timeout != 0 {
-		tctx, cancel := context.WithTimeout(ctx, driverSettings.Timeout)
-		defer cancel()
-		ctx = tctx
-	}
-
 	if q.QueryID == "" {
 		queryID, err := startQuery(ctx, ds.asyncDB, q)
 		if err != nil {

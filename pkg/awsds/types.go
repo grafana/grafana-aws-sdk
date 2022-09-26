@@ -74,6 +74,11 @@ func GetQuery(query backend.DataQuery) (*AsyncQuery, error) {
 	}
 
 	// Copy directly from the well typed query
+	model.RefID = query.RefID
+	model.Interval = query.Interval
+	model.TimeRange = query.TimeRange
+	model.MaxDataPoints = query.MaxDataPoints
+
 	return &AsyncQuery{
 		Query:   model.Query,
 		QueryID: model.QueryID,
