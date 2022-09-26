@@ -149,7 +149,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	_, db, _, err := ds.GetDBConnectionFromQuery(&q.Query, datasourceUID)
+	db, err := ds.GetDBFromQuery(&q.Query, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
