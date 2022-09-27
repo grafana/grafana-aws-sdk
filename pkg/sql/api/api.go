@@ -46,6 +46,7 @@ type SQL interface {
 type Resources interface {
 	Regions(aws.Context) ([]string, error)
 	Databases(aws.Context, sqlds.Options) ([]string, error)
+	CancelQuery(aws.Context, sqlds.Options, string) error
 }
 
 type AWSAPI interface {

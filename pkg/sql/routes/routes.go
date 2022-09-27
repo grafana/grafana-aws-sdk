@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -81,9 +82,25 @@ func (r *ResourceHandler) databases(rw http.ResponseWriter, req *http.Request) {
 	SendResources(rw, res, err)
 }
 
+func (r *ResourceHandler) cancel(rw http.ResponseWriter, req *http.Request) {
+	reqBody, err := ParseBody(req.Body)
+	if err != nil {
+		marshalError(rw, err, http.StatusBadRequest)
+		return
+	}
+	queryID := reqBody["queryId"]
+	if queryID == "" {
+		SendResources(rw, nil, fmt.Errorf("empty queryID"))
+		return
+	}
+	err = r.API.CancelQuery(req.Context(), reqBody, queryID)
+	SendResources(rw, "Successfully canceled", err)
+}
+
 func (r *ResourceHandler) DefaultRoutes() map[string]func(http.ResponseWriter, *http.Request) {
 	return map[string]func(http.ResponseWriter, *http.Request){
 		"/regions":   r.regions,
 		"/databases": r.databases,
+		"/cancel":    r.cancel,
 	}
 }
