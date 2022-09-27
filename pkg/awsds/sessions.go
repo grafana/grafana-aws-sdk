@@ -15,8 +15,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -111,10 +111,10 @@ var newSTSCredentials = stscreds.NewCredentials
 //nolint:gocritic
 var newEC2Metadata = ec2metadata.New
 
-// EC2 role credentials factory.
+// EC2 + ECS role credentials factory.
 // Stubbable by tests.
-var newEC2RoleCredentials = func(sess *session.Session) *credentials.Credentials {
-	return credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(sess), ExpiryWindow: stscreds.DefaultDuration})
+var newRemoteCredentials = func(sess *session.Session) *credentials.Credentials {
+	return credentials.NewCredentials(defaults.RemoteCredProvider(*sess.Config, sess.Handlers))
 }
 
 type SessionConfig struct {
@@ -223,7 +223,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		if err != nil {
 			return nil, err
 		}
-		cfgs = append(cfgs, &aws.Config{Credentials: newEC2RoleCredentials(sess)})
+		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}

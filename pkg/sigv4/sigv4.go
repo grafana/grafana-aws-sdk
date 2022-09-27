@@ -16,9 +16,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/private/protocol/rest"
@@ -225,7 +224,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		if err != nil {
 			return nil, err
 		}
-		c = credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{Client: ec2metadata.New(s), ExpiryWindow: stscreds.DefaultDuration})
+		c = credentials.NewCredentials(defaults.RemoteCredProvider(*s.Config, s.Handlers))
 
 		if cfg.AssumeRoleARN != "" {
 			s, err = session.NewSession(&aws.Config{
