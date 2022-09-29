@@ -31,12 +31,10 @@ func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
 	}
 }
 
-func getQueryFlow(query backend.DataQuery) string {
+// isAsyncFlow checks the feature flag in query to see if it is async
+func isAsyncFlow(query backend.DataQuery) bool {
 	q, _ := GetQuery(query)
-	if q.Meta.QueryFlow == "async" {
-		return "async"
-	}
-	return "sync"
+	return q.Meta.QueryFlow == "async"
 }
 
 func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -46,6 +44,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 	if err != nil {
 		return nil, err
 	}
+	// initialize the wrapped ds.SQLDatasource
 	_, err = ds.SQLDatasource.NewDatasource(settings)
 	return ds, err
 }
@@ -53,7 +52,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	syncExectionEnabled := false
 	for _, query := range req.Queries {
-		if getQueryFlow(query) == "sync" {
+		if !isAsyncFlow(query) {
 			syncExectionEnabled = true
 			break
 		}
@@ -76,7 +75,7 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 		go func(query backend.DataQuery) {
 			var frames data.Frames
 			var err error
-			frames, err = ds.handleAsyncQuery(ctx, query, getDatasourceUID(*req.PluginContext.DataSourceInstanceSettings))
+			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
 			response.Set(query.RefID, backend.DataResponse{
 				Frames: frames,
 				Error:  err,

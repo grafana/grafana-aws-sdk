@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
@@ -38,15 +37,6 @@ func GetUserAgentString(name string) string {
 		buildInfo.Version,
 		buildInfo.Hash,
 		grafanaVersion)
-}
-
-func getDatasourceUID(settings backend.DataSourceInstanceSettings) string {
-	datasourceUID := settings.UID
-	// Grafana < 8.0 won't include the UID yet
-	if datasourceUID == "" {
-		datasourceUID = fmt.Sprintf("%d", settings.ID)
-	}
-	return datasourceUID
 }
 
 // getErrorFrameFromQuery returns a error frames with empty data and meta fields

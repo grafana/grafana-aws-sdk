@@ -159,7 +159,6 @@ func (s *AWSDatasource) GetAsyncDB(
 	apiLoader api.Loader,
 	driverLoader asyncDriver.Loader,
 ) (awsds.AsyncDB, error) {
-	// TODO: Reuse stuff from GetDB
 	settings := settingsLoader()
 	err := s.parseSettings(id, options, settings)
 	if err != nil {
