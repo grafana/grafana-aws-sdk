@@ -134,7 +134,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		return getErrorFrameFromQuery(q), err
 	}
 	customMeta := queryMeta{QueryID: q.QueryID, Status: status.String()}
-	if !status.Finished() {
+	if status != QueryFinished {
 		return data.Frames{
 			{Meta: &data.FrameMeta{
 				ExecutedQueryString: q.RawSQL,
