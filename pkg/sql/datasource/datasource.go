@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
+	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/sqlds/v2"
@@ -46,6 +47,15 @@ func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.S
 	return db, nil
 }
 
+func (s *AWSDatasource) createAsyncDB(id int64, args sqlds.Options, settings models.Settings, dr asyncDriver.Driver) (awsds.AsyncDB, error) {
+	db, err := dr.GetAsyncDB()
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
+	}
+
+	return db, nil
+}
+
 func (d *AWSDatasource) storeAPI(id int64, args sqlds.Options, dsAPI api.AWSAPI) {
 	key := connectionKey(id, args)
 	d.api.Store(key, dsAPI)
@@ -75,6 +85,16 @@ func (d *AWSDatasource) storeDriver(id int64, args sqlds.Options, dr interface{}
 }
 
 func (s *AWSDatasource) createDriver(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI, loader driver.Loader) (driver.Driver, error) {
+	dr, err := loader(dsAPI)
+	if err != nil {
+		return nil, fmt.Errorf("%w: Failed to create client", err)
+	}
+	s.storeDriver(id, args, dr)
+
+	return dr, nil
+}
+
+func (s *AWSDatasource) createAsyncDriver(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI, loader asyncDriver.Loader) (asyncDriver.Driver, error) {
 	dr, err := loader(dsAPI)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
@@ -128,6 +148,34 @@ func (s *AWSDatasource) GetDB(
 	}
 
 	return s.createDB(id, options, settings, dr)
+}
+
+// GetAsyncDB returns a sqlds.AsyncDB. It will use the loader functions to initialize the required
+// settings, API and driver and finally create a DB.
+func (s *AWSDatasource) GetAsyncDB(
+	id int64,
+	options sqlds.Options,
+	settingsLoader models.Loader,
+	apiLoader api.Loader,
+	driverLoader asyncDriver.Loader,
+) (awsds.AsyncDB, error) {
+	settings := settingsLoader()
+	err := s.parseSettings(id, options, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	dsAPI, err := s.createAPI(id, options, settings, apiLoader)
+	if err != nil {
+		return nil, err
+	}
+
+	dr, err := s.createAsyncDriver(id, options, settings, dsAPI, driverLoader)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.createAsyncDB(id, options, settings, dr)
 }
 
 // GetAPI returns an API interface. When called multiple times with the same id and options, it

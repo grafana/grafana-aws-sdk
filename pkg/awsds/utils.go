@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
 // GetUserAgentString returns an agent that can be parsed in server logs
@@ -36,4 +37,15 @@ func GetUserAgentString(name string) string {
 		buildInfo.Version,
 		buildInfo.Hash,
 		grafanaVersion)
+}
+
+// getErrorFrameFromQuery returns a error frames with empty data and meta fields
+func getErrorFrameFromQuery(query *AsyncQuery) data.Frames {
+	frames := data.Frames{}
+	frame := data.NewFrame(query.RefID)
+	frame.Meta = &data.FrameMeta{
+		ExecutedQueryString: query.RawSQL,
+	}
+	frames = append(frames, frame)
+	return frames
 }

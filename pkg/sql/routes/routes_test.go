@@ -68,6 +68,9 @@ func (f *fakeDS) Databases(ctx aws.Context, options sqlds.Options) ([]string, er
 	return dbs, nil
 }
 
+func (f *fakeDS) CancelQuery(ctx aws.Context, options sqlds.Options, queryID string) error {
+	return nil
+}
 func TestDefaultRoutes(t *testing.T) {
 	tests := []struct {
 		description    string
@@ -94,6 +97,19 @@ func TestDefaultRoutes(t *testing.T) {
 			description:  "wrong region for databases",
 			route:        "/databases",
 			reqBody:      []byte(`{"region":"us-east-3"}`),
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			description:    "cancel query",
+			route:          "/cancel",
+			reqBody:        []byte(`{"queryId":"blah"}`),
+			expectedCode:   http.StatusOK,
+			expectedResult: `"Successfully canceled"`,
+		},
+		{
+			description:  "no queryId for cancel",
+			route:        "/cancel",
+			reqBody:      []byte(`{"region":"us-east-1"}`),
 			expectedCode: http.StatusBadRequest,
 		},
 	}
