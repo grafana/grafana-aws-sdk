@@ -128,8 +128,12 @@ func isOptInRegion(region string) bool {
 	regions := map[string]bool{
 		"af-south-1":     true,
 		"ap-east-1":      true,
+		"ap-south-2":     true,
 		"ap-southeast-3": true,
+		"eu-central-2":   true,
 		"eu-south-1":     true,
+		"eu-south-2":     true,
+		"me-central-1":   true,
 		"me-south-1":     true,
 		// The rest of regions will return false
 	}
