@@ -1,2 +1,4 @@
+* @grafana/aws-plugins
+
 # Grafana Partnerships Team
 /pkg/sigv4 @grafana/grafana-partnerships-team
