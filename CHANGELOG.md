@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.12.0
+Updating opt-in regions list by @robbierolin in https://github.com/grafana/grafana-aws-sdk/pull/66
+
 ## v0.11.0
 
 Switch ec2 role cred provider to remote cred provider https://github.com/grafana/grafana-aws-sdk/pull/62
