@@ -115,8 +115,9 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
+	asyncDB, _ := ds.driver.GetAsyncDB(ds.connSettings, q.ConnectionArgs)
 	if q.QueryID == "" {
-		queryID, err := startQuery(ctx, ds.asyncDB, q)
+		queryID, err := startQuery(ctx, asyncDB, q)
 		if err != nil {
 			return getErrorFrameFromQuery(q), err
 		}
@@ -128,7 +129,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	status, err := queryStatus(ctx, ds.asyncDB, q)
+	status, err := queryStatus(ctx, asyncDB, q)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
