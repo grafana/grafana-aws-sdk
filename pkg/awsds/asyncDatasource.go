@@ -3,6 +3,7 @@ package awsds
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -14,12 +15,48 @@ import (
 	"github.com/grafana/sqlds/v2"
 )
 
+const defaultKeySuffix = "default"
+
+func defaultKey(datasourceUID string) string {
+	return fmt.Sprintf("%s-%s", datasourceUID, defaultKeySuffix)
+}
+
+func keyWithConnectionArgs(datasourceUID string, connArgs json.RawMessage) string {
+	return fmt.Sprintf("%s-%s", datasourceUID, string(connArgs))
+}
+
+type dbConnection struct {
+	db       AsyncDB
+	settings backend.DataSourceInstanceSettings
+}
+
 type AsyncAWSDatasource struct {
 	*sqlds.SQLDatasource
-	asyncDB              AsyncDB
-	connSettings         backend.DataSourceInstanceSettings
+
+	dbConnections        sync.Map
 	driver               AsyncDriver
 	sqldsQueryDataHander backend.QueryDataHandlerFunc
+}
+
+func (ds *AsyncAWSDatasource) getDBConnection(key string) (dbConnection, bool) {
+	conn, ok := ds.dbConnections.Load(key)
+	if !ok {
+		return dbConnection{}, false
+	}
+	return conn.(dbConnection), true
+}
+
+func (ds *AsyncAWSDatasource) storeDBConnection(key string, dbConn dbConnection) {
+	ds.dbConnections.Store(key, dbConn)
+}
+
+func getDatasourceUID(settings backend.DataSourceInstanceSettings) string {
+	datasourceUID := settings.UID
+	// Grafana < 8.0 won't include the UID yet
+	if datasourceUID == "" {
+		datasourceUID = fmt.Sprintf("%d", settings.ID)
+	}
+	return datasourceUID
 }
 
 func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
@@ -38,12 +75,13 @@ func isAsyncFlow(query backend.DataQuery) bool {
 }
 
 func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	var err error
-	ds.connSettings = settings
-	ds.asyncDB, err = ds.driver.GetAsyncDB(settings, nil)
+	db, err := ds.driver.GetAsyncDB(settings, nil)
 	if err != nil {
 		return nil, err
 	}
+	key := defaultKey(getDatasourceUID(settings))
+	ds.storeDBConnection(key, dbConnection{db, settings})
+
 	// initialize the wrapped ds.SQLDatasource
 	_, err = ds.SQLDatasource.NewDatasource(settings)
 	return ds, err
@@ -89,6 +127,38 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	return response.Response(), nil
 }
 
+func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
+	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
+		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
+	}
+	// The database connection may vary depending on query arguments
+	// The raw arguments are used as key to store the db connection in memory so they can be reused
+	key := defaultKey(datasourceUID)
+	dbConn, ok := ds.getDBConnection(key)
+	if !ok {
+		return nil, sqlds.ErrorMissingDBConnection
+	}
+	if !ds.EnableMultipleConnections || len(q.ConnectionArgs) == 0 {
+		return dbConn.db, nil
+	}
+
+	key = keyWithConnectionArgs(datasourceUID, q.ConnectionArgs)
+	if cachedConn, ok := ds.getDBConnection(key); ok {
+		return cachedConn.db, nil
+	}
+
+	var err error
+	db, err := ds.driver.GetAsyncDB(dbConn.settings, q.ConnectionArgs)
+	if err != nil {
+		return nil, err
+	}
+	// Assign this connection in the cache
+	dbConn = dbConnection{db, dbConn.settings}
+	ds.storeDBConnection(key, dbConn)
+
+	return dbConn.db, nil
+}
+
 type queryMeta struct {
 	QueryID string `json:"queryID"`
 	Status  string `json:"status"`
@@ -115,7 +185,11 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
-	asyncDB, _ := ds.driver.GetAsyncDB(ds.connSettings, q.ConnectionArgs)
+	asyncDB, err := ds.getAsyncDBFromQuery(q, datasourceUID)
+	if err != nil {
+		return getErrorFrameFromQuery(q), err
+	}
+
 	if q.QueryID == "" {
 		queryID, err := startQuery(ctx, asyncDB, q)
 		if err != nil {
