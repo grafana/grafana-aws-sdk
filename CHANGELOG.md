@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.13.0
+
+- Fix connections for multiple async datasources @iwysiu in [#73](https://github.com/grafana/grafana-aws-sdk/pull/73)
+- Pass query args to GetAsyncDB @kevinwcyu in [#71](https://github.com/grafana/grafana-aws-sdk/pull/71)
+
 ## v0.12.0
 Updating opt-in regions list by @robbierolin in https://github.com/grafana/grafana-aws-sdk/pull/66
 
