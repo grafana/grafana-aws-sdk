@@ -1,4 +1,4 @@
-* @grafana/aws-plugins
+* @grafana/aws-datasources
 
 # Grafana Partnerships Team
-/pkg/sigv4 @grafana/grafana-partnerships-team
+/pkg/sigv4 @grafana/grafana-operator-experience-squad
