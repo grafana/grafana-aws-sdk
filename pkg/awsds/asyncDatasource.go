@@ -97,7 +97,8 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	}
 
 	_, isFromAlert := req.Headers["FromAlert"]
-	if syncExectionEnabled || isFromAlert {
+	_, isFromExpression := req.Headers["http_X-Grafana-From-Expr"]
+	if syncExectionEnabled || isFromAlert || isFromExpression {
 		return ds.sqldsQueryDataHander.QueryData(ctx, req)
 	}
 
