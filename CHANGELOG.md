@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.15.1
+
+- Fix expressions with async datasource @iwysiu in [#83](https://github.com/grafana/grafana-aws-sdk/pull/83)
+
 ## v0.15.0
 
 Updating opt-in regions list by @eunice98k in https://github.com/grafana/grafana-aws-sdk/pull/80
