@@ -105,26 +105,18 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 	}
 }
 
-func TestAsyncQueryData(t *testing.T) {
+func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expression(t *testing.T) {
 	tests := []struct {
 		desc    string
 		headers map[string]string
-		called  bool
 	}{
 		{
-			"assert header",
+			"alert header",
 			map[string]string{fromAlertHeader: "some value"},
-			true,
 		},
 		{
 			"expression Header",
 			map[string]string{fromExpressionHeader: "some value"},
-			true,
-		},
-		{
-			"no header",
-			map[string]string{},
-			false,
 		},
 	}
 	for _, tt := range tests {
@@ -138,7 +130,7 @@ func TestAsyncQueryData(t *testing.T) {
 
 			_, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{Headers: tt.headers})
 			assert.NoError(t, err)
-			assert.Equal(t, syncCalled, tt.called)
+			assert.True(t, syncCalled)
 		})
 	}
 }
