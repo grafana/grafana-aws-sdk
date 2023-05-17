@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/sqlds/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 type fakeAsyncDB struct{}
@@ -100,6 +101,36 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 			if dbConn != tt.expectedDB {
 				t.Fatalf("unexpected result %v", dbConn)
 			}
+		})
+	}
+}
+
+func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expression(t *testing.T) {
+	tests := []struct {
+		desc    string
+		headers map[string]string
+	}{
+		{
+			"alert header",
+			map[string]string{fromAlertHeader: "some value"},
+		},
+		{
+			"expression Header",
+			map[string]string{fromExpressionHeader: "some value"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			syncCalled := false
+			mockQueryData := func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+				syncCalled = true
+				return nil, nil
+			}
+			ds := &AsyncAWSDatasource{sqldsQueryDataHander: mockQueryData}
+
+			_, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{Headers: tt.headers})
+			assert.NoError(t, err)
+			assert.True(t, syncCalled)
 		})
 	}
 }

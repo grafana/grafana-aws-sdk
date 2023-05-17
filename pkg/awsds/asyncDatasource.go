@@ -16,6 +16,8 @@ import (
 )
 
 const defaultKeySuffix = "default"
+const fromAlertHeader = "FromAlert"
+const fromExpressionHeader = "http_X-Grafana-From-Expr"
 
 func defaultKey(datasourceUID string) string {
 	return fmt.Sprintf("%s-%s", datasourceUID, defaultKeySuffix)
@@ -96,8 +98,9 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 		}
 	}
 
-	_, isFromAlert := req.Headers["FromAlert"]
-	if syncExectionEnabled || isFromAlert {
+	_, isFromAlert := req.Headers[fromAlertHeader]
+	_, isFromExpression := req.Headers[fromExpressionHeader]
+	if syncExectionEnabled || isFromAlert || isFromExpression {
 		return ds.sqldsQueryDataHander.QueryData(ctx, req)
 	}
 
