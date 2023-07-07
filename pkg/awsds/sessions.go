@@ -96,6 +96,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 // Session factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 	return session.NewSession(cfgs...)
@@ -103,11 +104,13 @@ var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 
 // STS credentials factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newSTSCredentials = stscreds.NewCredentials
 
 // EC2Metadata service factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newEC2Metadata = ec2metadata.New
 
@@ -162,6 +165,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
+	// Hash the settings to use as a cache key
 	bldr := strings.Builder{}
 	for i, s := range []string{
 		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
@@ -175,6 +179,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	hashedSettings := sha256.Sum256([]byte(bldr.String()))
 	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
+	// Check if we have a valid session in the cache, if so return it
 	sc.sessCacheLock.RLock()
 	if env, ok := sc.sessCache[cacheKey]; ok {
 		if env.expiration.After(time.Now().UTC()) {
@@ -229,6 +234,8 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			return nil, err
 		}
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
+	case AuthTypeGrafanaAssumeRole:
+		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
@@ -249,7 +256,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	expiration := time.Now().UTC().Add(duration)
 	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
-		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
+		backend.Logger.Info("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
 		cfgs := []*aws.Config{
 			{
@@ -261,7 +268,10 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					// Not sure if this is necessary, overlaps with p.Duration and is undocumented
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
-					if c.Settings.ExternalID != "" {
+					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
+						// TODO: pull externalid from somewhere, can not be user input or hardcoded string
+						p.ExternalID = aws.String("grafanamagic")
+					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
 				}),
