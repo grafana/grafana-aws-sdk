@@ -61,9 +61,8 @@ type QueryMeta struct {
 
 type AsyncQuery struct {
 	sqlds.Query
-	QueryID      string    `json:"queryID,omitempty"`
-	FetchResults bool      `json:"fetchResults,omitempty"`
-	Meta         QueryMeta `json:"meta,omitempty"`
+	QueryID string    `json:"queryID,omitempty"`
+	Meta    QueryMeta `json:"meta,omitempty"`
 }
 
 // GetQuery returns a Query object given a backend.DataQuery using json.Unmarshal
@@ -81,10 +80,9 @@ func GetQuery(query backend.DataQuery) (*AsyncQuery, error) {
 	model.MaxDataPoints = query.MaxDataPoints
 
 	return &AsyncQuery{
-		Query:        model.Query,
-		QueryID:      model.QueryID,
-		FetchResults: model.FetchResults,
-		Meta:         model.Meta,
+		Query:   model.Query,
+		QueryID: model.QueryID,
+		Meta:    model.Meta,
 	}, nil
 }
 
