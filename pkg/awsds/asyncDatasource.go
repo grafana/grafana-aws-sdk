@@ -19,8 +19,6 @@ const defaultKeySuffix = "default"
 const fromAlertHeader = "FromAlert"
 const fromExpressionHeader = "http_X-Grafana-From-Expr"
 
-var ErrorQueryStillRunning = errors.New("fetching data from running query")
-
 func defaultKey(datasourceUID string) string {
 	return fmt.Sprintf("%s-%s", datasourceUID, defaultKeySuffix)
 }
@@ -213,22 +211,13 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		return getErrorFrameFromQuery(q), err
 	}
 	customMeta := queryMeta{QueryID: q.QueryID, Status: status.String()}
-	if !q.FetchResults {
-		return data.Frames{
-			{Meta: &data.FrameMeta{
-				ExecutedQueryString: q.RawSQL,
-				Custom:              customMeta},
-			},
-		}, nil
-	}
-
 	if status != QueryFinished {
 		return data.Frames{
 			{Meta: &data.FrameMeta{
 				ExecutedQueryString: q.RawSQL,
 				Custom:              customMeta},
 			},
-		}, ErrorQueryStillRunning
+		}, nil
 	}
 
 	db, err := ds.GetDBFromQuery(&q.Query, datasourceUID)
