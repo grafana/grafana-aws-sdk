@@ -6,9 +6,40 @@ import (
 	"runtime"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
+
+func ShouldCacheQuery(resp *backend.QueryDataResponse) bool {
+	shouldCache := true
+	for _, response := range resp.Responses {
+		for _, frame := range response.Frames {
+			if frame.Meta != nil && frame.Meta.Custom != nil {
+				// If the response doesn't contain a status, it isn't an async query
+				meta, ok := frame.Meta.Custom.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				if meta["status"] == nil {
+					continue
+				}
+				metaStatus, ok := meta["status"].(string)
+				if !ok {
+					continue
+				}
+
+				// we should not cache running queries
+				if metaStatus == QueryRunning.String() || metaStatus == QuerySubmitted.String() {
+					shouldCache = false
+					break
+				}
+			}
+		}
+	}
+	return shouldCache
+}
 
 // GetUserAgentString returns an agent that can be parsed in server logs
 func GetUserAgentString(name string) string {
