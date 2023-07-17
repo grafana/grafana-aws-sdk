@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.16.0
+
+- Add ShouldCacheQuery util for async caching @iwysiu in [#83](https://github.com/grafana/grafana-aws-sdk/pull/85)
+
 ## v0.15.1
 
 - Fix expressions with async datasource @iwysiu in [#83](https://github.com/grafana/grafana-aws-sdk/pull/83)
