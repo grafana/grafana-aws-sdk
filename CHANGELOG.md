@@ -2,9 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## v0.16.1
+
+- ShouldCacheQuery should handle nil responses @iwysiu in [#87](https://github.com/grafana/grafana-aws-sdk/pull/87)
+
 ## v0.16.0
 
-- Add ShouldCacheQuery util for async caching @iwysiu in [#83](https://github.com/grafana/grafana-aws-sdk/pull/85)
+- Add ShouldCacheQuery util for async caching @iwysiu in [#85](https://github.com/grafana/grafana-aws-sdk/pull/85)
 
 ## v0.15.1
 
