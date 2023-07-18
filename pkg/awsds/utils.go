@@ -11,7 +11,12 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
+// ShouldCacheQuery checks whether resp contains a running query, and returns false if it does
 func ShouldCacheQuery(resp *backend.QueryDataResponse) bool {
+	if resp == nil {
+		return true
+	}
+
 	shouldCache := true
 	for _, response := range resp.Responses {
 		for _, frame := range response.Frames {
