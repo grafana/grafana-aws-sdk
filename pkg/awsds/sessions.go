@@ -119,6 +119,11 @@ var newEC2Metadata = ec2metadata.New
 var newRemoteCredentials = func(sess *session.Session) *credentials.Credentials {
 	return credentials.NewCredentials(defaults.RemoteCredProvider(*sess.Config, sess.Handlers))
 }
+// Shared credentials factory
+// Stubbable by tests.
+var newSharedCredentials = func(profile string) *credentials.Credentials {
+	return credentials.NewSharedCredentials("", profile)
+}
 
 type SessionConfig struct {
 	Settings      AWSDatasourceSettings
@@ -218,7 +223,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
+			Credentials: newSharedCredentials(c.Settings.Profile),
 		})
 	case AuthTypeKeys:
 		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
@@ -236,6 +241,10 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
 		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
+		profileName := "assume_role"
+		cfgs = append(cfgs, &aws.Config{
+			Credentials: newSharedCredentials(profileName),
+		})
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}

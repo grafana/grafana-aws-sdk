@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -254,6 +255,55 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 	})
 }
 
+func TestNewSessionGrafanaAssumeRole(t *testing.T) {
+	newSharedCredentials = func(profile string) *credentials.Credentials {
+		if profile != "assume_role" {
+			t.Errorf("no profile")
+		}
+		return credentials.NewCredentials(&mockCredentialsProvider{})
+	}
+	t.Run("Credentials are created", func(t *testing.T) {
+		credentialCfgs := []*aws.Config{}
+		newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
+			cfg := aws.Config{}
+			cfg.MergeIn(cfgs...)
+			credentialCfgs = append(credentialCfgs, &cfg)
+			// require.Equal(t, , &cfg.)
+			return &session.Session{
+				Config: &cfg,
+			}, nil
+		}
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			p := &stscreds.AssumeRoleProvider{
+				RoleARN: roleARN,
+			}
+			for _, o := range options {
+				o(p)
+			}
+			require.Equal(t, "test_arn", roleARN )
+			return credentials.NewCredentials(p)
+		}
+		settings := AWSDatasourceSettings{
+			AuthType:      AuthTypeGrafanaAssumeRole,
+			AssumeRoleARN: "test_arn",
+		}
+		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "grafana_assume_role")
+		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+
+		// test that externalId is pulled from ?somewhere?
+
+		// test that external id is passed
+		testI := &credentialCfgs[1].Credentials.
+		require.Equal(t, 2, len(credentialCfgs))
+	})
+}
+
 func TestNewSession_EC2IAMRole(t *testing.T) {
 	newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 		cfg := aws.Config{}
@@ -343,4 +393,16 @@ func TestWithCustomHTTPClient(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sess)
 	assert.Equal(t, time.Duration(123), sess.Config.HTTPClient.Timeout)
+}
+
+type mockCredentialsProvider struct {
+	credentials.Provider
+	noCredentials bool
+}
+
+func (m *mockCredentialsProvider) Retrieve() (credentials.Value, error) {
+	if m.noCredentials {
+		return credentials.Value{}, fmt.Errorf("no valid credentials")
+	}
+	return credentials.Value{}, nil
 }
