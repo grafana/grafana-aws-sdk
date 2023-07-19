@@ -96,7 +96,6 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 // Session factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 	return session.NewSession(cfgs...)
@@ -104,13 +103,11 @@ var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 
 // STS credentials factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newSTSCredentials = stscreds.NewCredentials
 
 // EC2Metadata service factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newEC2Metadata = ec2metadata.New
 
@@ -241,6 +238,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
 		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
+		// TODO temporary profile name
 		profileName := "assume_role"
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: newSharedCredentials(profileName),
@@ -265,7 +263,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	expiration := time.Now().UTC().Add(duration)
 	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
-		backend.Logger.Info("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
+		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
 		cfgs := []*aws.Config{
 			{
