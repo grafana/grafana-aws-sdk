@@ -51,6 +51,9 @@ const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 // SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
 const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
 
+// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
+const GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
+
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
 	allowedAuthProviders := []string{}
@@ -146,6 +149,8 @@ func isOptInRegion(region string) bool {
 
 // GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
 func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
+	backend.Logger.Info("environ", "environ", os.Environ())
+	backend.Logger.Info("hello from GetSession", "settings", c.Settings)
 	if c.Settings.Region == "" && c.Settings.DefaultRegion != "" {
 		// DefaultRegion is deprecated, Region should be used instead
 		c.Settings.Region = c.Settings.DefaultRegion
@@ -157,9 +162,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			break
 		}
 	}
+
 	if !authTypeAllowed {
 		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
 	}
+	backend.Logger.Info("auth allowed")
 
 	if c.Settings.AssumeRoleARN != "" && !sc.authSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
@@ -184,10 +191,14 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	if env, ok := sc.sessCache[cacheKey]; ok {
 		if env.expiration.After(time.Now().UTC()) {
 			sc.sessCacheLock.RUnlock()
+			backend.Logger.Info("found something in cache")
+
 			return env.session, nil
 		}
 	}
 	sc.sessCacheLock.RUnlock()
+
+	backend.Logger.Info("nothing in cache")
 
 	cfgs := []*aws.Config{
 		{
@@ -215,27 +226,27 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 
 	switch c.Settings.AuthType {
 	case AuthTypeSharedCreds:
-		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
+		backend.Logger.Info("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
-		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
+		backend.Logger.Info("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
 			Credentials: credentials.NewStaticCredentials(c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.SessionToken),
 		})
 	case AuthTypeDefault:
-		backend.Logger.Debug("Authenticating towards AWS with default SDK method", "region", c.Settings.Region)
+		backend.Logger.Info("Authenticating towards AWS with default SDK method", "region", c.Settings.Region)
 	case AuthTypeEC2IAMRole:
-		backend.Logger.Debug("Authenticating towards AWS with IAM Role", "region", c.Settings.Region)
+		backend.Logger.Info("Authenticating towards AWS with IAM Role", "region", c.Settings.Region)
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
 		}
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
-		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
+		backend.Logger.Info("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
@@ -269,8 +280,8 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
-						// TODO: pull externalid from somewhere, can not be user input or hardcoded string
-						p.ExternalID = aws.String("grafanamagic")
+						backend.Logger.Info("externnnnnalid", "externalid", os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
+						p.ExternalID = aws.String(os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
 					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
