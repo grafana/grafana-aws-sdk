@@ -116,11 +116,6 @@ var newEC2Metadata = ec2metadata.New
 var newRemoteCredentials = func(sess *session.Session) *credentials.Credentials {
 	return credentials.NewCredentials(defaults.RemoteCredProvider(*sess.Config, sess.Handlers))
 }
-// Shared credentials factory
-// Stubbable by tests.
-var newSharedCredentials = func(profile string) *credentials.Credentials {
-	return credentials.NewSharedCredentials("", profile)
-}
 
 type SessionConfig struct {
 	Settings      AWSDatasourceSettings
@@ -220,7 +215,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: newSharedCredentials(c.Settings.Profile),
+			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
 		})
 	case AuthTypeKeys:
 		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
@@ -241,7 +236,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		// TODO temporary profile name
 		profileName := "assume_role"
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: newSharedCredentials(profileName),
+			Credentials: credentials.NewSharedCredentials("", profileName),
 		})
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
@@ -263,7 +258,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	expiration := time.Now().UTC().Add(duration)
 	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
-		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
+		backend.Logger.Info("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
 		cfgs := []*aws.Config{
 			{
