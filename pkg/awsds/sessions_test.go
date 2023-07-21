@@ -265,6 +265,8 @@ func TestNewSession_GrafanaAssumeRole(t *testing.T) {
 	})
 
 	t.Run("externalID is passed to the session", func(t *testing.T) {
+		originalExternalId := os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
+		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, "pretendExternalId")
 		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
 			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
 			p := &stscreds.AssumeRoleProvider{
@@ -275,7 +277,7 @@ func TestNewSession_GrafanaAssumeRole(t *testing.T) {
 			}
 			require.NotNil(t, p.ExternalID)
 
-			assert.Equal(t, "grafanamagic", *p.ExternalID)
+			assert.Equal(t, "pretendExternalId", *p.ExternalID)
 			return credentials.NewCredentials(p)
 		}
 
@@ -289,6 +291,7 @@ func TestNewSession_GrafanaAssumeRole(t *testing.T) {
 		}})
 
 		require.NoError(t, err)
+		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, originalExternalId)
 	})
 
 	t.Run("roleARN is passed to the session", func(t *testing.T) {
@@ -303,16 +306,16 @@ func TestNewSession_GrafanaAssumeRole(t *testing.T) {
 			require.Equal(t, "test_arn", roleARN)
 			return credentials.NewCredentials(p)
 		}
-	
+
 		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "grafana_assume_role"))
 		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
-	
+
 		cache := NewSessionCache()
 		_, err := cache.GetSession(SessionConfig{Settings: AWSDatasourceSettings{
 			AuthType:      AuthTypeGrafanaAssumeRole,
 			AssumeRoleARN: "test_arn",
 		}})
-	
+
 		require.NoError(t, err)
 	})
 }
