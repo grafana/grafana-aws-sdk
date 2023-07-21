@@ -42,6 +42,13 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
+// path to the shared credentials file in the instance for the aws/aws-sdk
+// if empty string, the path is ~/.aws/credentials
+const CredentialsPath = ""
+
+// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+const ProfileName = "assume_role_credentials"
+
 // AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
 const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 
@@ -96,7 +103,6 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 // Session factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 	return session.NewSession(cfgs...)
@@ -104,13 +110,11 @@ var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 
 // STS credentials factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newSTSCredentials = stscreds.NewCredentials
 
 // EC2Metadata service factory.
 // Stubbable by tests.
-//
 //nolint:gocritic
 var newEC2Metadata = ec2metadata.New
 
@@ -218,7 +222,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
+			Credentials: credentials.NewSharedCredentials(CredentialsPath, c.Settings.Profile),
 		})
 	case AuthTypeKeys:
 		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
@@ -236,6 +240,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
 		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
+		cfgs = append(cfgs, &aws.Config{
+			Credentials: credentials.NewSharedCredentials(CredentialsPath, ProfileName),
+		})
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
