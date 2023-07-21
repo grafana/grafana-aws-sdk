@@ -58,6 +58,9 @@ const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 // SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
 const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
 
+// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
+const GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
+
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
 	allowedAuthProviders := []string{}
@@ -161,6 +164,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			break
 		}
 	}
+
 	if !authTypeAllowed {
 		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
 	}
@@ -276,8 +280,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
-						// TODO: pull externalid from somewhere, can not be user input or hardcoded string
-						p.ExternalID = aws.String("grafanamagic")
+						p.ExternalID = aws.String(os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
 					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
