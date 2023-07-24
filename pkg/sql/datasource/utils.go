@@ -19,3 +19,11 @@ func GetDatasourceID(ctx context.Context) int64 {
 	}
 	return 0
 }
+
+func GetDatasourceLastUpdatedTime(ctx context.Context) string {
+	plugin := httpadapter.PluginConfigFromContext(ctx)
+	if plugin.DataSourceInstanceSettings != nil {
+		return plugin.DataSourceInstanceSettings.Updated.String()
+	}
+	return ""
+}

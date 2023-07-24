@@ -13,3 +13,12 @@ func TestGetDatasourceID(t *testing.T) {
 		t.Errorf("unexpected id: %d", id)
 	}
 }
+
+func TestGetDatasourceTime(t *testing.T) {
+	// It's not possible to test that GetDatasourceTime returns an actual
+	// time because the ctx key is not exported. This just tests the fallback
+	// path.
+	if time := GetDatasourceTime(context.TODO()); time != "" {
+		t.Errorf("unexpected time: %s", time)
+	}
+}
