@@ -14,11 +14,11 @@ func TestGetDatasourceID(t *testing.T) {
 	}
 }
 
-func TestGetDatasourceTime(t *testing.T) {
-	// It's not possible to test that GetDatasourceTime returns an actual
+func TestGetDatasourceLastUpdatedTime(t *testing.T) {
+	// It's not possible to test that GetDatasourceLastUpdatedTime returns an actual
 	// time because the ctx key is not exported. This just tests the fallback
 	// path.
-	if time := GetDatasourceTime(context.TODO()); time != "" {
+	if time := GetDatasourceLastUpdatedTime(context.TODO()); time != "" {
 		t.Errorf("unexpected time: %s", time)
 	}
 }

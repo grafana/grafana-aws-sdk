@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.17.0
+
+- Add GetDatasourceLastUpdatedTime util for client caching @iwysiu in [#90](https://github.com/grafana/grafana-aws-sdk/pull/90)
+
 
 ## v0.16.1
 
