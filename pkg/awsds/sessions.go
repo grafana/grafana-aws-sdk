@@ -42,6 +42,13 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
+// path to the shared credentials file in the instance for the aws/aws-sdk
+// if empty string, the path is ~/.aws/credentials
+const CredentialsPath = ""
+
+// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+const ProfileName = "assume_role_credentials"
+
 // AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
 const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 
@@ -50,6 +57,9 @@ const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
 // SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
 const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
+
+// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
+const GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
 
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
@@ -96,6 +106,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 // Session factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 	return session.NewSession(cfgs...)
@@ -103,11 +114,13 @@ var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
 
 // STS credentials factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newSTSCredentials = stscreds.NewCredentials
 
 // EC2Metadata service factory.
 // Stubbable by tests.
+//
 //nolint:gocritic
 var newEC2Metadata = ec2metadata.New
 
@@ -154,6 +167,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			break
 		}
 	}
+
 	if !authTypeAllowed {
 		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
 	}
@@ -162,6 +176,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
+	// Hash the settings to use as a cache key
 	bldr := strings.Builder{}
 	for i, s := range []string{
 		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
@@ -175,6 +190,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	hashedSettings := sha256.Sum256([]byte(bldr.String()))
 	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
+	// Check if we have a valid session in the cache, if so return it
 	sc.sessCacheLock.RLock()
 	if env, ok := sc.sessCache[cacheKey]; ok {
 		if env.expiration.After(time.Now().UTC()) {
@@ -213,7 +229,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		backend.Logger.Debug("Authenticating towards AWS with shared credentials", "profile", c.Settings.Profile,
 			"region", c.Settings.Region)
 		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewSharedCredentials("", c.Settings.Profile),
+			Credentials: credentials.NewSharedCredentials(CredentialsPath, c.Settings.Profile),
 		})
 	case AuthTypeKeys:
 		backend.Logger.Debug("Authenticating towards AWS with an access key pair", "region", c.Settings.Region)
@@ -229,6 +245,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			return nil, err
 		}
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
+	case AuthTypeGrafanaAssumeRole:
+		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
+		cfgs = append(cfgs, &aws.Config{
+			Credentials: credentials.NewSharedCredentials(CredentialsPath, ProfileName),
+		})
 	default:
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
@@ -261,7 +282,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					// Not sure if this is necessary, overlaps with p.Duration and is undocumented
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
-					if c.Settings.ExternalID != "" {
+					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
+						p.ExternalID = aws.String(os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
+					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
 				}),

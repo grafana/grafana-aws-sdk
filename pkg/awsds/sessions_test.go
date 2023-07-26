@@ -61,8 +61,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
@@ -85,8 +85,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: roleARN,
 			ExternalID:    externalID,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
@@ -108,9 +108,9 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
-		os.Setenv(SessionDurationEnvVarKeyName, "20m")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+		require.NoError(t, os.Setenv(SessionDurationEnvVarKeyName, "20m"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
@@ -131,8 +131,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.Error(t, err)
@@ -147,7 +147,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
@@ -176,8 +176,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: "test",
 			Region:        "me-south-1",
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		newSTSCredentials = fakeNewSTSCredentials
@@ -201,8 +201,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: "test",
 			Region:        "us-gov-east-1",
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		newSTSCredentials = fakeNewSTSCredentials
@@ -219,7 +219,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeDefault,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.Error(t, err)
@@ -232,7 +232,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AuthType: AuthTypeKeys,
 		}
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "keys"))
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
 		require.NoError(t, err)
@@ -251,6 +251,72 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, sess)
 		}
+	})
+}
+
+func TestNewSession_GrafanaAssumeRole(t *testing.T) {
+	origAllowedAuthProvidersEnvVarKeyName := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
+	origAssumeRoleEnabledEnvVarKeyName := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
+	origNewSTSCredentials := newSTSCredentials
+	t.Cleanup(func() {
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, origAllowedAuthProvidersEnvVarKeyName))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, origAssumeRoleEnabledEnvVarKeyName))
+		newSTSCredentials = origNewSTSCredentials
+	})
+
+	t.Run("externalID is passed to the session", func(t *testing.T) {
+		originalExternalId := os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
+		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, "pretendExternalId")
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			p := &stscreds.AssumeRoleProvider{
+				RoleARN: roleARN,
+			}
+			for _, o := range options {
+				o(p)
+			}
+			require.NotNil(t, p.ExternalID)
+
+			assert.Equal(t, "pretendExternalId", *p.ExternalID)
+			return credentials.NewCredentials(p)
+		}
+
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "grafana_assume_role"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+
+		cache := NewSessionCache()
+		_, err := cache.GetSession(SessionConfig{Settings: AWSDatasourceSettings{
+			AuthType:      AuthTypeGrafanaAssumeRole,
+			AssumeRoleARN: "test_arn",
+		}})
+
+		require.NoError(t, err)
+		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, originalExternalId)
+	})
+
+	t.Run("roleARN is passed to the session", func(t *testing.T) {
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			p := &stscreds.AssumeRoleProvider{
+				RoleARN: roleARN,
+			}
+			for _, o := range options {
+				o(p)
+			}
+			require.Equal(t, "test_arn", roleARN)
+			return credentials.NewCredentials(p)
+		}
+
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "grafana_assume_role"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+
+		cache := NewSessionCache()
+		_, err := cache.GetSession(SessionConfig{Settings: AWSDatasourceSettings{
+			AuthType:      AuthTypeGrafanaAssumeRole,
+			AssumeRoleARN: "test_arn",
+		}})
+
+		require.NoError(t, err)
 	})
 }
 
@@ -284,8 +350,8 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 			Endpoint: "foo",
 		}
 
-		os.Setenv(AllowedAuthProvidersEnvVarKeyName, "ec2_iam_role")
-		os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true")
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "ec2_iam_role"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
 
 		cache := NewSessionCache()
 		sess, err := cache.GetSession(SessionConfig{Settings: settings})
@@ -317,8 +383,8 @@ func unsetEnvironmentVariables() {
 
 func TestWithUserAgent(t *testing.T) {
 	defer unsetEnvironmentVariables()
-	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
+	require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+	require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false"))
 	cache := NewSessionCache()
 	sess, err := cache.GetSession(SessionConfig{UserAgentName: aws.String("Athena")})
 	require.NoError(t, err)
@@ -334,8 +400,8 @@ func TestWithUserAgent(t *testing.T) {
 
 func TestWithCustomHTTPClient(t *testing.T) {
 	defer unsetEnvironmentVariables()
-	os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default")
-	os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false")
+	require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+	require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false"))
 	cache := NewSessionCache()
 	sess, err := cache.GetSession(SessionConfig{
 		HTTPClient: &http.Client{Timeout: 123},

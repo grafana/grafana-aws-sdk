@@ -17,6 +17,7 @@ const (
 	AuthTypeSharedCreds
 	AuthTypeKeys
 	AuthTypeEC2IAMRole
+	AuthTypeGrafanaAssumeRole //cloud only
 )
 
 func (at AuthType) String() string {
@@ -29,6 +30,8 @@ func (at AuthType) String() string {
 		return "keys"
 	case AuthTypeEC2IAMRole:
 		return "ec2_iam_role"
+	case AuthTypeGrafanaAssumeRole:
+		return "grafana_assume_role"
 	default:
 		panic(fmt.Sprintf("Unrecognized auth type %d", at))
 	}
@@ -46,6 +49,8 @@ func ToAuthType(authType string) (AuthType, error) {
 		return AuthTypeEC2IAMRole, nil
 	case "arn":
 		return AuthTypeDefault, nil
+	case "grafana_assume_role":
+		return AuthTypeGrafanaAssumeRole, nil
 	default:
 		return AuthTypeDefault, fmt.Errorf("invalid auth type: %s", authType)
 	}
@@ -75,6 +80,8 @@ func (at *AuthType) UnmarshalJSON(b []byte) error {
 		*at = AuthTypeKeys
 	case "ec2_iam_role":
 		*at = AuthTypeEC2IAMRole
+	case "grafana_assume_role":
+		*at = AuthTypeGrafanaAssumeRole
 	case "default":
 		fallthrough
 	default:
