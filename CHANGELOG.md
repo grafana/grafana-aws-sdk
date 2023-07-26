@@ -2,10 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.18.0
+
+- Add Support for Temporary Credentials in Grafana Cloud @idastambuk @sarahzinger [84](https://github.com/grafana/grafana-aws-sdk/pull/84)
+- Add Contributing.md file
+
 ## v0.17.0
 
 - Add GetDatasourceLastUpdatedTime util for client caching @iwysiu in [#90](https://github.com/grafana/grafana-aws-sdk/pull/90)
-
 
 ## v0.16.1
 
@@ -29,6 +33,7 @@ Updating opt-in regions list by @eunice98k in https://github.com/grafana/grafana
 - Pass query args to GetAsyncDB @kevinwcyu in [#71](https://github.com/grafana/grafana-aws-sdk/pull/71)
 
 ## v0.12.0
+
 Updating opt-in regions list by @robbierolin in https://github.com/grafana/grafana-aws-sdk/pull/66
 
 ## v0.11.0
