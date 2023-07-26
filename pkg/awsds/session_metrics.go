@@ -4,8 +4,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const ExporterName = "grafana"
-
 var AWSSessionCreatedHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Namespace: "grafana",
 	Subsystem: "aws_datasources",
