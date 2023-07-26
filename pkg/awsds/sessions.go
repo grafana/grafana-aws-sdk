@@ -310,6 +310,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	backend.Logger.Debug("Successfully created AWS session")
+	prometheus.Register(AWSSessionCreatedHistogram)
 	AWSSessionCreatedHistogram.With(prometheus.Labels{
 		"auth_type": c.Settings.AuthType.String(),
 	}).Observe(time.Since(startCreateSession).Seconds())
