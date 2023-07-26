@@ -9,6 +9,7 @@ require (
 	github.com/grafana/sqlds/v2 v2.3.10
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.13.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/stretchr/testify v1.7.2
 )
 
@@ -52,7 +53,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

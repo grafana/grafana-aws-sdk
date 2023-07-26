@@ -12,6 +12,7 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -199,6 +200,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		}
 	}
 	sc.sessCacheLock.RUnlock()
+	startCreateSession := time.Now()
 
 	cfgs := []*aws.Config{
 		{
@@ -308,6 +310,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	backend.Logger.Debug("Successfully created AWS session")
+	AWSSessionCreatedHistogram.With(prometheus.Labels{
+		"auth_type": c.Settings.AuthType.String(),
+	}).Observe(time.Since(startCreateSession).Seconds())
 
 	sc.sessCacheLock.Lock()
 	sc.sessCache[cacheKey] = envelope{
