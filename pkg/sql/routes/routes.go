@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
@@ -25,7 +24,7 @@ func Write(rw http.ResponseWriter, b []byte) {
 
 func ParseBody(body io.ReadCloser) (sqlds.Options, error) {
 	reqBody := sqlds.Options{}
-	b, err := ioutil.ReadAll(body)
+	b, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}

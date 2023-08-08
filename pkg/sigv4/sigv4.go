@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -149,7 +149,7 @@ func (m *middleware) createSignedRequest(origReq *http.Request) (*http.Request, 
 
 	body := bytes.NewReader([]byte{})
 	if req.Body != nil {
-		b, err := ioutil.ReadAll(req.Body)
+		b, err := io.ReadAll(req.Body)
 		if err != nil {
 			return nil, err
 		}
