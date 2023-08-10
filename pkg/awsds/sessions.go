@@ -147,6 +147,7 @@ func isOptInRegion(region string) bool {
 		"eu-central-2":   true,
 		"eu-south-1":     true,
 		"eu-south-2":     true,
+		"il-central-1":   true,
 		"me-central-1":   true,
 		"me-south-1":     true,
 		// The rest of regions will return false
