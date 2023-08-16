@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.19.1
+
+- Update aws-sdk from v1.44.9 to v1.44.323
+
 ## v0.19.0
 
 - Add `il-central-1` to opt-in region list
