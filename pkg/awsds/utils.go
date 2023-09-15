@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -64,7 +65,11 @@ func GetUserAgentString(name string) string {
 		grafanaVersion = "?"
 	}
 
-	return fmt.Sprintf("%s/%s (%s; %s;) %s/%s-%s Grafana/%s",
+	// Determine if running in an Amazon Managed Grafana environment by checking
+	// an environment variable used for the AWS Datasource Provisioner app
+	_, amgEnv := os.LookupEnv("AWS_TRAVERSAL_FETCH")
+
+	return fmt.Sprintf("%s/%s (%s; %s;) %s/%s-%s Grafana/%s AMG/%s",
 		aws.SDKName,
 		aws.SDKVersion,
 		runtime.Version(),
@@ -72,7 +77,8 @@ func GetUserAgentString(name string) string {
 		name,
 		buildInfo.Version,
 		buildInfo.Hash,
-		grafanaVersion)
+		grafanaVersion,
+		strconv.FormatBool(amgEnv))
 }
 
 // getErrorFrameFromQuery returns a error frames with empty data and meta fields
