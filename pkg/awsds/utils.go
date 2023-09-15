@@ -65,9 +65,8 @@ func GetUserAgentString(name string) string {
 		grafanaVersion = "?"
 	}
 
-	// Determine if running in an Amazon Managed Grafana environment by checking
-	// an environment variable used for the AWS Datasource Provisioner app
-	_, amgEnv := os.LookupEnv("AWS_TRAVERSAL_FETCH")
+	// Determine if running in an Amazon Managed Grafana environment
+	_, amgEnv := os.LookupEnv("AMAZON_MANAGED_GRAFANA")
 
 	return fmt.Sprintf("%s/%s (%s; %s;) %s/%s-%s Grafana/%s AMG/%s",
 		aws.SDKName,
