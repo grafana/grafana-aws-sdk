@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.19.2
+
+- Update grafana-plugin-sdk-go from v0.134.0 to v0.172.0
+- Update go from 1.17 to 1.20
+- Add AMAZON_MANAGED_GRAFANA to the UserAgent string header
+
 ## v0.19.1
 
 - Update aws-sdk from v1.44.9 to v1.44.323
