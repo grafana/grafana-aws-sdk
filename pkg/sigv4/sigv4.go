@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -217,6 +218,29 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		c = credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, cfg.SessionToken)
 	case awsds.AuthTypeSharedCreds:
 		c = credentials.NewSharedCredentials("", cfg.Profile)
+	case awsds.AuthTypeGrafanaAssumeRole:
+		// create a session from grafana cloud's credentials
+		c = credentials.NewSharedCredentials(awsds.CredentialsPath, awsds.ProfileName)
+		s, err := session.NewSession(&aws.Config{
+			Region:      aws.String(cfg.Region),
+			Credentials: c,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// assume role with the primary credentials
+		duration := stscreds.DefaultDuration
+		expiration := time.Now().UTC().Add(duration)
+		tempCreds := stscreds.NewCredentials(s, cfg.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
+			// Not sure if this is necessary, overlaps with p.Duration and is undocumented
+			p.Expiry.SetExpiration(expiration, 0)
+			p.Duration = duration
+			backend.Logger.Info("os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName)", "os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName)", os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName))
+			p.ExternalID = aws.String(os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName))
+		})
+		return v4.NewSigner(tempCreds, signerOpts), nil
+
 	case awsds.AuthTypeEC2IAMRole:
 		s, err := session.NewSession(&aws.Config{
 			Region: aws.String(cfg.Region),
