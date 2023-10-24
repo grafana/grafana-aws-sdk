@@ -5,7 +5,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -14,13 +13,6 @@ import (
 
 // AmazonSessionProvider will return a session (perhaps cached) for given region and settings
 type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*session.Session, error)
-
-// AuthSettings defines whether certain auth types and provider can be used or not
-type AuthSettings struct {
-	AllowedAuthProviders []string
-	AssumeRoleEnabled    bool
-	SessionDuration      *time.Duration
-}
 
 // QueryStatus represents the status of an async query
 type QueryStatus uint32

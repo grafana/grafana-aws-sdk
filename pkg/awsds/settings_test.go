@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/grafana/grafana-aws-sdk/pkg/auth"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +13,7 @@ import (
 // Test load settings from json
 func TestLoadSettings(t *testing.T) {
 	settings := &AWSDatasourceSettings{
-		AuthType:      AuthTypeKeys,
+		AuthType:      auth.AuthTypeKeys,
 		DefaultRegion: "aaaa",
 	}
 

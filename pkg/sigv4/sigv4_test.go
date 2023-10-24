@@ -17,14 +17,13 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("Can't create new middleware without valid auth type", func(t *testing.T) {
-		rt, err := New(&Config{}, nil)
+		rt, err := New(&SigV4Config{}, nil)
 		require.Error(t, err)
 		require.Nil(t, rt)
-
 	})
 	t.Run("Can create new middleware with any valid auth type", func(t *testing.T) {
-		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn"} {
-			rt, err := New(&Config{AuthType: authType}, nil)
+		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn", "grafana_assume_role"} {
+			rt, err := New(&SigV4Config{AuthType: authType}, nil)
 
 			require.NoError(t, err)
 			require.NotNil(t, rt)
@@ -32,7 +31,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Can sign a request", func(t *testing.T) {
-		cfg := &Config{AuthType: "default"}
+		cfg := &SigV4Config{AuthType: "default"}
 		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
@@ -62,7 +61,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Can sign a request with extra headers which are not signed", func(t *testing.T) {
-		cfg := &Config{AuthType: "default"}
+		cfg := &SigV4Config{AuthType: "default"}
 		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
@@ -95,7 +94,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Signed request overwrites existing Authorization header", func(t *testing.T) {
-		cfg := &Config{AuthType: "default"}
+		cfg := &SigV4Config{AuthType: "default"}
 		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
@@ -121,7 +120,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Can't sign a request without valid credentials", func(t *testing.T) {
-		cfg := &Config{AuthType: "ec2_iam_role"}
+		cfg := &SigV4Config{AuthType: "ec2_iam_role"}
 		rt, err := New(cfg, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
@@ -139,7 +138,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Will log requests during signing if verboseMode is true", func(t *testing.T) {
-		cfg := &Config{AuthType: "ec2_iam_role"}
+		cfg := &SigV4Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
 		origLogger := backend.Logger
@@ -171,7 +170,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Will not log requests during signing if verboseMode is false", func(t *testing.T) {
-		cfg := &Config{AuthType: "ec2_iam_role"}
+		cfg := &SigV4Config{AuthType: "ec2_iam_role"}
 
 		// Mock logger
 		origLogger := backend.Logger
@@ -203,7 +202,7 @@ func TestNew(t *testing.T) {
 
 func TestConfig(t *testing.T) {
 	t.Run("SHA generation is consistent", func(t *testing.T) {
-		cfg := &Config{
+		cfg := &SigV4Config{
 			AuthType:      "A",
 			Profile:       "B",
 			Service:       "C",
@@ -225,7 +224,7 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Config field order does not affect SHA", func(t *testing.T) {
-		cfg1 := &Config{
+		cfg1 := &SigV4Config{
 			AuthType:      "A",
 			Profile:       "B",
 			Service:       "C",
@@ -237,7 +236,7 @@ func TestConfig(t *testing.T) {
 			Region:        "I",
 		}
 
-		cfg2 := &Config{
+		cfg2 := &SigV4Config{
 			Region:        "I",
 			ExternalID:    "H",
 			AssumeRoleARN: "G",
@@ -259,7 +258,7 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("Config SHA changes depending on contents", func(t *testing.T) {
-		cfg1 := &Config{
+		cfg1 := &SigV4Config{
 			AuthType:      "A",
 			Profile:       "B",
 			Service:       "C",
@@ -271,7 +270,7 @@ func TestConfig(t *testing.T) {
 			Region:        "I",
 		}
 
-		cfg2 := &Config{
+		cfg2 := &SigV4Config{
 			AuthType:      "AB",
 			Profile:       "B",
 			Service:       "C",
