@@ -236,7 +236,6 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 			// Not sure if this is necessary, overlaps with p.Duration and is undocumented
 			p.Expiry.SetExpiration(expiration, 0)
 			p.Duration = duration
-			backend.Logger.Info("os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName)", "os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName)", os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName))
 			p.ExternalID = aws.String(os.Getenv(awsds.GrafanaAssumeRoleExternalIdKeyName))
 		})
 		return v4.NewSigner(tempCreds, signerOpts), nil
