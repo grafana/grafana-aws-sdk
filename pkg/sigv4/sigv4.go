@@ -262,7 +262,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 			}
 			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 		}
-		return nil, fmt.Errorf("invalid SigV4 auth type")
+		return nil, fmt.Errorf("invalid SigV4 auth type %q", authType)
 	}
 
 	if cfg.AssumeRoleARN != "" {
