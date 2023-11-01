@@ -11,22 +11,22 @@ platform:
 
 steps:
   - name: build
-    image: grafana/grafana-plugin-ci:1.8.1-alpine
+    image: grafana/grafana-plugin-ci:1.9.5
     commands:
       - mage -v build
 
   - name: lint
-    image: grafana/grafana-plugin-ci:1.8.1-alpine
+    image: grafana/grafana-plugin-ci:1.9.5
     commands:
       - mage -v lint
 
   - name: test
-    image: grafana/grafana-plugin-ci:1.8.1-alpine
+    image: grafana/grafana-plugin-ci:1.9.5
     commands:
       - mage -v test
 
 ---
 kind: signature
-hmac: d3a0b5a417025ef7b94c034de2ba1ea59302481b4d8930089fa25cd4ef90db33
+hmac: dabf2613950066fd502238aeacf42600215e93853dc525e055d32027090867db
 
 ...
