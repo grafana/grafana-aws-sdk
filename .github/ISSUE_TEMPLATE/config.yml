@@ -1,8 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Feature Request
-    url: https://github.com/grafana/grafana-aws-sdk/discussions/new?category=ideas
-    about: Discuss ideas for new features or changes
   - name: Questions & Help
     url: https://community.grafana.com
     about: Please ask and answer questions here
