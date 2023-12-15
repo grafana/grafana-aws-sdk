@@ -211,6 +211,33 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		require.NotNil(t, sess)
 		assert.Equal(t, "us-gov-east-1", *sess.Config.Region)
 	})
+
+	t.Run("Assume role is enabled with a fips endpoint", func(t *testing.T) {
+		defer unsetEnvironmentVariables()
+		fakeNewSTSCredentials := newSTSCredentials
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			sess := c.(*session.Session)
+			// Verify that we are using the correct sts endpoint
+			assert.Equal(t, "sts-fips.us-east-1.amazonaws.com", *sess.Config.Endpoint)
+			return fakeNewSTSCredentials(c, roleARN, options...)
+		}
+		settings := AWSDatasourceSettings{
+			AssumeRoleARN: "test",
+			Region:        "us-east-1",
+			Endpoint:      "athena-fips.us-east-1.amazonaws.com",
+		}
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
+		newSTSCredentials = fakeNewSTSCredentials
+
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		// Verify that we use the endpoint from the settings
+		assert.Equal(t, settings.Endpoint, *sess.Config.Endpoint)
+	})
 }
 
 func TestNewSession_AllowedAuthProviders(t *testing.T) {
