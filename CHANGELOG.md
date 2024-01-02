@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.19.3
+
+- Fix assuming a role with an endpoint set
+- Include invalid authType in error message
+- Update go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.37.0 to 0.44.0
+
 ## v0.19.2
 
 - Update grafana-plugin-sdk-go from v0.134.0 to v0.172.0
