@@ -255,15 +255,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
 	}
 
-	if c.Settings.Endpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
-	}
-
-	sess, err := newSession(cfgs...)
-	if err != nil {
-		return nil, err
-	}
-
 	duration := stscreds.DefaultDuration
 	if sc.authSettings.SessionDuration != nil {
 		duration = *sc.authSettings.SessionDuration
@@ -273,7 +264,16 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		// We should assume a role in AWS
 		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
-		cfgs := []*aws.Config{
+		if c.Settings.Endpoint != "" {
+			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
+		}
+
+		sess, err := newSession(cfgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		cfgs = []*aws.Config{
 			{
 				CredentialsChainVerboseErrors: aws.Bool(true),
 			},
@@ -296,10 +296,15 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)
 		}
-		sess, err = newSession(cfgs...)
-		if err != nil {
-			return nil, err
-		}
+	}
+
+	if c.Settings.Endpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+	}
+
+	sess, err := newSession(cfgs...)
+	if err != nil {
+		return nil, err
 	}
 
 	if c.UserAgentName != nil {
@@ -318,4 +323,31 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	sc.sessCacheLock.Unlock()
 
 	return sess, nil
+}
+
+// getSTSEndpoint checks if the set endpoint is a fips endpoint, and if so, returns the STS fips endpoint for the same region
+func getSTSEndpoint(endpoint string) string {
+	if endpoint == "" {
+		return ""
+	}
+	if strings.Contains(endpoint, "fips") {
+		switch {
+		case strings.Contains(endpoint, "us-east-1"):
+			return "sts-fips.us-east-1.amazonaws.com"
+		case strings.Contains(endpoint, "us-east-2"):
+			return "sts-fips.us-east-2.amazonaws.com"
+		case strings.Contains(endpoint, "us-west-1"):
+			return "sts-fips.us-west-1.amazonaws.com"
+		case strings.Contains(endpoint, "us-west-2"):
+			return "sts-fips.us-west-2.amazonaws.com"
+		}
+	}
+
+	if strings.Contains(endpoint, "us-gov-east-1") {
+		return "sts.us-gov-east-1.amazonaws.com"
+	}
+	if strings.Contains(endpoint, "us-gov-west-1") {
+		return "sts.us-gov-west-1.amazonaws.com"
+	}
+	return ""
 }
