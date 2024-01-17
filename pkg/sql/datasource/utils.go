@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v4"
 )
 
 func connectionKey(id int64, args sqlds.Options) string {

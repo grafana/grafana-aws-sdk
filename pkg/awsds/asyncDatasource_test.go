@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v4"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,7 +93,7 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 				ds.storeDBConnection(key, dbConnection{tt.existingDB, settings})
 			}
 
-			dbConn, err := ds.getAsyncDBFromQuery(&AsyncQuery{Query: sqlds.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
+			dbConn, err := ds.getAsyncDBFromQuery(&AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -126,7 +128,7 @@ func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expres
 				syncCalled = true
 				return nil, nil
 			}
-			ds := &AsyncAWSDatasource{sqldsQueryDataHander: mockQueryData}
+			ds := &AsyncAWSDatasource{sqldsQueryDataHandler: mockQueryData}
 
 			_, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{Headers: tt.headers})
 			assert.NoError(t, err)

@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v4"
 )
 
 const defaultKeySuffix = "default"
@@ -35,9 +35,9 @@ type dbConnection struct {
 type AsyncAWSDatasource struct {
 	*sqlds.SQLDatasource
 
-	dbConnections        sync.Map
-	driver               AsyncDriver
-	sqldsQueryDataHander backend.QueryDataHandlerFunc
+	dbConnections         sync.Map
+	driver                AsyncDriver
+	sqldsQueryDataHandler backend.QueryDataHandlerFunc
 }
 
 func (ds *AsyncAWSDatasource) getDBConnection(key string) (dbConnection, bool) {
@@ -64,9 +64,9 @@ func getDatasourceUID(settings backend.DataSourceInstanceSettings) string {
 func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
 	sqlDs := sqlds.NewDatasource(driver)
 	return &AsyncAWSDatasource{
-		SQLDatasource:        sqlDs,
-		driver:               driver,
-		sqldsQueryDataHander: sqlDs.QueryData,
+		SQLDatasource:         sqlDs,
+		driver:                driver,
+		sqldsQueryDataHandler: sqlDs.QueryData,
 	}
 }
 
@@ -76,7 +76,7 @@ func isAsyncFlow(query backend.DataQuery) bool {
 	return q.Meta.QueryFlow == "async"
 }
 
-func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	db, err := ds.driver.GetAsyncDB(settings, nil)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 	ds.storeDBConnection(key, dbConnection{db, settings})
 
 	// initialize the wrapped ds.SQLDatasource
-	_, err = ds.SQLDatasource.NewDatasource(settings)
+	_, err = ds.SQLDatasource.NewDatasource(ctx, settings)
 	return ds, err
 }
 
@@ -101,7 +101,7 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	_, isFromAlert := req.Headers[fromAlertHeader]
 	_, isFromExpression := req.Headers[fromExpressionHeader]
 	if syncExectionEnabled || isFromAlert || isFromExpression {
-		return ds.sqldsQueryDataHander.QueryData(ctx, req)
+		return ds.sqldsQueryDataHandler.QueryData(ctx, req)
 	}
 
 	// async flow
@@ -176,7 +176,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	}
 
 	// Apply supported macros to the query
-	q.RawSQL, err = sqlds.Interpolate(ds.driver, &q.Query)
+	q.RawSQL, err = sqlutil.Interpolate(&q.Query, ds.driver.Macros())
 	if err != nil {
 		return getErrorFrameFromQuery(q), fmt.Errorf("%s: %w", "Could not apply macros", err)
 	}
@@ -220,7 +220,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	db, err := ds.GetDBFromQuery(&q.Query, datasourceUID)
+	db, err := ds.GetDBFromQuery(ctx, &q.Query, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}

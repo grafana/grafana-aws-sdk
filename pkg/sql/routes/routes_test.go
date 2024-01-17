@@ -10,7 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/google/go-cmp/cmp"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v4"
 )
 
 func TestWrite(t *testing.T) {
