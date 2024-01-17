@@ -9,7 +9,7 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v3"
 	"github.com/jpillora/backoff"
 )
 
@@ -40,7 +40,7 @@ type ExecuteQueryStatus struct {
 type SQL interface {
 	Execute(aws.Context, *ExecuteQueryInput) (*ExecuteQueryOutput, error)
 	Status(aws.Context, *ExecuteQueryOutput) (*ExecuteQueryStatus, error)
-	Stop(*ExecuteQueryOutput) error
+	Stop(aws.Context, *ExecuteQueryOutput) error
 }
 
 type Resources interface {
@@ -75,7 +75,7 @@ func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error
 		case <-ctx.Done():
 			err := ctx.Err()
 			if errors.Is(err, context.Canceled) {
-				err := api.Stop(output)
+				err := api.Stop(ctx, output)
 				if err != nil {
 					return err
 				}
