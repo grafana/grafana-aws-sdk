@@ -8,7 +8,7 @@ import (
 
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
-	"github.com/grafana/sqlds/v4"
+	"github.com/grafana/sqlds/v3"
 )
 
 type ResourceHandler struct {

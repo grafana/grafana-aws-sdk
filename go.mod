@@ -4,16 +4,16 @@ go 1.21
 
 toolchain go1.21.3
 
-// TODO: remove the following before release
-replace github.com/grafana/sqlds/v4 v4.0.0 => github.com/grafana/sqlds/v4 v4.0.0-20240117130621-9bc9b0d75ec9
+// TODO: remove both of the following before release
+replace github.com/grafana/sqlds/v3 v3.0.0 => github.com/grafana/sqlds/v3 v3.1.1-0.20240119123957-3c96a7f7d247
 
-replace github.com/grafana/grafana-plugin-sdk-go v0.200.0 => github.com/grafana/grafana-plugin-sdk-go v0.199.1-0.20240116153452-aea63d7c66a6
+replace github.com/grafana/grafana-plugin-sdk-go v0.200.0 => github.com/grafana/grafana-plugin-sdk-go v0.199.1-0.20240118111631-6e778df70b6c
 
 require (
 	github.com/aws/aws-sdk-go v1.44.323
 	github.com/google/go-cmp v0.6.0
 	github.com/grafana/grafana-plugin-sdk-go v0.200.0
-	github.com/grafana/sqlds/v4 v4.0.0
+	github.com/grafana/sqlds/v3 v3.0.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.8.4
