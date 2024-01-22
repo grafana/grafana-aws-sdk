@@ -12,6 +12,7 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -42,25 +43,33 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
-// path to the shared credentials file in the instance for the aws/aws-sdk
-// if empty string, the path is ~/.aws/credentials
-const CredentialsPath = ""
+const (
+	// path to the shared credentials file in the instance for the aws/aws-sdk
+	// if empty string, the path is ~/.aws/credentials
+	CredentialsPath = ""
 
-// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
-const ProfileName = "assume_role_credentials"
+	// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+	ProfileName = "assume_role_credentials"
 
-// AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
-const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
+	// AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
+	AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
 
-// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
-const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
+	// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
+	AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
-// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
-const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
+	// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
+	SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
 
-// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
-const GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
+	// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
+	GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
 
+	// GrafanaListMetricsPageLimit is the string literal for the cloudwatch list metrics page limit key name
+	GrafanaListMetricsPageLimit = "AWS_CW_LIST_METRICS_PAGE_LIMIT"
+
+	defaultListMetricsPageLimit = 500
+)
+
+// ReadAuthSettingsFromEnvironmentVariables is deprecated in favor of
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
 	allowedAuthProviders := []string{}
@@ -91,6 +100,20 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		authSettings.AssumeRoleEnabled = true
 	}
 
+	authSettings.ExternalID = os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
+
+	listMetricsPageLimitString := os.Getenv(GrafanaListMetricsPageLimit)
+	if len(listMetricsPageLimitString) == 0 {
+		backend.Logger.Warn("environment variable missing. falling back to default page limit", "var", GrafanaListMetricsPageLimit)
+		listMetricsPageLimitString = "500"
+	}
+
+	authSettings.ListMetricsPageLimit, err = strconv.Atoi(listMetricsPageLimitString)
+	if err != nil {
+		backend.Logger.Error("could not parse env variable", "var", GrafanaListMetricsPageLimit)
+		authSettings.ListMetricsPageLimit = defaultListMetricsPageLimit
+	}
+
 	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
 	if sessionDurationString != "" {
 		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
@@ -99,6 +122,18 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		} else {
 			authSettings.SessionDuration = &sessionDuration
 		}
+	}
+
+	proxyEnabledString := os.Getenv(proxy.PluginSecureSocksProxyEnabled)
+	if len(proxyEnabledString) == 0 {
+		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
+		proxyEnabledString = "false"
+	}
+
+	authSettings.SecureSocksDSProxyEnabled, err = strconv.ParseBool(proxyEnabledString)
+	if err != nil {
+		backend.Logger.Error("could not parse env variable", "var", proxy.PluginSecureSocksProxyEnabled)
+		authSettings.SecureSocksDSProxyEnabled = false
 	}
 
 	return authSettings
@@ -144,7 +179,7 @@ func isOptInRegion(region string) bool {
 		"ap-south-2":     true,
 		"ap-southeast-3": true,
 		"ap-southeast-4": true,
-		"ca-west-1":	  true,
+		"ca-west-1":      true,
 		"eu-central-2":   true,
 		"eu-south-1":     true,
 		"eu-south-2":     true,
@@ -285,7 +320,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
-						p.ExternalID = aws.String(os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
+						p.ExternalID = aws.String(sc.authSettings.ExternalID)
 					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}

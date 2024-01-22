@@ -15,11 +15,16 @@ import (
 // AmazonSessionProvider will return a session (perhaps cached) for given region and settings
 type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*session.Session, error)
 
-// AuthSettings defines whether certain auth types and provider can be used or not
+// AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {
 	AllowedAuthProviders []string
 	AssumeRoleEnabled    bool
 	SessionDuration      *time.Duration
+	ExternalID           string
+	ListMetricsPageLimit int
+
+	// necessary for a work around until https://github.com/grafana/grafana/issues/39089 is implemented
+	SecureSocksDSProxyEnabled bool
 }
 
 // QueryStatus represents the status of an async query

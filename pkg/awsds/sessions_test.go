@@ -406,6 +406,7 @@ func unsetEnvironmentVariables() {
 	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
 	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
 	os.Unsetenv(SessionDurationEnvVarKeyName)
+	os.Unsetenv(GrafanaListMetricsPageLimit)
 }
 
 func TestWithUserAgent(t *testing.T) {
