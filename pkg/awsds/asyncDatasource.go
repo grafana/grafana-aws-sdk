@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v3"
 )
 
 const defaultKeySuffix = "default"
@@ -76,7 +76,7 @@ func isAsyncFlow(query backend.DataQuery) bool {
 	return q.Meta.QueryFlow == "async"
 }
 
-func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	db, err := ds.driver.GetAsyncDB(settings, nil)
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(settings backend.DataSourceInstanceS
 	ds.storeDBConnection(key, dbConnection{db, settings})
 
 	// initialize the wrapped ds.SQLDatasource
-	_, err = ds.SQLDatasource.NewDatasource(settings)
+	_, err = ds.SQLDatasource.NewDatasource(ctx, settings)
 	return ds, err
 }
 
@@ -220,7 +220,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	db, err := ds.GetDBFromQuery(&q.Query, datasourceUID)
+	db, err := ds.GetDBFromQuery(ctx, &q.Query, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}

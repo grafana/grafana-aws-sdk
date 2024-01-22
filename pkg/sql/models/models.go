@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v3"
 )
 
 type Settings interface {

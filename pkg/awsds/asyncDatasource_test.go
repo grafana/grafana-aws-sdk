@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v3"
 	"github.com/stretchr/testify/assert"
 )
 
