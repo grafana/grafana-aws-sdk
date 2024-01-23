@@ -12,11 +12,6 @@ import (
 )
 
 func TestReadSettingsFromContext(t *testing.T) {
-	defaultAuthSettings := &AuthSettings{
-		AllowedAuthProviders: []string{"default", "keys", "credentials"},
-		AssumeRoleEnabled:    true,
-		ListMetricsPageLimit: defaultListMetricsPageLimit,
-	}
 	tcs := []struct {
 		name                string
 		cfg                 *backend.GrafanaCfg
@@ -26,25 +21,25 @@ func TestReadSettingsFromContext(t *testing.T) {
 		{
 			name:                "nil config",
 			cfg:                 nil,
-			expectedSettings:    defaultAuthSettings,
+			expectedSettings:    &AuthSettings{},
 			expectedHasSettings: false,
 		},
 		{
 			name:                "empty config",
 			cfg:                 &backend.GrafanaCfg{},
-			expectedSettings:    defaultAuthSettings,
+			expectedSettings:    &AuthSettings{},
 			expectedHasSettings: false,
 		},
 		{
 			name:                "nil config map",
 			cfg:                 backend.NewGrafanaCfg(nil),
-			expectedSettings:    defaultAuthSettings,
+			expectedSettings:    &AuthSettings{},
 			expectedHasSettings: false,
 		},
 		{
 			name:                "empty config map",
 			cfg:                 backend.NewGrafanaCfg(make(map[string]string)),
-			expectedSettings:    defaultAuthSettings,
+			expectedSettings:    &AuthSettings{},
 			expectedHasSettings: false,
 		},
 		{

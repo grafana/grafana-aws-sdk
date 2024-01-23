@@ -24,11 +24,7 @@ func ReadSettings(ctx context.Context) *AuthSettings {
 func ReadSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 	cfg := backend.GrafanaConfigFromContext(ctx)
 	// initialize settings with the default values set
-	settings := &AuthSettings{
-		AllowedAuthProviders: []string{"default", "keys", "credentials"},
-		AssumeRoleEnabled:    true,
-		ListMetricsPageLimit: defaultListMetricsPageLimit,
-	}
+	settings := &AuthSettings{}
 	if cfg == nil {
 		return settings, false
 	}
@@ -42,9 +38,7 @@ func ReadSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 				allowedAuthProviders = append(allowedAuthProviders, authProvider)
 			}
 		}
-		if len(allowedAuthProviders) == 0 {
-			backend.Logger.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
-		} else {
+		if len(allowedAuthProviders) != 0 {
 			settings.AllowedAuthProviders = allowedAuthProviders
 		}
 		hasSettings = true
@@ -55,6 +49,7 @@ func ReadSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 		settings.AssumeRoleEnabled, err = strconv.ParseBool(v)
 		if err != nil {
 			backend.Logger.Error("could not parse context variable", "var", AssumeRoleEnabledEnvVarKeyName)
+			// assume role enabled defaults to on
 			settings.AssumeRoleEnabled = true
 		}
 		hasSettings = true
