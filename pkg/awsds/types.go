@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+	"github.com/grafana/sqlds/v3"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v2"
 )
 
 // AmazonSessionProvider will return a session (perhaps cached) for given region and settings
@@ -60,7 +62,7 @@ type QueryMeta struct {
 }
 
 type AsyncQuery struct {
-	sqlds.Query
+	sqlutil.Query
 	QueryID string    `json:"queryID,omitempty"`
 	Meta    QueryMeta `json:"meta,omitempty"`
 }
@@ -70,7 +72,7 @@ func GetQuery(query backend.DataQuery) (*AsyncQuery, error) {
 	model := &AsyncQuery{}
 
 	if err := json.Unmarshal(query.JSON, &model); err != nil {
-		return nil, fmt.Errorf("%w: %v", sqlds.ErrorJSON, err)
+		return nil, fmt.Errorf("%w: %v", sqlutil.ErrorJSON, err)
 	}
 
 	// Copy directly from the well typed query

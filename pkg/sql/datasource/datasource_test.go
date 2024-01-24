@@ -7,11 +7,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-aws-sdk/pkg/sql/api"
+	sqlApi "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	sqlDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v2"
+	"github.com/grafana/sqlds/v3"
 )
 
 func TestNew(t *testing.T) {
@@ -50,7 +50,7 @@ func (f *fakeDriver) OpenDB() (*sql.DB, error) {
 }
 
 type fakeAPI struct {
-	api.AWSAPI
+	sqlApi.AWSAPI
 }
 
 func TestLoadAPI(t *testing.T) {
@@ -136,7 +136,7 @@ func TestParseSettings(t *testing.T) {
 	}
 }
 
-func fakeAPILoader(cache *awsds.SessionCache, settings models.Settings) (api.AWSAPI, error) {
+func fakeAPILoader(cache *awsds.SessionCache, settings models.Settings) (sqlApi.AWSAPI, error) {
 	return fakeAPI{}, nil
 }
 
@@ -160,7 +160,7 @@ func TestCreateAPI(t *testing.T) {
 	}
 }
 
-func fakeDriverLoader(api.AWSAPI) (sqlDriver.Driver, error) {
+func fakeDriverLoader(sqlApi.AWSAPI) (sqlDriver.Driver, error) {
 	return &fakeDriver{db: &sql.DB{}}, nil
 }
 
