@@ -4,16 +4,11 @@ go 1.21
 
 toolchain go1.21.3
 
-// TODO: remove both of the following before release
-replace github.com/grafana/sqlds/v3 v3.0.0 => github.com/grafana/sqlds/v3 v3.1.1-0.20240119123957-3c96a7f7d247
-
-replace github.com/grafana/grafana-plugin-sdk-go v0.200.0 => github.com/grafana/grafana-plugin-sdk-go v0.199.1-0.20240118111631-6e778df70b6c
-
 require (
 	github.com/aws/aws-sdk-go v1.44.323
 	github.com/google/go-cmp v0.6.0
-	github.com/grafana/grafana-plugin-sdk-go v0.200.0
-	github.com/grafana/sqlds/v3 v3.0.0
+	github.com/grafana/grafana-plugin-sdk-go v0.201.0
+	github.com/grafana/sqlds/v3 v3.2.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.8.4
@@ -42,6 +37,7 @@ require (
 	github.com/google/flatbuffers v23.1.21+incompatible // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/grafana/dataplane/sdata v0.0.7 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.2 // indirect
