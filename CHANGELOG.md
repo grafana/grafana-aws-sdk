@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.21.0
+
+- Use new versions of sqlds & grafana-plugin-sdk-go
+
 ## v0.20.0
 
 - Add ca-west-1 to list of opt-in regions @zspeaks [#111](https://github.com/grafana/grafana-aws-sdk/pull/111)
