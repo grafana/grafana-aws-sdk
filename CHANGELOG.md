@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## v0.21.0
 
-- Use new versions of sqlds & grafana-plugin-sdk-go
+- Update grafana-plugin-sdk-go to v0.201.0
+- Update sqlds to v3.2.0
 
 ## v0.20.0
 
