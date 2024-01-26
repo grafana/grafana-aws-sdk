@@ -69,7 +69,8 @@ const (
 	defaultListMetricsPageLimit = 500
 )
 
-// ReadAuthSettingsFromEnvironmentVariables is deprecated in favor of
+// ReadAuthSettingsFromEnvironmentVariables gets the Grafana auth settings from the environment variables
+// Deprecated: Use ReadAuthSettingsFromContext instead
 func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	authSettings := &AuthSettings{}
 	allowedAuthProviders := []string{}

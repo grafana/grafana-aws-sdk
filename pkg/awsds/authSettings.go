@@ -11,17 +11,17 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 )
 
-// ReadSettings gets the session settings from the context if its available, the environment variables if not
-func ReadSettings(ctx context.Context) *AuthSettings {
-	settings, exists := ReadSettingsFromContext(ctx)
+// ReadAuthSettings gets the Grafana auth settings from the context if its available, the environment variables if not
+func ReadAuthSettings(ctx context.Context) *AuthSettings {
+	settings, exists := ReadAuthSettingsFromContext(ctx)
 	if !exists {
 		settings = ReadAuthSettingsFromEnvironmentVariables()
 	}
 	return settings
 }
 
-// ReadSessionSettingsFromContext tries to get the SessionSettings from the GrafanaConfig in ctx, and returns true if it finds a config
-func ReadSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
+// ReadAuthSettingsFromContext tries to get the auth settings from the GrafanaConfig in ctx, and returns true if it finds a config
+func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 	cfg := backend.GrafanaConfigFromContext(ctx)
 	// initialize settings with the default values set
 	settings := &AuthSettings{}

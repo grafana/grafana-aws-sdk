@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadSettingsFromContext(t *testing.T) {
+func TestReadAuthSettingsFromContext(t *testing.T) {
 	tcs := []struct {
 		name                string
 		cfg                 *backend.GrafanaCfg
@@ -64,7 +64,7 @@ func TestReadSettingsFromContext(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := backend.WithGrafanaConfig(context.Background(), tc.cfg)
-			settings, hasSettings := ReadSettingsFromContext(ctx)
+			settings, hasSettings := ReadAuthSettingsFromContext(ctx)
 
 			require.Equal(t, tc.expectedHasSettings, hasSettings)
 			require.Equal(t, tc.expectedSettings, settings)
@@ -72,7 +72,7 @@ func TestReadSettingsFromContext(t *testing.T) {
 	}
 }
 
-func TestReadSettings(t *testing.T) {
+func TestReadAuthSettings(t *testing.T) {
 	originalExternalId := os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
 	os.Setenv(GrafanaAssumeRoleExternalIdKeyName, "env_id")
 	defer func() {
@@ -147,7 +147,7 @@ func TestReadSettings(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := backend.WithGrafanaConfig(context.Background(), tc.cfg)
-			settings := ReadSettings(ctx)
+			settings := ReadAuthSettings(ctx)
 
 			require.Equal(t, tc.expectedSettings, settings)
 		})
