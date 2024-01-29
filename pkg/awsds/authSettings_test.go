@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/stretchr/testify/require"
@@ -21,25 +22,25 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 		{
 			name:                "nil config",
 			cfg:                 nil,
-			expectedSettings:    &AuthSettings{},
+			expectedSettings:    defaultAuthSettings(),
 			expectedHasSettings: false,
 		},
 		{
 			name:                "empty config",
 			cfg:                 &backend.GrafanaCfg{},
-			expectedSettings:    &AuthSettings{},
+			expectedSettings:    defaultAuthSettings(),
 			expectedHasSettings: false,
 		},
 		{
 			name:                "nil config map",
 			cfg:                 backend.NewGrafanaCfg(nil),
-			expectedSettings:    &AuthSettings{},
+			expectedSettings:    defaultAuthSettings(),
 			expectedHasSettings: false,
 		},
 		{
 			name:                "empty config map",
 			cfg:                 backend.NewGrafanaCfg(make(map[string]string)),
-			expectedSettings:    &AuthSettings{},
+			expectedSettings:    defaultAuthSettings(),
 			expectedHasSettings: false,
 		},
 		{
@@ -56,6 +57,7 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 				AssumeRoleEnabled:         false,
 				ExternalID:                "mock_id",
 				ListMetricsPageLimit:      50,
+				SessionDuration:           &stscreds.DefaultDuration,
 				SecureSocksDSProxyEnabled: true,
 			},
 			expectedHasSettings: true,
@@ -132,7 +134,7 @@ func TestReadAuthSettings(t *testing.T) {
 			expectedSettings: expectedSessionEnvSettings,
 		},
 		{
-			name: "reaf from context",
+			name: "read from context",
 			cfg: backend.NewGrafanaCfg(map[string]string{
 				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
 				AssumeRoleEnabledEnvVarKeyName:      "false",

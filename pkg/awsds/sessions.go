@@ -4,15 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -50,95 +46,7 @@ const (
 
 	// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
 	ProfileName = "assume_role_credentials"
-
-	// AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
-	AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
-
-	// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
-	AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
-
-	// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
-	SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
-
-	// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
-	GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
-
-	// GrafanaListMetricsPageLimit is the string literal for the cloudwatch list metrics page limit key name
-	GrafanaListMetricsPageLimit = "AWS_CW_LIST_METRICS_PAGE_LIMIT"
-
-	defaultListMetricsPageLimit = 500
 )
-
-// ReadAuthSettingsFromEnvironmentVariables gets the Grafana auth settings from the environment variables
-// Deprecated: Use ReadAuthSettingsFromContext instead
-func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
-	authSettings := &AuthSettings{}
-	allowedAuthProviders := []string{}
-	providers := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
-	for _, authProvider := range strings.Split(providers, ",") {
-		authProvider = strings.TrimSpace(authProvider)
-		if authProvider != "" {
-			allowedAuthProviders = append(allowedAuthProviders, authProvider)
-		}
-	}
-
-	if len(allowedAuthProviders) == 0 {
-		allowedAuthProviders = []string{"default", "keys", "credentials"}
-		backend.Logger.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
-	}
-	authSettings.AllowedAuthProviders = allowedAuthProviders
-
-	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
-	if len(assumeRoleEnabledString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
-		assumeRoleEnabledString = "true"
-	}
-
-	var err error
-	authSettings.AssumeRoleEnabled, err = strconv.ParseBool(assumeRoleEnabledString)
-	if err != nil {
-		backend.Logger.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
-		authSettings.AssumeRoleEnabled = true
-	}
-
-	authSettings.ExternalID = os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
-
-	listMetricsPageLimitString := os.Getenv(GrafanaListMetricsPageLimit)
-	if len(listMetricsPageLimitString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to default page limit", "var", GrafanaListMetricsPageLimit)
-		listMetricsPageLimitString = "500"
-	}
-
-	authSettings.ListMetricsPageLimit, err = strconv.Atoi(listMetricsPageLimitString)
-	if err != nil {
-		backend.Logger.Error("could not parse env variable", "var", GrafanaListMetricsPageLimit)
-		authSettings.ListMetricsPageLimit = defaultListMetricsPageLimit
-	}
-
-	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
-	if sessionDurationString != "" {
-		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
-		if err != nil {
-			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
-		} else {
-			authSettings.SessionDuration = &sessionDuration
-		}
-	}
-
-	proxyEnabledString := os.Getenv(proxy.PluginSecureSocksProxyEnabled)
-	if len(proxyEnabledString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
-		proxyEnabledString = "false"
-	}
-
-	authSettings.SecureSocksDSProxyEnabled, err = strconv.ParseBool(proxyEnabledString)
-	if err != nil {
-		backend.Logger.Error("could not parse env variable", "var", proxy.PluginSecureSocksProxyEnabled)
-		authSettings.SecureSocksDSProxyEnabled = false
-	}
-
-	return authSettings
-}
 
 // Session factory.
 // Stubbable by tests.
