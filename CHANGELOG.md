@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.22.0
+
+- Add ReadAuthSettings to get config settings from context [#118](https://github.com/grafana/grafana-aws-sdk/pull/118)
+
 ## v0.21.0
 
 - Update grafana-plugin-sdk-go to v0.201.0
