@@ -4,14 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -42,67 +39,14 @@ func NewSessionCache() *SessionCache {
 	}
 }
 
-// path to the shared credentials file in the instance for the aws/aws-sdk
-// if empty string, the path is ~/.aws/credentials
-const CredentialsPath = ""
+const (
+	// path to the shared credentials file in the instance for the aws/aws-sdk
+	// if empty string, the path is ~/.aws/credentials
+	CredentialsPath = ""
 
-// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
-const ProfileName = "assume_role_credentials"
-
-// AllowedAuthProvidersEnvVarKeyName is the string literal for the aws allowed auth providers environment variable key name
-const AllowedAuthProvidersEnvVarKeyName = "AWS_AUTH_AllowedAuthProviders"
-
-// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
-const AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
-
-// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
-const SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
-
-// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
-const GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
-
-func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
-	authSettings := &AuthSettings{}
-	allowedAuthProviders := []string{}
-	providers := os.Getenv(AllowedAuthProvidersEnvVarKeyName)
-	for _, authProvider := range strings.Split(providers, ",") {
-		authProvider = strings.TrimSpace(authProvider)
-		if authProvider != "" {
-			allowedAuthProviders = append(allowedAuthProviders, authProvider)
-		}
-	}
-
-	if len(allowedAuthProviders) == 0 {
-		allowedAuthProviders = []string{"default", "keys", "credentials"}
-		backend.Logger.Warn("could not find allowed auth providers. falling back to 'default, keys, credentials'")
-	}
-	authSettings.AllowedAuthProviders = allowedAuthProviders
-
-	assumeRoleEnabledString := os.Getenv(AssumeRoleEnabledEnvVarKeyName)
-	if len(assumeRoleEnabledString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
-		assumeRoleEnabledString = "true"
-	}
-
-	var err error
-	authSettings.AssumeRoleEnabled, err = strconv.ParseBool(assumeRoleEnabledString)
-	if err != nil {
-		backend.Logger.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
-		authSettings.AssumeRoleEnabled = true
-	}
-
-	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
-	if sessionDurationString != "" {
-		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
-		if err != nil {
-			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
-		} else {
-			authSettings.SessionDuration = &sessionDuration
-		}
-	}
-
-	return authSettings
-}
+	// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+	ProfileName = "assume_role_credentials"
+)
 
 // Session factory.
 // Stubbable by tests.
@@ -144,7 +88,7 @@ func isOptInRegion(region string) bool {
 		"ap-south-2":     true,
 		"ap-southeast-3": true,
 		"ap-southeast-4": true,
-		"ca-west-1":	  true,
+		"ca-west-1":      true,
 		"eu-central-2":   true,
 		"eu-south-1":     true,
 		"eu-south-2":     true,
@@ -285,7 +229,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
-						p.ExternalID = aws.String(os.Getenv(GrafanaAssumeRoleExternalIdKeyName))
+						p.ExternalID = aws.String(sc.authSettings.ExternalID)
 					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}
