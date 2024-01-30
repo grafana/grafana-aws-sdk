@@ -3,6 +3,7 @@ package awsds
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -113,25 +114,47 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			AssumeRoleARN: roleARN,
 		}
 		var expectedDuration time.Duration = 1200000000000 //20 minutes in nanoseconds count
-		cache := NewSessionCache()
-		sess, err := cache.GetSession(SessionConfig{
-			Settings: settings,
-			AuthSettings: &AuthSettings{
-				AllowedAuthProviders: []string{"default"},
-				AssumeRoleEnabled:    true,
-				SessionDuration:      &expectedDuration,
-			},
+
+		t.Run("from config", func(t *testing.T) {
+			cache := NewSessionCache()
+			sess, err := cache.GetSession(SessionConfig{
+				Settings: settings,
+				AuthSettings: &AuthSettings{
+					AllowedAuthProviders: []string{"default"},
+					AssumeRoleEnabled:    true,
+					SessionDuration:      &expectedDuration,
+				},
+			})
+			require.NoError(t, err)
+			require.NotNil(t, sess)
+			expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
+				RoleARN:  roleARN,
+				Duration: expectedDuration,
+			})
+			diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
+				return true
+			}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
+			assert.Empty(t, diff)
 		})
-		require.NoError(t, err)
-		require.NotNil(t, sess)
-		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
-			RoleARN:  roleARN,
-			Duration: expectedDuration,
+
+		t.Run("from env variable", func(t *testing.T) {
+			defer unsetEnvironmentVariables()
+			require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+			require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+			require.NoError(t, os.Setenv(SessionDurationEnvVarKeyName, "20m"))
+			cache := NewSessionCache()
+			sess, err := cache.GetSession(SessionConfig{Settings: settings})
+			require.NoError(t, err)
+			require.NotNil(t, sess)
+			expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
+				RoleARN:  roleARN,
+				Duration: expectedDuration,
+			})
+			diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
+				return true
+			}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
+			assert.Empty(t, diff)
 		})
-		diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
-			return true
-		}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
-		assert.Empty(t, diff)
 	})
 
 	t.Run("Assume role not enabled", func(t *testing.T) {
@@ -139,18 +162,54 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		cache := NewSessionCache()
-		sess, err := cache.GetSession(SessionConfig{
-			Settings: settings,
-			AuthSettings: &AuthSettings{
-				AllowedAuthProviders: []string{"default"},
-				AssumeRoleEnabled:    false,
-			},
+
+		t.Run("from config", func(t *testing.T) {
+			cache := NewSessionCache()
+			sess, err := cache.GetSession(SessionConfig{
+				Settings: settings,
+				AuthSettings: &AuthSettings{
+					AllowedAuthProviders: []string{"default"},
+					AssumeRoleEnabled:    false,
+				},
+			})
+			require.Error(t, err)
+			require.Nil(t, sess)
+			expectedError := "attempting to use assume role (ARN) which is disabled in grafana.ini"
+			assert.Equal(t, expectedError, err.Error())
 		})
-		require.Error(t, err)
-		require.Nil(t, sess)
-		expectedError := "attempting to use assume role (ARN) which is disabled in grafana.ini"
-		assert.Equal(t, expectedError, err.Error())
+
+		t.Run("from env variable", func(t *testing.T) {
+			defer unsetEnvironmentVariables()
+			require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+			require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "false"))
+			cache := NewSessionCache()
+			sess, err := cache.GetSession(SessionConfig{Settings: settings})
+			require.Error(t, err)
+			require.Nil(t, sess)
+			expectedError := "attempting to use assume role (ARN) which is disabled in grafana.ini"
+			assert.Equal(t, expectedError, err.Error())
+		})
+	})
+
+	t.Run("Assume role is enabled when AssumeRoleEnabled env var is missing and no config set", func(t *testing.T) {
+		defer unsetEnvironmentVariables()
+		const roleARN = "test"
+		settings := AWSDatasourceSettings{
+			AssumeRoleARN: roleARN,
+		}
+		require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "default"))
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{Settings: settings})
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		expCreds := credentials.NewCredentials(&stscreds.AssumeRoleProvider{
+			RoleARN:  roleARN,
+			Duration: duration,
+		})
+		diff := cmp.Diff(expCreds, sess.Config.Credentials, cmp.Exporter(func(_ reflect.Type) bool {
+			return true
+		}), cmpopts.IgnoreFields(stscreds.AssumeRoleProvider{}, "Expiry"))
+		assert.Empty(t, diff)
 	})
 
 	t.Run("Assume role is enabled with an opt-in region", func(t *testing.T) {
@@ -272,7 +331,7 @@ func TestNewSession_AllowedAuthProviders(t *testing.T) {
 		require.NotNil(t, sess)
 	})
 
-	t.Run("Env var fallback is used when auth settings aren't sent", func(t *testing.T) {
+	t.Run("Fallback is used when env variable and auth settings are missing", func(t *testing.T) {
 		defaultAuthProviders := []AuthType{AuthTypeDefault, AuthTypeKeys, AuthTypeSharedCreds}
 		for _, provider := range defaultAuthProviders {
 			defer unsetEnvironmentVariables()
@@ -308,20 +367,41 @@ func TestNewSession_GrafanaAssumeRole(t *testing.T) {
 			return credentials.NewCredentials(p)
 		}
 
-		cache := NewSessionCache()
-		_, err := cache.GetSession(SessionConfig{
-			Settings: AWSDatasourceSettings{
-				AuthType:      AuthTypeGrafanaAssumeRole,
-				AssumeRoleARN: "test_arn",
-			},
-			AuthSettings: &AuthSettings{
-				AllowedAuthProviders: []string{"grafana_assume_role"},
-				ExternalID:           "pretendExternalId",
-				AssumeRoleEnabled:    true,
-			},
+		t.Run("from config", func(t *testing.T) {
+			cache := NewSessionCache()
+			_, err := cache.GetSession(SessionConfig{
+				Settings: AWSDatasourceSettings{
+					AuthType:      AuthTypeGrafanaAssumeRole,
+					AssumeRoleARN: "test_arn",
+				},
+				AuthSettings: &AuthSettings{
+					AllowedAuthProviders: []string{"grafana_assume_role"},
+					ExternalID:           "pretendExternalId",
+					AssumeRoleEnabled:    true,
+				},
+			})
+			require.NoError(t, err)
 		})
 
-		require.NoError(t, err)
+		t.Run("from env variable", func(t *testing.T) {
+			originalExternalId := os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
+			require.NoError(t, os.Setenv(GrafanaAssumeRoleExternalIdKeyName, "pretendExternalId"))
+			t.Cleanup(func() {
+				os.Setenv(GrafanaAssumeRoleExternalIdKeyName, originalExternalId)
+				unsetEnvironmentVariables()
+			})
+			require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "grafana_assume_role"))
+			require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
+
+			cache := NewSessionCache()
+			_, err := cache.GetSession(SessionConfig{
+				Settings: AWSDatasourceSettings{
+					AuthType:      AuthTypeGrafanaAssumeRole,
+					AssumeRoleARN: "test_arn",
+				},
+			})
+			require.NoError(t, err)
+		})
 	})
 
 	t.Run("roleARN is passed to the session", func(t *testing.T) {
@@ -407,10 +487,6 @@ func TestNewSession_EC2IAMRole(t *testing.T) {
 		require.NotNil(t, sess.Config.Endpoint)
 		require.Equal(t, "foo", *sess.Config.Endpoint)
 	})
-}
-
-func TestNewSession_EnvVarFallback(t *testing.T) {
-
 }
 
 func TestWithUserAgent(t *testing.T) {
