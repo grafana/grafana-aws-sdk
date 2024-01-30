@@ -28,14 +28,12 @@ type envelope struct {
 type SessionCache struct {
 	sessCache     map[string]envelope
 	sessCacheLock sync.RWMutex
-	authSettings  *AuthSettings
 }
 
 // NewSessionCache creates a new session cache using the default settings loaded from environment variables
 func NewSessionCache() *SessionCache {
 	return &SessionCache{
-		sessCache:    map[string]envelope{},
-		authSettings: ReadAuthSettingsFromEnvironmentVariables(),
+		sessCache: map[string]envelope{},
 	}
 }
 
@@ -78,6 +76,7 @@ type SessionConfig struct {
 	Settings      AWSDatasourceSettings
 	HTTPClient    *http.Client
 	UserAgentName *string
+	AuthSettings  *AuthSettings
 }
 
 func isOptInRegion(region string) bool {
@@ -106,8 +105,12 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		// DefaultRegion is deprecated, Region should be used instead
 		c.Settings.Region = c.Settings.DefaultRegion
 	}
+	if c.AuthSettings == nil {
+		c.AuthSettings = ReadAuthSettingsFromEnvironmentVariables()
+	}
+
 	authTypeAllowed := false
-	for _, provider := range sc.authSettings.AllowedAuthProviders {
+	for _, provider := range c.AuthSettings.AllowedAuthProviders {
 		if provider == c.Settings.AuthType.String() {
 			authTypeAllowed = true
 			break
@@ -118,7 +121,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
 	}
 
-	if c.Settings.AssumeRoleARN != "" && !sc.authSettings.AssumeRoleEnabled {
+	if c.Settings.AssumeRoleARN != "" && !c.AuthSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
 	}
 
@@ -159,7 +162,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		c.Settings.Region = ""
 	}
 	if c.Settings.Region != "" {
-		if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled && isOptInRegion(c.Settings.Region) {
+		if c.Settings.AssumeRoleARN != "" && c.AuthSettings.AssumeRoleEnabled && isOptInRegion(c.Settings.Region) {
 			// When assuming a role, the real region is set later in a new session
 			// so we use a well-known region here (not opt-in) to obtain valid credentials
 			regionCfg = &aws.Config{Region: aws.String("us-east-1")}
@@ -201,11 +204,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	duration := stscreds.DefaultDuration
-	if sc.authSettings.SessionDuration != nil {
-		duration = *sc.authSettings.SessionDuration
+	if c.AuthSettings.SessionDuration != nil {
+		duration = *c.AuthSettings.SessionDuration
 	}
 	expiration := time.Now().UTC().Add(duration)
-	if c.Settings.AssumeRoleARN != "" && sc.authSettings.AssumeRoleEnabled {
+	if c.Settings.AssumeRoleARN != "" && c.AuthSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
 		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
@@ -229,7 +232,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					p.Expiry.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
-						p.ExternalID = aws.String(sc.authSettings.ExternalID)
+						p.ExternalID = aws.String(c.AuthSettings.ExternalID)
 					} else if c.Settings.ExternalID != "" {
 						p.ExternalID = aws.String(c.Settings.ExternalID)
 					}

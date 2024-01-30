@@ -91,6 +91,15 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 		hasSettings = true
 	}
 
+	if v := cfg.Get(SessionDurationEnvVarKeyName); v != "" {
+		sessionDuration, err := gtime.ParseDuration(v)
+		if err == nil {
+			settings.SessionDuration = &sessionDuration
+		} else {
+			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
+		}
+	}
+
 	if v := cfg.Get(GrafanaListMetricsPageLimit); v != "" {
 		listMetricsPageLimit, err := strconv.Atoi(v)
 		if err == nil {
@@ -109,17 +118,6 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 			backend.Logger.Error("could not parse context variable", "var", proxy.PluginSecureSocksProxyEnabled)
 		}
 		hasSettings = true
-	}
-
-	// Users set session duration directly as an environment variable
-	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
-	if sessionDurationString != "" {
-		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
-		if err == nil {
-			settings.SessionDuration = &sessionDuration
-		} else {
-			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
-		}
 	}
 
 	return settings, hasSettings
