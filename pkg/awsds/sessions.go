@@ -105,6 +105,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		// DefaultRegion is deprecated, Region should be used instead
 		c.Settings.Region = c.Settings.DefaultRegion
 	}
+
+	// If the datasource calling GetSession is getting the settings from the contexts, they'll pass
+	// the values through AuthSettings. Otherwise, we need to get them from the env variables.
 	if c.AuthSettings == nil {
 		c.AuthSettings = ReadAuthSettingsFromEnvironmentVariables()
 	}

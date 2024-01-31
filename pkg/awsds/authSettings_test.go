@@ -49,7 +49,7 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
 				AssumeRoleEnabledEnvVarKeyName:      "false",
 				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				GrafanaListMetricsPageLimit:         "50",
+				ListMetricsPageLimitKeyName:         "50",
 				proxy.PluginSecureSocksProxyEnabled: "true",
 			}),
 			expectedSettings: &AuthSettings{
@@ -81,8 +81,8 @@ func TestReadAuthSettings(t *testing.T) {
 		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, originalExternalId)
 	}()
 
-	var ctxDuration time.Duration = 600000000000  // 10 minutes in nanoseconds count
-	var envDuration time.Duration = 1200000000000 // 20 minutes in nanoseconds count
+	ctxDuration := 10 * time.Minute
+	envDuration := 20 * time.Minute
 	expectedSessionContextSettings := &AuthSettings{
 		AllowedAuthProviders:      []string{"foo", "bar", "baz"},
 		AssumeRoleEnabled:         false,
@@ -101,7 +101,7 @@ func TestReadAuthSettings(t *testing.T) {
 		SecureSocksDSProxyEnabled: false,
 	}
 
-	require.NoError(t, os.Setenv(GrafanaListMetricsPageLimit, "30"))
+	require.NoError(t, os.Setenv(ListMetricsPageLimitKeyName, "30"))
 	require.NoError(t, os.Setenv(SessionDurationEnvVarKeyName, "20m"))
 	require.NoError(t, os.Setenv(proxy.PluginSecureSocksProxyEnabled, "false"))
 	defer unsetEnvironmentVariables()
@@ -138,7 +138,7 @@ func TestReadAuthSettings(t *testing.T) {
 				AssumeRoleEnabledEnvVarKeyName:      "false",
 				SessionDurationEnvVarKeyName:        "10m",
 				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				GrafanaListMetricsPageLimit:         "50",
+				ListMetricsPageLimitKeyName:         "50",
 				proxy.PluginSecureSocksProxyEnabled: "true",
 			}),
 			expectedSettings: expectedSessionContextSettings,
@@ -159,5 +159,5 @@ func unsetEnvironmentVariables() {
 	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
 	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
 	os.Unsetenv(SessionDurationEnvVarKeyName)
-	os.Unsetenv(GrafanaListMetricsPageLimit)
+	os.Unsetenv(ListMetricsPageLimitKeyName)
 }

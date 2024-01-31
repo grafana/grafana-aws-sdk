@@ -113,7 +113,7 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		settings := AWSDatasourceSettings{
 			AssumeRoleARN: roleARN,
 		}
-		var expectedDuration time.Duration = 1200000000000 //20 minutes in nanoseconds count
+		expectedDuration := 20 * time.Minute
 
 		t.Run("from config", func(t *testing.T) {
 			cache := NewSessionCache()
