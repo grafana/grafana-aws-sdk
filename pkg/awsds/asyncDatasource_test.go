@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
@@ -133,6 +134,43 @@ func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expres
 			_, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{Headers: tt.headers})
 			assert.NoError(t, err)
 			assert.True(t, syncCalled)
+		})
+	}
+}
+
+func Test_AsyncDatasource_CheckHealth(t *testing.T) {
+	tests := []struct {
+		desc          string
+		mockQueryData func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error)
+		expected      *backend.CheckHealthResult
+	}{
+		{
+			desc: "it returns an error when the query fails",
+			mockQueryData: func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+				return nil, fmt.Errorf("your auth wasn't right")
+			},
+			expected: &backend.CheckHealthResult{
+				Status:  backend.HealthStatusError,
+				Message: "your auth wasn't right",
+			},
+		},
+		{
+			desc: "it returns an ok when the query succeeds",
+			mockQueryData: func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+				return &backend.QueryDataResponse{}, nil
+			},
+			expected: &backend.CheckHealthResult{
+				Status:  backend.HealthStatusOk,
+				Message: "Data source is working",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			ds := &AsyncAWSDatasource{sqldsQueryDataHandler: tt.mockQueryData}
+			result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

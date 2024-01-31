@@ -130,6 +130,34 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	return response.Response(), nil
 }
 
+func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+	res, err := ds.QueryData(ctx, &backend.QueryDataRequest{
+		PluginContext: req.PluginContext,
+		Queries: []backend.DataQuery{
+			{
+				RefID: "health",
+				JSON:  []byte(`{"rawSql":"SELECT 1"}`),
+			},
+		},
+	})
+	if err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: err.Error(),
+		}, nil
+	}
+	if res.Responses["health"].Error != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: res.Responses["health"].Error.Error(),
+		}, nil
+	}
+	return &backend.CheckHealthResult{
+		Status:  backend.HealthStatusOk,
+		Message: "Data source is working",
+	}, nil
+}
+
 func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
