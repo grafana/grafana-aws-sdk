@@ -49,7 +49,7 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
 				AssumeRoleEnabledEnvVarKeyName:      "false",
 				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				GrafanaListMetricsPageLimit:         "50",
+				ListMetricsPageLimitKeyName:         "50",
 				proxy.PluginSecureSocksProxyEnabled: "true",
 			}),
 			expectedSettings: &AuthSettings{
@@ -81,29 +81,27 @@ func TestReadAuthSettings(t *testing.T) {
 		os.Setenv(GrafanaAssumeRoleExternalIdKeyName, originalExternalId)
 	}()
 
-	expectedDuration, err := time.ParseDuration("20m")
-	require.NoError(t, err)
+	ctxDuration := 10 * time.Minute
+	envDuration := 20 * time.Minute
 	expectedSessionContextSettings := &AuthSettings{
 		AllowedAuthProviders:      []string{"foo", "bar", "baz"},
 		AssumeRoleEnabled:         false,
-		SessionDuration:           &expectedDuration, //20 minutes in nanoseconds count,
+		SessionDuration:           &ctxDuration,
 		ExternalID:                "mock_id",
 		ListMetricsPageLimit:      50,
 		SecureSocksDSProxyEnabled: true,
 	}
 
 	expectedSessionEnvSettings := &AuthSettings{
-		AllowedAuthProviders:      []string{"env1", "env2"},
+		AllowedAuthProviders:      []string{"default", "keys", "credentials"},
 		AssumeRoleEnabled:         true,
-		SessionDuration:           &expectedDuration,
+		SessionDuration:           &envDuration,
 		ExternalID:                "env_id",
 		ListMetricsPageLimit:      30,
 		SecureSocksDSProxyEnabled: false,
 	}
 
-	require.NoError(t, os.Setenv(AllowedAuthProvidersEnvVarKeyName, "env1,env2"))
-	require.NoError(t, os.Setenv(AssumeRoleEnabledEnvVarKeyName, "true"))
-	require.NoError(t, os.Setenv(GrafanaListMetricsPageLimit, "30"))
+	require.NoError(t, os.Setenv(ListMetricsPageLimitKeyName, "30"))
 	require.NoError(t, os.Setenv(SessionDurationEnvVarKeyName, "20m"))
 	require.NoError(t, os.Setenv(proxy.PluginSecureSocksProxyEnabled, "false"))
 	defer unsetEnvironmentVariables()
@@ -138,8 +136,9 @@ func TestReadAuthSettings(t *testing.T) {
 			cfg: backend.NewGrafanaCfg(map[string]string{
 				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
 				AssumeRoleEnabledEnvVarKeyName:      "false",
+				SessionDurationEnvVarKeyName:        "10m",
 				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				GrafanaListMetricsPageLimit:         "50",
+				ListMetricsPageLimitKeyName:         "50",
 				proxy.PluginSecureSocksProxyEnabled: "true",
 			}),
 			expectedSettings: expectedSessionContextSettings,
@@ -154,4 +153,11 @@ func TestReadAuthSettings(t *testing.T) {
 			require.Equal(t, tc.expectedSettings, settings)
 		})
 	}
+}
+
+func unsetEnvironmentVariables() {
+	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
+	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
+	os.Unsetenv(SessionDurationEnvVarKeyName)
+	os.Unsetenv(ListMetricsPageLimitKeyName)
 }

@@ -25,8 +25,8 @@ const (
 	// GrafanaAssumeRoleExternalIdKeyName is the string literal for the grafana assume role external id environment variable key name
 	GrafanaAssumeRoleExternalIdKeyName = "AWS_AUTH_EXTERNAL_ID"
 
-	// GrafanaListMetricsPageLimit is the string literal for the cloudwatch list metrics page limit key name
-	GrafanaListMetricsPageLimit = "AWS_CW_LIST_METRICS_PAGE_LIMIT"
+	// ListMetricsPageLimitKeyName is the string literal for the cloudwatch list metrics page limit key name
+	ListMetricsPageLimitKeyName = "AWS_CW_LIST_METRICS_PAGE_LIMIT"
 
 	defaultAssumeRoleEnabled         = true
 	defaultListMetricsPageLimit      = 500
@@ -91,12 +91,21 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 		hasSettings = true
 	}
 
-	if v := cfg.Get(GrafanaListMetricsPageLimit); v != "" {
+	if v := cfg.Get(SessionDurationEnvVarKeyName); v != "" {
+		sessionDuration, err := gtime.ParseDuration(v)
+		if err == nil {
+			settings.SessionDuration = &sessionDuration
+		} else {
+			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
+		}
+	}
+
+	if v := cfg.Get(ListMetricsPageLimitKeyName); v != "" {
 		listMetricsPageLimit, err := strconv.Atoi(v)
 		if err == nil {
 			settings.ListMetricsPageLimit = listMetricsPageLimit
 		} else {
-			backend.Logger.Error("could not parse context variable", "var", GrafanaListMetricsPageLimit)
+			backend.Logger.Error("could not parse context variable", "var", ListMetricsPageLimitKeyName)
 		}
 		hasSettings = true
 	}
@@ -109,17 +118,6 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 			backend.Logger.Error("could not parse context variable", "var", proxy.PluginSecureSocksProxyEnabled)
 		}
 		hasSettings = true
-	}
-
-	// Users set session duration directly as an environment variable
-	sessionDurationString := os.Getenv(SessionDurationEnvVarKeyName)
-	if sessionDurationString != "" {
-		sessionDuration, err := gtime.ParseDuration(sessionDurationString)
-		if err == nil {
-			settings.SessionDuration = &sessionDuration
-		} else {
-			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
-		}
 	}
 
 	return settings, hasSettings
@@ -159,15 +157,15 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 	authSettings.ExternalID = os.Getenv(GrafanaAssumeRoleExternalIdKeyName)
 
-	listMetricsPageLimitString := os.Getenv(GrafanaListMetricsPageLimit)
+	listMetricsPageLimitString := os.Getenv(ListMetricsPageLimitKeyName)
 	if len(listMetricsPageLimitString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to default page limit", "var", GrafanaListMetricsPageLimit)
+		backend.Logger.Warn("environment variable missing. falling back to default page limit", "var", ListMetricsPageLimitKeyName)
 		listMetricsPageLimitString = "500"
 	}
 
 	authSettings.ListMetricsPageLimit, err = strconv.Atoi(listMetricsPageLimitString)
 	if err != nil {
-		backend.Logger.Error("could not parse env variable", "var", GrafanaListMetricsPageLimit)
+		backend.Logger.Error("could not parse env variable", "var", ListMetricsPageLimitKeyName)
 		authSettings.ListMetricsPageLimit = defaultListMetricsPageLimit
 	}
 
