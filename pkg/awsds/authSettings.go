@@ -181,7 +181,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 	proxyEnabledString := os.Getenv(proxy.PluginSecureSocksProxyEnabled)
 	if len(proxyEnabledString) == 0 {
-		backend.Logger.Warn("environment variable missing. falling back to enable assume role", "var", AssumeRoleEnabledEnvVarKeyName)
+		backend.Logger.Warn("environment variable missing. falling back to proxy disabled", "var", proxy.PluginSecureSocksProxyEnabled)
 		proxyEnabledString = "false"
 	}
 
