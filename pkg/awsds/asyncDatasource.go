@@ -131,25 +131,20 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 }
 
 func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	res, err := ds.QueryData(ctx, &backend.QueryDataRequest{
-		PluginContext: req.PluginContext,
-		Queries: []backend.DataQuery{
-			{
-				RefID: "health",
-				JSON:  []byte(`{"rawSql":"SELECT 1"}`),
-			},
-		},
-	})
+	datasourceUID := req.PluginContext.DataSourceInstanceSettings.UID
+	key := defaultKey(datasourceUID)
+	dbConn, ok := ds.getDBConnection(key)
+	if !ok {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: "No database connection found for datasource uid: " + datasourceUID,
+		}, nil
+	}
+	err := dbConn.db.Ping(ctx)
 	if err != nil {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
 			Message: err.Error(),
-		}, nil
-	}
-	if res.Responses["health"].Error != nil {
-		return &backend.CheckHealthResult{
-			Status:  backend.HealthStatusError,
-			Message: res.Responses["health"].Error.Error(),
 		}, nil
 	}
 	return &backend.CheckHealthResult{

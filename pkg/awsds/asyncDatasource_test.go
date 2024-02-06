@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
@@ -12,6 +13,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/sqlds/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type fakeAsyncDB struct{}
@@ -138,27 +140,66 @@ func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expres
 	}
 }
 
+type MockDB struct {
+	mock.Mock
+}
+
+func (m *MockDB) Ping(context context.Context) error {
+	args := m.Called(context)
+	return args.Error(0)
+}
+
+func (m *MockDB) Begin() (driver.Tx, error) {
+	args := m.Called()
+	return args.Get(0).(driver.Tx), args.Error(1)
+}
+
+func (m *MockDB) CancelQuery(ctx context.Context, queryID string) error {
+	args := m.Called(ctx, queryID)
+	return args.Error(0)
+}
+func (m *MockDB) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+func (m *MockDB) GetQueryID(ctx context.Context, query string, args ...interface{}) (bool, string, error) {
+	arg := m.Called(ctx, query, args)
+	return arg.Bool(0), arg.String(1), arg.Error(2)
+}
+func (m *MockDB) GetRows(ctx context.Context, queryID string) (driver.Rows, error) {
+	args := m.Called(ctx, queryID)
+	return args.Get(0).(driver.Rows), args.Error(1)
+}
+func (m *MockDB) Prepare(query string) (driver.Stmt, error) {
+	args := m.Called(query)
+	return args.Get(0).(driver.Stmt), args.Error(1)
+}
+func (m *MockDB) QueryStatus(ctx context.Context, queryID string) (QueryStatus, error) {
+	args := m.Called(ctx, queryID)
+	return args.Get(0).(QueryStatus), args.Error(1)
+}
+func (m *MockDB) StartQuery(ctx context.Context, query string, args ...interface{}) (string, error) {
+	arg := m.Called(ctx, query, args)
+	return arg.String(0), arg.Error(1)
+}
+
 func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 	tests := []struct {
-		desc          string
-		mockQueryData func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error)
-		expected      *backend.CheckHealthResult
+		desc             string
+		mockPingResponse error
+		expected         *backend.CheckHealthResult
 	}{
 		{
-			desc: "it returns an error when the query fails",
-			mockQueryData: func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-				return nil, fmt.Errorf("your auth wasn't right")
-			},
+			desc:             "it returns an error when ping fails",
+			mockPingResponse: fmt.Errorf("your auth wasn't right"),
 			expected: &backend.CheckHealthResult{
 				Status:  backend.HealthStatusError,
 				Message: "your auth wasn't right",
 			},
 		},
 		{
-			desc: "it returns an ok when the query succeeds",
-			mockQueryData: func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-				return &backend.QueryDataResponse{}, nil
-			},
+			desc:             "it returns an ok when the query succeeds",
+			mockPingResponse: nil,
 			expected: &backend.CheckHealthResult{
 				Status:  backend.HealthStatusOk,
 				Message: "Data source is working",
@@ -167,8 +208,20 @@ func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			ds := &AsyncAWSDatasource{sqldsQueryDataHandler: tt.mockQueryData}
-			result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{})
+			db := new(MockDB)
+			db.On("Ping", context.Background()).Return(tt.mockPingResponse)
+			dbC := dbConnection{
+				db,
+				backend.DataSourceInstanceSettings{UID: "uid1"},
+			}
+			ds := &AsyncAWSDatasource{dbConnections: sync.Map{}}
+			ds.dbConnections.Store(defaultKey("uid1"), dbC)
+
+			result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{
+				PluginContext: backend.PluginContext{
+					DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{UID: "uid1"},
+				},
+			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
