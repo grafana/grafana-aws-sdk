@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -219,6 +220,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
 		}
 
+		if isOptInRegion(c.Settings.Region) {
+			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
+			cfgs = append(cfgs, optInRegionCfg)
+		}
+
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
@@ -241,6 +247,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					}
 				}),
 			},
+		}
+
+		if isOptInRegion(c.Settings.Region) {
+			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
+			cfgs = append(cfgs, optInRegionCfg)
 		}
 
 		if c.Settings.Region != "" {
