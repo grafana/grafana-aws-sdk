@@ -130,6 +130,29 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	return response.Response(), nil
 }
 
+func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+	datasourceUID := req.PluginContext.DataSourceInstanceSettings.UID
+	key := defaultKey(datasourceUID)
+	dbConn, ok := ds.getDBConnection(key)
+	if !ok {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: "No database connection found for datasource uid: " + datasourceUID,
+		}, nil
+	}
+	err := dbConn.db.Ping(ctx)
+	if err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: err.Error(),
+		}, nil
+	}
+	return &backend.CheckHealthResult{
+		Status:  backend.HealthStatusOk,
+		Message: "Data source is working",
+	}, nil
+}
+
 func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
