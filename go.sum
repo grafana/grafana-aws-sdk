@@ -105,8 +105,8 @@ github.com/grafana/dataplane/sdata v0.0.7 h1:CImITypIyS1jxijCR6xqKx71JnYAxcwpH9C
 github.com/grafana/dataplane/sdata v0.0.7/go.mod h1:Jvs5ddpGmn6vcxT7tCTWAZ1mgi4sbcdFt9utQx5uMAU=
 github.com/grafana/grafana-plugin-sdk-go v0.201.0 h1:2ovSMQbT+wBvEggVRIJ+ExazCQVzS2nAFtx56j/yvGM=
 github.com/grafana/grafana-plugin-sdk-go v0.201.0/go.mod h1:aT5g1EGl4722duptKf2sK3X/B0EIZ7Dv8PMGxFHA/vk=
-github.com/grafana/sqlds/v3 v3.2.0 h1:WXuYEaFfiCvgm8kK2ixx44/zAEjFzCylA2+RF3GBqZA=
-github.com/grafana/sqlds/v3 v3.2.0/go.mod h1:kH0WuHUR3j0Q7IEymbm2JiaPckUhRCbqjV9ajaBAnmM=
+github.com/grafana/sqlds/v3 v3.2.1-0.20240216130849-15f79d8fef7f h1:DPLQ3OSJs9NqEV8ssuLk6ERpBD9QtuXabR9OHscTN54=
+github.com/grafana/sqlds/v3 v3.2.1-0.20240216130849-15f79d8fef7f/go.mod h1:kH0WuHUR3j0Q7IEymbm2JiaPckUhRCbqjV9ajaBAnmM=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 h1:UH//fgunKIs4JdUbpDl1VZCDaL56wXCB/5+wF6uHfaI=
 github.com/grpc-ecosystem/go-grpc-middleware v1.4.0/go.mod h1:g5qyo/la0ALbONm6Vbp88Yd8NsDy6rZz+RcrMPxvld8=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 h1:Ovs26xHkKqVztRpIrF/92BcuyuQ/YW4NSIpoGtfXNho=

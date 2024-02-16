@@ -4,6 +4,9 @@ go 1.21
 
 toolchain go1.21.3
 
+// FIXME: remove this when the sqlds change is released
+replace github.com/grafana/sqlds/v3 v3.2.0 => github.com/grafana/sqlds/v3 v3.2.1-0.20240216130849-15f79d8fef7f
+
 require (
 	github.com/aws/aws-sdk-go v1.44.323
 	github.com/google/go-cmp v0.6.0

@@ -15,17 +15,8 @@ import (
 	"github.com/grafana/sqlds/v3"
 )
 
-const defaultKeySuffix = "default"
 const fromAlertHeader = "FromAlert"
 const fromExpressionHeader = "http_X-Grafana-From-Expr"
-
-func defaultKey(datasourceUID string) string {
-	return fmt.Sprintf("%s-%s", datasourceUID, defaultKeySuffix)
-}
-
-func keyWithConnectionArgs(datasourceUID string, connArgs json.RawMessage) string {
-	return fmt.Sprintf("%s-%s", datasourceUID, string(connArgs))
-}
 
 type dbConnection struct {
 	db       AsyncDB
@@ -40,7 +31,8 @@ type AsyncAWSDatasource struct {
 	sqldsQueryDataHandler backend.QueryDataHandlerFunc
 }
 
-func (ds *AsyncAWSDatasource) getDBConnection(key string) (dbConnection, bool) {
+func (ds *AsyncAWSDatasource) getDBConnection(settings backend.DataSourceInstanceSettings, connectionArgs json.RawMessage) (dbConnection, bool) {
+	key := sqlds.GetConnectionKey(settings, connectionArgs)
 	conn, ok := ds.dbConnections.Load(key)
 	if !ok {
 		return dbConnection{}, false
@@ -48,17 +40,9 @@ func (ds *AsyncAWSDatasource) getDBConnection(key string) (dbConnection, bool) {
 	return conn.(dbConnection), true
 }
 
-func (ds *AsyncAWSDatasource) storeDBConnection(key string, dbConn dbConnection) {
+func (ds *AsyncAWSDatasource) storeDBConnection(dbConn dbConnection, connectionArgs json.RawMessage) {
+	key := sqlds.GetConnectionKey(dbConn.settings, connectionArgs)
 	ds.dbConnections.Store(key, dbConn)
-}
-
-func getDatasourceUID(settings backend.DataSourceInstanceSettings) string {
-	datasourceUID := settings.UID
-	// Grafana < 8.0 won't include the UID yet
-	if datasourceUID == "" {
-		datasourceUID = fmt.Sprintf("%d", settings.ID)
-	}
-	return datasourceUID
 }
 
 func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
@@ -81,8 +65,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backen
 	if err != nil {
 		return nil, err
 	}
-	key := defaultKey(getDatasourceUID(settings))
-	ds.storeDBConnection(key, dbConnection{db, settings})
+	ds.storeDBConnection(dbConnection{db, settings}, nil)
 
 	// initialize the wrapped ds.SQLDatasource
 	_, err = ds.SQLDatasource.NewDatasource(ctx, settings)
@@ -116,7 +99,7 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 		go func(query backend.DataQuery) {
 			var frames data.Frames
 			var err error
-			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
+			frames, err = ds.handleAsyncQuery(ctx, query, *req.PluginContext.DataSourceInstanceSettings)
 			response.Set(query.RefID, backend.DataResponse{
 				Frames: frames,
 				Error:  err,
@@ -131,13 +114,12 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 }
 
 func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	datasourceUID := req.PluginContext.DataSourceInstanceSettings.UID
-	key := defaultKey(datasourceUID)
-	dbConn, ok := ds.getDBConnection(key)
+	settings := *req.PluginContext.DataSourceInstanceSettings
+	dbConn, ok := ds.getDBConnection(settings, nil)
 	if !ok {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
-			Message: "No database connection found for datasource uid: " + datasourceUID,
+			Message: "No database connection found for datasource uid: " + settings.UID,
 		}, nil
 	}
 	err := dbConn.db.Ping(ctx)
@@ -153,34 +135,32 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 	}, nil
 }
 
-func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
+func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, settings backend.DataSourceInstanceSettings) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
 	}
 	// The database connection may vary depending on query arguments
 	// The raw arguments are used as key to store the db connection in memory so they can be reused
-	key := defaultKey(datasourceUID)
-	dbConn, ok := ds.getDBConnection(key)
-	if !ok {
-		return nil, sqlds.ErrorMissingDBConnection
-	}
 	if !ds.EnableMultipleConnections || len(q.ConnectionArgs) == 0 {
+		dbConn, ok := ds.getDBConnection(settings, nil)
+		if !ok {
+			return nil, sqlds.ErrorMissingDBConnection
+		}
 		return dbConn.db, nil
 	}
 
-	key = keyWithConnectionArgs(datasourceUID, q.ConnectionArgs)
-	if cachedConn, ok := ds.getDBConnection(key); ok {
+	if cachedConn, ok := ds.getDBConnection(settings, q.ConnectionArgs); ok {
 		return cachedConn.db, nil
 	}
 
 	var err error
-	db, err := ds.driver.GetAsyncDB(dbConn.settings, q.ConnectionArgs)
+	db, err := ds.driver.GetAsyncDB(settings, q.ConnectionArgs)
 	if err != nil {
 		return nil, err
 	}
 	// Assign this connection in the cache
-	dbConn = dbConnection{db, dbConn.settings}
-	ds.storeDBConnection(key, dbConn)
+	dbConn := dbConnection{db, settings}
+	ds.storeDBConnection(dbConn, q.ConnectionArgs)
 
 	return dbConn.db, nil
 }
@@ -191,7 +171,7 @@ type queryMeta struct {
 }
 
 // handleQuery will call query, and attempt to reconnect if the query failed
-func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.DataQuery, datasourceUID string) (data.Frames, error) {
+func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.DataQuery, settings backend.DataSourceInstanceSettings) (data.Frames, error) {
 	// Convert the backend.DataQuery into a Query object
 	q, err := GetQuery(req)
 	if err != nil {
@@ -211,7 +191,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
-	asyncDB, err := ds.getAsyncDBFromQuery(q, datasourceUID)
+	asyncDB, err := ds.getAsyncDBFromQuery(q, settings)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
@@ -243,7 +223,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	db, err := ds.GetDBFromQuery(ctx, &q.Query, datasourceUID)
+	db, err := ds.GetDBFromQuery(ctx, &q.Query, settings)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}

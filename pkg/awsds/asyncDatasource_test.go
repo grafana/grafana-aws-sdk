@@ -86,22 +86,19 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			ds := &AsyncAWSDatasource{driver: d, SQLDatasource: &sqlds.SQLDatasource{EnableMultipleConnections: true}}
 			settings := backend.DataSourceInstanceSettings{UID: tt.dsUID}
-			key := defaultKey(tt.dsUID)
 			// Add the mandatory default db
-			ds.storeDBConnection(key, dbConnection{db, settings})
-			if tt.args != "" {
-				key = keyWithConnectionArgs(tt.dsUID, []byte(tt.args))
+			ds.storeDBConnection(dbConnection{db, settings}, nil)
+			args := []byte(tt.args)
+			if len(args) > 0 {
+				ds.storeDBConnection(dbConnection{db, settings}, args)
 			}
 			if tt.existingDB != nil {
-				ds.storeDBConnection(key, dbConnection{tt.existingDB, settings})
+				ds.storeDBConnection(dbConnection{tt.existingDB, settings}, args)
 			}
 
-			dbConn, err := ds.getAsyncDBFromQuery(&AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
+			dbConn, err := ds.getAsyncDBFromQuery(&AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, settings)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
-			}
-			if key != tt.expectedKey {
-				t.Fatalf("unexpected cache key %s", key)
 			}
 			if dbConn != tt.expectedDB {
 				t.Fatalf("unexpected result %v", dbConn)
@@ -208,19 +205,15 @@ func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
+			settings := backend.DataSourceInstanceSettings{UID: "uid1"}
 			db := new(MockDB)
 			db.On("Ping", context.Background()).Return(tt.mockPingResponse)
-			dbC := dbConnection{
-				db,
-				backend.DataSourceInstanceSettings{UID: "uid1"},
-			}
+			dbC := dbConnection{db, settings}
 			ds := &AsyncAWSDatasource{dbConnections: sync.Map{}}
-			ds.dbConnections.Store(defaultKey("uid1"), dbC)
+			ds.storeDBConnection(dbC, nil)
 
 			result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{
-				PluginContext: backend.PluginContext{
-					DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{UID: "uid1"},
-				},
+				PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
