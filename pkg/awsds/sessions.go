@@ -170,7 +170,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			// When assuming a role, the real region is set later in a new session
 			// so we use a well-known region here (not opt-in) to obtain valid credentials
 			regionCfg = &aws.Config{Region: aws.String("us-east-1")}
-			cfgs = append(cfgs, regionCfg)
+
+			// set regional endpoint flag to obtain credentials that can be used in opt-in regions as well
+			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
+
+			cfgs = append(cfgs, regionCfg, optInRegionCfg)
 		} else {
 			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)
@@ -220,11 +224,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
 		}
 
-		if isOptInRegion(c.Settings.Region) {
-			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
-			cfgs = append(cfgs, optInRegionCfg)
-		}
-
 		sess, err := newSession(cfgs...)
 		if err != nil {
 			return nil, err
@@ -247,11 +246,6 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 					}
 				}),
 			},
-		}
-
-		if isOptInRegion(c.Settings.Region) {
-			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
-			cfgs = append(cfgs, optInRegionCfg)
 		}
 
 		if c.Settings.Region != "" {
