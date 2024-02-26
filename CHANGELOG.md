@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.24.0
+
+- Sessions: Use STS regional endpoint in assume role for opt-in regions in [#129](https://github.com/grafana/grafana-aws-sdk/pull/129)
+- Add health check for async queries in [#124](https://github.com/grafana/grafana-aws-sdk/pull/125)
+
 ## v0.23.1
 
 -Fix warning for getting GF_SECURE_SOCKS_DATASOURCE_PROXY_SERVER_ENABLED env variable [#125](https://github.com/grafana/grafana-aws-sdk/pull/125)
