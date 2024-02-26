@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -169,7 +170,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			// When assuming a role, the real region is set later in a new session
 			// so we use a well-known region here (not opt-in) to obtain valid credentials
 			regionCfg = &aws.Config{Region: aws.String("us-east-1")}
-			cfgs = append(cfgs, regionCfg)
+
+			// set regional endpoint flag to obtain credentials that can be used in opt-in regions as well
+			optInRegionCfg := &aws.Config{STSRegionalEndpoint: endpoints.RegionalSTSEndpoint}
+
+			cfgs = append(cfgs, regionCfg, optInRegionCfg)
 		} else {
 			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)

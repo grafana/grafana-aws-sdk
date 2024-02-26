@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/go-cmp/cmp"
@@ -219,6 +220,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			sess := c.(*session.Session)
 			// Verify that we are using the well-known region
 			assert.Equal(t, "us-east-1", *sess.Config.Region)
+			// verify that we're using regional sts endpoint
+			assert.Equal(t, endpoints.RegionalSTSEndpoint, sess.Config.STSRegionalEndpoint)
 			return fakeNewSTSCredentials(c, roleARN, options...)
 		}
 		settings := AWSDatasourceSettings{
