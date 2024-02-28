@@ -23,7 +23,7 @@ func TestNew(t *testing.T) {
 
 	})
 	t.Run("Can create new middleware with any valid auth type", func(t *testing.T) {
-		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn"} {
+		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn", "grafana_assume_role"} {
 			rt, err := New(&Config{AuthType: authType}, nil)
 
 			require.NoError(t, err)
