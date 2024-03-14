@@ -29,6 +29,12 @@ type AuthSettings struct {
 	SecureSocksDSProxyEnabled bool
 }
 
+// SigV4Settings stores the settings for SigV4 authentication
+type SigV4Settings struct {
+	Enabled        bool
+	VerboseLogging bool
+}
+
 // QueryStatus represents the status of an async query
 type QueryStatus uint32
 
