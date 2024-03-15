@@ -155,6 +155,39 @@ func TestReadAuthSettings(t *testing.T) {
 	}
 }
 
+func TestReadSigV4Settings(t *testing.T) {
+	tcs := []struct {
+		name             string
+		cfg              *backend.GrafanaCfg
+		expectedSettings *SigV4Settings
+	}{
+		{
+			name:             "empty config map",
+			cfg:              backend.NewGrafanaCfg(make(map[string]string)),
+			expectedSettings: &SigV4Settings{},
+		},
+		{
+			name: "aws settings in config",
+			cfg: backend.NewGrafanaCfg(map[string]string{
+				SigV4AuthEnabledEnvVarKeyName:    "true",
+				SigV4VerboseLoggingEnvVarKeyName: "true",
+			}),
+			expectedSettings: &SigV4Settings{
+				Enabled:        true,
+				VerboseLogging: true,
+			},
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := backend.WithGrafanaConfig(context.Background(), tc.cfg)
+			settings := ReadSigV4Settings(ctx)
+
+			require.Equal(t, tc.expectedSettings, settings)
+		})
+	}
+}
+
 func unsetEnvironmentVariables() {
 	os.Unsetenv(AllowedAuthProvidersEnvVarKeyName)
 	os.Unsetenv(AssumeRoleEnabledEnvVarKeyName)
