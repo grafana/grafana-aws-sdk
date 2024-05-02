@@ -218,14 +218,18 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	expiration := time.Now().UTC().Add(duration)
 
 	if c.Settings.Endpoint != "" {
-		var endpoint = aws.String(getSTSEndpoint(c.Settings.Endpoint))
-		backend.Logger.Debug("Using custom STS endpoint", "endpoint", endpoint)
-		cfgs = append(cfgs, &aws.Config{Endpoint: endpoint})
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
 	}
 
 	if c.Settings.AssumeRoleARN != "" && c.AuthSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
 		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
+
+		// If a FIPS endpoint is set, we need to use the FIPS STS endpoint
+		if c.Settings.Endpoint != "" {
+			var endpoint = aws.String(getSTSEndpoint(c.Settings.Endpoint))
+			cfgs = append(cfgs, &aws.Config{Endpoint: endpoint})
+		}
 
 		sess, err := newSession(cfgs...)
 		if err != nil {
@@ -256,8 +260,9 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			cfgs = append(cfgs, regionCfg)
 		}
 
-		if c.Settings.Endpoint != "" {
-			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
+		// If a FIPS endpoint is set, we need to set the endpoint on the returned session
+		if isFIPSEndpoint(c.Settings.Endpoint) {
+			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
 		}
 	}
 
@@ -282,6 +287,13 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	sc.sessCacheLock.Unlock()
 
 	return sess, nil
+}
+
+// getSTSEndpoint returns true if the set endpoint is a fips endpoint
+func isFIPSEndpoint(endpoint string) bool {
+	return strings.Contains(endpoint, "fips") ||
+		strings.Contains(endpoint, "us-gov-east-1") ||
+		strings.Contains(endpoint, "us-gov-west-1")
 }
 
 // getSTSEndpoint checks if the set endpoint is a fips endpoint, and if so, returns the STS fips endpoint for the same region

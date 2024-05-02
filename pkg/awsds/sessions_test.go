@@ -297,8 +297,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, sess)
-		// Verify that we use the corrected fips endpoint, not the one from the settings
-		assert.Equal(t, "sts-fips.us-east-1.amazonaws.com", *sess.Config.Endpoint)
+		// Verify that we use the endpoint from the settings
+		assert.Equal(t, settings.Endpoint, *sess.Config.Endpoint)
 	})
 
 	t.Run("Assume role is enabled with a non-fips endpoint", func(t *testing.T) {
@@ -324,6 +324,44 @@ func TestNewSession_AssumeRole(t *testing.T) {
 			},
 		})
 		newSTSCredentials = fakeNewSTSCredentials
+
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		// Verify that we don't use the endpoint from the settings
+		assert.Nil(t, sess.Config.Endpoint)
+	})
+}
+
+func TestNewSession_fips(t *testing.T) {
+	origNewSession := newSession
+	t.Cleanup(func() {
+		newSession = origNewSession
+	})
+
+	newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
+		cfg := aws.Config{}
+		cfg.MergeIn(cfgs...)
+		return &session.Session{
+			Config: &cfg,
+		}, nil
+	}
+
+	t.Run("non-assume auth sets the fips endpoint", func(t *testing.T) {
+		settings := AWSDatasourceSettings{
+			AuthType:  AuthTypeKeys,
+			AccessKey: "foo",
+			SecretKey: "bar",
+			Region:    "us-east-1",
+			Endpoint:  "athena-fips.us-east-1.amazonaws.com",
+		}
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{
+			Settings: settings,
+			AuthSettings: &AuthSettings{
+				AllowedAuthProviders: []string{"keys"},
+				AssumeRoleEnabled:    true,
+			},
+		})
 
 		require.NoError(t, err)
 		require.NotNil(t, sess)
