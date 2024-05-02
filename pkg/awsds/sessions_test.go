@@ -300,6 +300,36 @@ func TestNewSession_AssumeRole(t *testing.T) {
 		// Verify that we use the endpoint from the settings
 		assert.Equal(t, settings.Endpoint, *sess.Config.Endpoint)
 	})
+
+	t.Run("Assume role is enabled with a non-fips endpoint", func(t *testing.T) {
+		fakeNewSTSCredentials := newSTSCredentials
+		newSTSCredentials = func(c client.ConfigProvider, roleARN string,
+			options ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+			sess := c.(*session.Session)
+			// Verify that we are using the correct sts endpoint
+			assert.Equal(t, "sts.eu-west-2.amazonaws.com", *sess.Config.Endpoint)
+			return fakeNewSTSCredentials(c, roleARN, options...)
+		}
+		settings := AWSDatasourceSettings{
+			AssumeRoleARN: "test",
+			Region:        "eu-west-2",
+			Endpoint:      "sts.eu-west-2.amazonaws.com",
+		}
+		cache := NewSessionCache()
+		sess, err := cache.GetSession(SessionConfig{
+			Settings: settings,
+			AuthSettings: &AuthSettings{
+				AllowedAuthProviders: []string{"default"},
+				AssumeRoleEnabled:    true,
+			},
+		})
+		newSTSCredentials = fakeNewSTSCredentials
+
+		require.NoError(t, err)
+		require.NotNil(t, sess)
+		// Verify that we use the endpoint from the settings
+		assert.Equal(t, settings.Endpoint, *sess.Config.Endpoint)
+	})
 }
 
 func TestNewSession_AllowedAuthProviders(t *testing.T) {

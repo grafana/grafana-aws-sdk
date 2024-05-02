@@ -305,5 +305,5 @@ func getSTSEndpoint(endpoint string) string {
 	if strings.Contains(endpoint, "us-gov-west-1") {
 		return "sts.us-gov-west-1.amazonaws.com"
 	}
-	return ""
+	return endpoint
 }
