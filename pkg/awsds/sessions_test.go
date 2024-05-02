@@ -297,8 +297,8 @@ func TestNewSession_AssumeRole(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, sess)
-		// Verify that we use the endpoint from the settings
-		assert.Equal(t, settings.Endpoint, *sess.Config.Endpoint)
+		// Verify that we use the corrected fips endpoint, not the one from the settings
+		assert.Equal(t, "sts-fips.us-east-1.amazonaws.com", *sess.Config.Endpoint)
 	})
 
 	t.Run("Assume role is enabled with a non-fips endpoint", func(t *testing.T) {

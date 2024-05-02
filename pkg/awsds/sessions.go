@@ -216,13 +216,16 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		duration = *c.AuthSettings.SessionDuration
 	}
 	expiration := time.Now().UTC().Add(duration)
+
+	if c.Settings.Endpoint != "" {
+		var endpoint = aws.String(getSTSEndpoint(c.Settings.Endpoint))
+		backend.Logger.Debug("Using custom STS endpoint", "endpoint", endpoint)
+		cfgs = append(cfgs, &aws.Config{Endpoint: endpoint})
+	}
+
 	if c.Settings.AssumeRoleARN != "" && c.AuthSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
 		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
-
-		if c.Settings.Endpoint != "" {
-			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
-		}
 
 		sess, err := newSession(cfgs...)
 		if err != nil {
@@ -252,10 +255,10 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)
 		}
-	}
 
-	if c.Settings.Endpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+		if c.Settings.Endpoint != "" {
+			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
+		}
 	}
 
 	sess, err := newSession(cfgs...)
