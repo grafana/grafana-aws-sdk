@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.25.1
+
+- Fix: aws sts assume role with custom endpoint in [#136](https://github.com/grafana/grafana-aws-sdk/pull/136)
+
 ## v0.25.0
 
 - Add SigV4 middleware from Grafana core.
