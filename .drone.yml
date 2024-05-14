@@ -25,6 +25,13 @@ steps:
     commands:
       - mage -v test
 
+  - name: vuln check
+    image: golang:1.22
+    depends_on: [clone]
+    commands:
+      - go install golang.org/x/vuln/cmd/govulncheck@latest
+      - govulncheck ./...
+
 ---
 kind: signature
 hmac: dabf2613950066fd502238aeacf42600215e93853dc525e055d32027090867db
