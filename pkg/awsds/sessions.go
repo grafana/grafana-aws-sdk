@@ -39,11 +39,11 @@ func NewSessionCache() *SessionCache {
 }
 
 const (
-	// path to the shared credentials file in the instance for the aws/aws-sdk
+	// CredentialsPath is the path to the shared credentials file in the instance for the aws/aws-sdk
 	// if empty string, the path is ~/.aws/credentials
 	CredentialsPath = ""
 
-	// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+	// ProfileName is the profile containing credentials for GrafanaAssumeRole auth type in the shared credentials file
 	ProfileName = "assume_role_credentials"
 )
 
@@ -130,17 +130,17 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	// Hash the settings to use as a cache key
-	bldr := strings.Builder{}
+	b := strings.Builder{}
 	for i, s := range []string{
 		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
 	} {
 		if i != 0 {
-			bldr.WriteString(":")
+			b.WriteString(":")
 		}
-		bldr.WriteString(strings.ReplaceAll(s, ":", `\:`))
+		b.WriteString(strings.ReplaceAll(s, ":", `\:`))
 	}
 
-	hashedSettings := sha256.Sum256([]byte(bldr.String()))
+	hashedSettings := sha256.Sum256([]byte(b.String()))
 	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
 	// Check if we have a valid session in the cache, if so return it

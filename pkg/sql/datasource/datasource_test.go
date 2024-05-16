@@ -136,7 +136,7 @@ func TestParseSettings(t *testing.T) {
 	}
 }
 
-func fakeAPILoader(cache *awsds.SessionCache, settings models.Settings) (sqlApi.AWSAPI, error) {
+func fakeAPILoader(_ *awsds.SessionCache, _ models.Settings) (sqlApi.AWSAPI, error) {
 	return fakeAPI{}, nil
 }
 
@@ -165,35 +165,24 @@ func fakeDriverLoader(sqlApi.AWSAPI) (sqlDriver.Driver, error) {
 }
 
 func TestCreateDriver(t *testing.T) {
-	id := int64(1)
-	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
-	key := connectionKey(id, args)
 	api := fakeAPI{}
-	settings := &fakeSettings{}
 
-	dr, err := ds.createDriver(id, args, settings, api, fakeDriverLoader)
+	dr, err := ds.createDriver(api, fakeDriverLoader)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
 	if dr == nil {
 		t.Errorf("unexpected result driver %v", dr)
 	}
-	cachedDriver, ok := ds.driver.Load(key)
-	if !ok || cachedDriver == nil {
-		t.Errorf("unexpected cached driver %v", cachedDriver)
-	}
 }
 
 func TestCreateDB(t *testing.T) {
-	id := int64(1)
-	args := sqlds.Options{"foo": "bar"}
 	ds := &AWSDatasource{}
 	db := &sql.DB{}
 	dr := &fakeDriver{db: db}
-	settings := &fakeSettings{}
 
-	res, err := ds.createDB(id, args, settings, dr)
+	res, err := ds.createDB(dr)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}

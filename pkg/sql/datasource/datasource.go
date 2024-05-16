@@ -16,17 +16,14 @@ import (
 
 // AWSDatasource stores a cache of several instances.
 // Each Map will depend on the datasource ID (and connection options):
+//   - sessionCache: AWS cache. This is not a Map since it does not depend on the datasource.
 //   - config: Base configuration. It will be used as base to populate datasource settings.
 //     It does not depend on connection options (only one per datasource)
-//   - api: API instace with the common methods to contact the data source API.
-//   - driver: Abstraction on top the upstream sql.Driver. Defined to handle multiple connections.
-//   - db: Upstream database (sql.DB).
-//   - sessionCache: AWS cache. This is not a Map since it does not depend on the datasource.
+//   - api: API instance with the common methods to contact the data source API.
 type AWSDatasource struct {
 	sessionCache *awsds.SessionCache
 	config       sync.Map
 	api          sync.Map
-	driver       sync.Map
 }
 
 func New() *AWSDatasource {
@@ -34,78 +31,71 @@ func New() *AWSDatasource {
 	return ds
 }
 
-func (d *AWSDatasource) storeConfig(config backend.DataSourceInstanceSettings) {
-	d.config.Store(config.ID, config)
+func (ds *AWSDatasource) storeConfig(config backend.DataSourceInstanceSettings) {
+	ds.config.Store(config.ID, config)
 }
 
-func (s *AWSDatasource) createDB(id int64, args sqlds.Options, settings models.Settings, dr driver.Driver) (*sql.DB, error) {
+func (ds *AWSDatasource) createDB(dr driver.Driver) (*sql.DB, error) {
 	db, err := dr.OpenDB()
 	if err != nil {
-		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
+		return nil, fmt.Errorf("%w: failed to connect to database (check hostname and port?)", err)
 	}
 
 	return db, nil
 }
 
-func (s *AWSDatasource) createAsyncDB(id int64, args sqlds.Options, settings models.Settings, dr asyncDriver.Driver) (awsds.AsyncDB, error) {
+func (ds *AWSDatasource) createAsyncDB(dr asyncDriver.Driver) (awsds.AsyncDB, error) {
 	db, err := dr.GetAsyncDB()
 	if err != nil {
-		return nil, fmt.Errorf("%w: Failed to connect to database. Is the hostname and port correct?", err)
+		return nil, fmt.Errorf("%w: failed to connect to database (check hostname and port)", err)
 	}
 
 	return db, nil
 }
 
-func (d *AWSDatasource) storeAPI(id int64, args sqlds.Options, dsAPI api.AWSAPI) {
+func (ds *AWSDatasource) storeAPI(id int64, args sqlds.Options, dsAPI api.AWSAPI) {
 	key := connectionKey(id, args)
-	d.api.Store(key, dsAPI)
+	ds.api.Store(key, dsAPI)
 }
 
-func (d *AWSDatasource) loadAPI(id int64, args sqlds.Options) (api.AWSAPI, bool) {
+func (ds *AWSDatasource) loadAPI(id int64, args sqlds.Options) (api.AWSAPI, bool) {
 	key := connectionKey(id, args)
-	dsAPI, exists := d.api.Load(key)
+	dsAPI, exists := ds.api.Load(key)
 	if exists {
 		return dsAPI.(api.AWSAPI), true
 	}
 	return nil, false
 }
 
-func (s *AWSDatasource) createAPI(id int64, args sqlds.Options, settings models.Settings, loader api.Loader) (api.AWSAPI, error) {
-	api, err := loader(s.sessionCache, settings)
+func (ds *AWSDatasource) createAPI(id int64, args sqlds.Options, settings models.Settings, loader api.Loader) (api.AWSAPI, error) {
+	dsAPI, err := loader(ds.sessionCache, settings)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}
-	s.storeAPI(id, args, api)
-	return api, err
+	ds.storeAPI(id, args, dsAPI)
+	return dsAPI, err
 }
 
-func (d *AWSDatasource) storeDriver(id int64, args sqlds.Options, dr interface{}) {
-	key := connectionKey(id, args)
-	d.driver.Store(key, dr)
-}
-
-func (s *AWSDatasource) createDriver(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI, loader driver.Loader) (driver.Driver, error) {
+func (ds *AWSDatasource) createDriver(dsAPI api.AWSAPI, loader driver.Loader) (driver.Driver, error) {
 	dr, err := loader(dsAPI)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}
-	s.storeDriver(id, args, dr)
 
 	return dr, nil
 }
 
-func (s *AWSDatasource) createAsyncDriver(id int64, args sqlds.Options, settings models.Settings, dsAPI api.AWSAPI, loader asyncDriver.Loader) (asyncDriver.Driver, error) {
+func (ds *AWSDatasource) createAsyncDriver(dsAPI api.AWSAPI, loader asyncDriver.Loader) (asyncDriver.Driver, error) {
 	dr, err := loader(dsAPI)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}
-	s.storeDriver(id, args, dr)
 
 	return dr, nil
 }
 
-func (d *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings models.Settings) error {
-	config, ok := d.config.Load(id)
+func (ds *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings models.Settings) error {
+	config, ok := ds.config.Load(id)
 	if !ok {
 		return fmt.Errorf("unable to find stored configuration for datasource %d. Initialize it first", id)
 	}
@@ -118,13 +108,13 @@ func (d *AWSDatasource) parseSettings(id int64, args sqlds.Options, settings mod
 }
 
 // Init stores the data source configuration. It's needed for the GetDB and GetAPI functions
-func (s *AWSDatasource) Init(config backend.DataSourceInstanceSettings) {
-	s.storeConfig(config)
+func (ds *AWSDatasource) Init(config backend.DataSourceInstanceSettings) {
+	ds.storeConfig(config)
 }
 
 // GetDB returns a *sql.DB. It will use the loader functions to initialize the required
 // settings, API and driver and finally create a DB.
-func (s *AWSDatasource) GetDB(
+func (ds *AWSDatasource) GetDB(
 	id int64,
 	options sqlds.Options,
 	settingsLoader models.Loader,
@@ -132,27 +122,27 @@ func (s *AWSDatasource) GetDB(
 	driverLoader driver.Loader,
 ) (*sql.DB, error) {
 	settings := settingsLoader()
-	err := s.parseSettings(id, options, settings)
+	err := ds.parseSettings(id, options, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	dsAPI, err := s.createAPI(id, options, settings, apiLoader)
+	dsAPI, err := ds.createAPI(id, options, settings, apiLoader)
 	if err != nil {
 		return nil, err
 	}
 
-	dr, err := s.createDriver(id, options, settings, dsAPI, driverLoader)
+	dr, err := ds.createDriver(dsAPI, driverLoader)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.createDB(id, options, settings, dr)
+	return ds.createDB(dr)
 }
 
 // GetAsyncDB returns a sqlds.AsyncDB. It will use the loader functions to initialize the required
 // settings, API and driver and finally create a DB.
-func (s *AWSDatasource) GetAsyncDB(
+func (ds *AWSDatasource) GetAsyncDB(
 	id int64,
 	options sqlds.Options,
 	settingsLoader models.Loader,
@@ -160,43 +150,43 @@ func (s *AWSDatasource) GetAsyncDB(
 	driverLoader asyncDriver.Loader,
 ) (awsds.AsyncDB, error) {
 	settings := settingsLoader()
-	err := s.parseSettings(id, options, settings)
+	err := ds.parseSettings(id, options, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	dsAPI, err := s.createAPI(id, options, settings, apiLoader)
+	dsAPI, err := ds.createAPI(id, options, settings, apiLoader)
 	if err != nil {
 		return nil, err
 	}
 
-	dr, err := s.createAsyncDriver(id, options, settings, dsAPI, driverLoader)
+	dr, err := ds.createAsyncDriver(dsAPI, driverLoader)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.createAsyncDB(id, options, settings, dr)
+	return ds.createAsyncDB(dr)
 }
 
 // GetAPI returns an API interface. When called multiple times with the same id and options, it
 // will return a cached version of the API. The first time, it will use the loader
 // functions to initialize the required settings and API.
-func (s *AWSDatasource) GetAPI(
+func (ds *AWSDatasource) GetAPI(
 	id int64,
 	options sqlds.Options,
 	settingsLoader models.Loader,
 	apiLoader api.Loader,
 ) (api.AWSAPI, error) {
-	cachedAPI, exists := s.loadAPI(id, options)
+	cachedAPI, exists := ds.loadAPI(id, options)
 	if exists {
 		return cachedAPI, nil
 	}
 
 	// create new api
 	settings := settingsLoader()
-	err := s.parseSettings(id, options, settings)
+	err := ds.parseSettings(id, options, settings)
 	if err != nil {
 		return nil, err
 	}
-	return s.createAPI(id, options, settings, apiLoader)
+	return ds.createAPI(id, options, settings, apiLoader)
 }
