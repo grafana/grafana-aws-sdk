@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/sqlds/v3"
 	"github.com/jpillora/backoff"
@@ -53,8 +52,6 @@ type AWSAPI interface {
 	SQL
 	Resources
 }
-
-type Loader func(cache *awsds.SessionCache, settings models.Settings) (AWSAPI, error)
 
 // WaitOnQuery polls the datasource api until the query finishes, returning an error if it failed.
 func WaitOnQuery(ctx context.Context, api SQL, output *ExecuteQueryOutput) error {

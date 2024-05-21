@@ -116,5 +116,5 @@ type AsyncDB interface {
 // AsyncDriver extends the driver interface to also connect to async SQL datasources
 type AsyncDriver interface {
 	sqlds.Driver
-	GetAsyncDB(settings backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (AsyncDB, error)
+	GetAsyncDB(ctx context.Context, settings backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (AsyncDB, error)
 }

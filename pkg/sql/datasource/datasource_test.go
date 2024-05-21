@@ -1,8 +1,10 @@
 package datasource
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
+	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,9 +16,38 @@ import (
 	"github.com/grafana/sqlds/v3"
 )
 
+type fakeLoader struct {
+	driver sqlDriver.Driver
+}
+
+func (m fakeLoader) LoadSettings(_ context.Context) models.Settings {
+	return &fakeSettings{}
+}
+
+func (m fakeLoader) LoadAPI(_ context.Context, _ *awsds.SessionCache, _ models.Settings) (sqlApi.AWSAPI, error) {
+	return fakeAPI{}, nil
+}
+
+func (m fakeLoader) LoadDriver(_ context.Context, _ sqlApi.AWSAPI) (sqlDriver.Driver, error) {
+	return m.driver, nil
+}
+
+func (m fakeLoader) LoadAsyncDriver(_ context.Context, _ sqlApi.AWSAPI) (asyncDriver.Driver, error) {
+	return nil, nil
+}
+func newFakeLoader(db *sql.DB) Loader {
+	return fakeLoader{driver: &fakeDriver{db: db}}
+
+}
+
 func TestNew(t *testing.T) {
-	ds := New()
-	if ds.sessionCache == nil {
+	ds := New(newFakeLoader(nil))
+	impl, ok := ds.(*awsClient)
+	if !ok {
+		t.Errorf("unexpected underlying type: %t", ds)
+	}
+
+	if impl.sessionCache == nil {
 		t.Errorf("missing initialization")
 	}
 }
@@ -25,7 +56,7 @@ func TestInit(t *testing.T) {
 	config := backend.DataSourceInstanceSettings{
 		ID: 100,
 	}
-	ds := &AWSDatasource{}
+	ds := &awsClient{loader: newFakeLoader(nil)}
 	ds.Init(config)
 	if _, ok := ds.config.Load(config.ID); !ok {
 		t.Errorf("missing config")
@@ -87,7 +118,7 @@ func TestLoadAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.description, func(t *testing.T) {
-			ds := &AWSDatasource{}
+			ds := &awsClient{loader: newFakeLoader(nil)}
 			key := connectionKey(tt.id, tt.args)
 			if tt.api != nil {
 				ds.api.Store(key, tt.api)
@@ -120,7 +151,7 @@ func (f *fakeSettings) Apply(args sqlds.Options) {
 func TestParseSettings(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
-	ds := &AWSDatasource{}
+	ds := &awsClient{loader: newFakeLoader(nil)}
 	ds.config.Store(id, backend.DataSourceInstanceSettings{ID: id})
 
 	settings := &fakeSettings{}
@@ -136,18 +167,15 @@ func TestParseSettings(t *testing.T) {
 	}
 }
 
-func fakeAPILoader(_ *awsds.SessionCache, _ models.Settings) (sqlApi.AWSAPI, error) {
-	return fakeAPI{}, nil
-}
-
 func TestCreateAPI(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
-	ds := &AWSDatasource{}
+	ds := &awsClient{loader: newFakeLoader(nil)}
 	key := connectionKey(id, args)
 	settings := &fakeSettings{}
+	ctx := context.Background()
 
-	api, err := ds.createAPI(id, args, settings, fakeAPILoader)
+	api, err := ds.createAPI(ctx, id, args, settings)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -160,15 +188,16 @@ func TestCreateAPI(t *testing.T) {
 	}
 }
 
-func fakeDriverLoader(sqlApi.AWSAPI) (sqlDriver.Driver, error) {
-	return &fakeDriver{db: &sql.DB{}}, nil
-}
-
 func TestCreateDriver(t *testing.T) {
-	ds := &AWSDatasource{}
-	api := fakeAPI{}
+	ctx := context.Background()
+	loader := newFakeLoader(nil)
+	ds := &awsClient{loader: loader}
+	api, err := ds.createAPI(ctx, 0, sqlds.Options{}, loader.LoadSettings(ctx))
+	if err != nil {
+		t.Errorf("unexpected error %v", err)
+	}
 
-	dr, err := ds.createDriver(api, fakeDriverLoader)
+	dr, err := ds.createDriver(context.Background(), api)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -178,9 +207,9 @@ func TestCreateDriver(t *testing.T) {
 }
 
 func TestCreateDB(t *testing.T) {
-	ds := &AWSDatasource{}
 	db := &sql.DB{}
 	dr := &fakeDriver{db: db}
+	ds := &awsClient{loader: newFakeLoader(db)}
 
 	res, err := ds.createDB(dr)
 	if err != nil {
@@ -191,18 +220,14 @@ func TestCreateDB(t *testing.T) {
 	}
 }
 
-func fakeSettingsLoader() models.Settings {
-	return &fakeSettings{}
-}
-
 func TestGetDB(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
-	ds := &AWSDatasource{}
+	ds := &awsClient{loader: newFakeLoader(&sql.DB{})}
 	config := backend.DataSourceInstanceSettings{ID: id}
 	ds.Init(config)
 
-	res, err := ds.GetDB(config.ID, args, fakeSettingsLoader, fakeAPILoader, fakeDriverLoader)
+	res, err := ds.GetDB(context.Background(), config.ID, args)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
@@ -214,12 +239,12 @@ func TestGetDB(t *testing.T) {
 func TestGetAPI(t *testing.T) {
 	id := int64(1)
 	args := sqlds.Options{"foo": "bar"}
-	ds := &AWSDatasource{}
+	ds := &awsClient{loader: fakeLoader{}}
 	config := backend.DataSourceInstanceSettings{ID: id}
 	ds.Init(config)
 	key := connectionKey(id, args)
 
-	api, err := ds.GetAPI(id, args, fakeSettingsLoader, fakeAPILoader)
+	api, err := ds.GetAPI(context.Background(), id, args)
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
 	}
