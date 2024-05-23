@@ -77,7 +77,7 @@ func isAsyncFlow(query backend.DataQuery) bool {
 }
 
 func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	db, err := ds.driver.GetAsyncDB(settings, nil)
+	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 	}, nil
 }
 
-func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
+func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
 	}
@@ -174,7 +174,7 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID s
 	}
 
 	var err error
-	db, err := ds.driver.GetAsyncDB(dbConn.settings, q.ConnectionArgs)
+	db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, q.ConnectionArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
-	asyncDB, err := ds.getAsyncDBFromQuery(q, datasourceUID)
+	asyncDB, err := ds.getAsyncDBFromQuery(ctx, q, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}

@@ -72,7 +72,7 @@ func TestWaitOnQuery(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			err := WaitOnQuery(context.TODO(), tc.ds, &ExecuteQueryOutput{})
+			err := WaitOnQuery(context.Background(), tc.ds, &ExecuteQueryOutput{})
 			if tc.ds.statusCounter != len(tc.ds.status) {
 				t.Errorf("status not called the right amount of times. Want %d got %d", len(tc.ds.status), tc.ds.statusCounter)
 			}
