@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.26.1
+
+- Add CloudWatch Metrics and Dimension Key maps by @iwysiu in [#142](https://github.com/grafana/grafana-aws-sdk/pull/142)
+
 ## v0.26.0
-* **breaking**: Add more context handling @njvrzm in [#139](https://github.com/grafana/grafana-aws-sdk/pull/139)
-* upgrade all deps by @tristanburgess in [#134](https://github.com/grafana/grafana-aws-sdk/pull/134)
-* Cleanup: typos, unused methods & parameters, docstrings, etc. by @njvrzm in [#138](https://github.com/grafana/grafana-aws-sdk/pull/138)
+
+- **breaking**: Add more context handling @njvrzm in [#139](https://github.com/grafana/grafana-aws-sdk/pull/139)
+- upgrade all deps by @tristanburgess in [#134](https://github.com/grafana/grafana-aws-sdk/pull/134)
+- Cleanup: typos, unused methods & parameters, docstrings, etc. by @njvrzm in [#138](https://github.com/grafana/grafana-aws-sdk/pull/138)
 
 ## v0.25.1
 
