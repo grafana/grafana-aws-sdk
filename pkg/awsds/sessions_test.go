@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -591,4 +594,42 @@ func TestWithCustomHTTPClient(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sess)
 	assert.Equal(t, time.Duration(123), sess.Config.HTTPClient.Timeout)
+}
+
+func TestGetSessionWithContext(t *testing.T) {
+	t.Run("it uses the passed in context for auth settings", func(t *testing.T) {
+		sessionCache := NewSessionCache()
+		sessionConfig := GetSessionWithContextConfig{
+			Settings: AWSDatasourceSettings{
+				AuthType:  AuthTypeKeys,
+				AccessKey: "foo",
+				SecretKey: "bar",
+			},
+		}
+		dsInstanceContext := backend.WithGrafanaConfig(context.Background(), backend.NewGrafanaCfg(map[string]string{
+			AllowedAuthProvidersEnvVarKeyName:   "foo,bar",
+			AssumeRoleEnabledEnvVarKeyName:      "false",
+			GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
+			ListMetricsPageLimitKeyName:         "50",
+			proxy.PluginSecureSocksProxyEnabled: "true",
+		}))
+
+		_, err := sessionCache.GetSessionWithContext(dsInstanceContext, sessionConfig)
+		require.EqualError(t, err, "attempting to use an auth type that is not allowed: \"keys\"")
+	})
+
+	t.Run("it uses the default auth settings if no auth settings are passed in the context", func(t *testing.T) {
+		sessionCache := NewSessionCache()
+		sessionConfig := GetSessionWithContextConfig{
+			Settings: AWSDatasourceSettings{
+				AuthType:  AuthTypeEC2IAMRole,
+				AccessKey: "foo",
+				SecretKey: "bar",
+			},
+		}
+		dsInstanceContext := context.Background()
+
+		_, err := sessionCache.GetSessionWithContext(dsInstanceContext, sessionConfig)
+		require.EqualError(t, err, "attempting to use an auth type that is not allowed: \"ec2_iam_role\"")
+	})
 }
