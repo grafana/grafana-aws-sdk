@@ -592,3 +592,21 @@ func TestWithCustomHTTPClient(t *testing.T) {
 	require.NotNil(t, sess)
 	assert.Equal(t, time.Duration(123), sess.Config.HTTPClient.Timeout)
 }
+
+func TestGetSessionWithAuthSettings(t *testing.T) {
+	t.Run("it uses the passed in for auth settings", func(t *testing.T) {
+		sessionConfig := GetSessionConfig{
+			Settings: AWSDatasourceSettings{
+				AuthType:  AuthTypeKeys,
+				AccessKey: "foo",
+				SecretKey: "bar",
+			},
+		}
+		authSettings := AuthSettings{
+			AllowedAuthProviders: []string{"ec2_iam_role"},
+		}
+		sessionCache := NewSessionCache()
+		_, err := sessionCache.GetSessionWithAuthSettings(sessionConfig, authSettings)
+		require.EqualError(t, err, "attempting to use an auth type that is not allowed: \"keys\"")
+	})
+}

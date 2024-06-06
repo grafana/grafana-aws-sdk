@@ -73,6 +73,12 @@ var newRemoteCredentials = func(sess *session.Session) *credentials.Credentials 
 	return credentials.NewCredentials(defaults.RemoteCredProvider(*sess.Config, sess.Handlers))
 }
 
+type GetSessionConfig struct {
+	Settings      AWSDatasourceSettings
+	HTTPClient    *http.Client
+	UserAgentName *string
+}
+
 type SessionConfig struct {
 	Settings      AWSDatasourceSettings
 	HTTPClient    *http.Client
@@ -100,7 +106,7 @@ func isOptInRegion(region string) bool {
 	return regions[region]
 }
 
-// GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
+// Deprecated: use GetSessionWithAuthSettings instead
 func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	if c.Settings.Region == "" && c.Settings.DefaultRegion != "" {
 		// DefaultRegion is deprecated, Region should be used instead
@@ -287,6 +293,16 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	sc.sessCacheLock.Unlock()
 
 	return sess, nil
+}
+
+// AuthSettings can be grabed from the datasource instance's context with ReadSettingsFromContext
+func (sc *SessionCache) GetSessionWithAuthSettings(c GetSessionConfig, as AuthSettings) (*session.Session, error) {
+	return sc.GetSession(SessionConfig{
+		Settings:      c.Settings,
+		HTTPClient:    c.HTTPClient,
+		UserAgentName: c.UserAgentName,
+		AuthSettings:  &as,
+	})
 }
 
 // getSTSEndpoint returns true if the set endpoint is a fips endpoint
