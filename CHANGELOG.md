@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.27.0
+
+- Add GetSessionWithAuthSettings and Deprecate GetSession [144](https://github.com/grafana/grafana-aws-sdk/pull/144)
+
 ## v0.26.1
 
 - Add CloudWatch Metrics and Dimension Key maps by @iwysiu in [#142](https://github.com/grafana/grafana-aws-sdk/pull/142)
