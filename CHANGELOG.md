@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## What's Changed
+
+- add case sensitive metric name millisBehindLatest for KinesisAnalytics by @tristanburgess in https://github.com/grafana/grafana-aws-sdk/pull/148
+
 ## v0.27.0
 
 - Add GetSessionWithAuthSettings and Deprecate GetSession [#144](https://github.com/grafana/grafana-aws-sdk/pull/144)
