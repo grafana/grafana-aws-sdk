@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## What's Changed
+## 0.27.1
 
 - add case sensitive metric name millisBehindLatest for KinesisAnalytics by @tristanburgess in https://github.com/grafana/grafana-aws-sdk/pull/148
 
