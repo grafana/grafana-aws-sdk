@@ -79,6 +79,7 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
+// AuthSettings can be gotten from the datasource instance's context with awsds.ReadSettingsFromContext
 func New(cfg *Config, authSettings awsds.AuthSettings, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
 	var sigv4Opts Opts
 	switch len(opts) {
