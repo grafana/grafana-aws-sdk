@@ -51,6 +51,8 @@ type Config struct {
 	AssumeRoleARN string
 	ExternalID    string
 	Region        string
+
+	AuthSettings awsds.AuthSettings
 }
 
 type Opts struct {
@@ -187,9 +189,8 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		return nil, err
 	}
 
-	authSettings := awsds.ReadAuthSettingsFromEnvironmentVariables()
 	authTypeAllowed := false
-	for _, provider := range authSettings.AllowedAuthProviders {
+	for _, provider := range cfg.AuthSettings.AllowedAuthProviders {
 		if provider == authType.String() {
 			authTypeAllowed = true
 			break
@@ -200,7 +201,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
 	}
 
-	if cfg.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
+	if cfg.AssumeRoleARN != "" && !cfg.AuthSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
 	}
 

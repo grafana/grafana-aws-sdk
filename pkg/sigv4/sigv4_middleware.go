@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 )
 
@@ -12,8 +13,8 @@ const SigV4MiddlewareName = "sigv4"
 
 var newSigV4Func = New
 
-// SigV4Middleware applies AWS Signature Version 4 request signing for the outgoing request.
-func SigV4Middleware(verboseLogging bool) httpclient.Middleware {
+// SigV4MiddlewareWithAuthSettings applies AWS Signature Version 4 request signing for the outgoing request.
+func SigV4MiddlewareWithAuthSettings(verboseLogging bool, authSettings awsds.AuthSettings) httpclient.Middleware {
 	return httpclient.NamedMiddlewareFunc(SigV4MiddlewareName, func(opts httpclient.Options, next http.RoundTripper) http.RoundTripper {
 		if opts.SigV4 == nil {
 			return next
@@ -28,6 +29,7 @@ func SigV4Middleware(verboseLogging bool) httpclient.Middleware {
 			AuthType:      opts.SigV4.AuthType,
 			ExternalID:    opts.SigV4.ExternalID,
 			Profile:       opts.SigV4.Profile,
+			AuthSettings:  authSettings,
 		}
 
 		rt, err := newSigV4Func(conf, next, Opts{VerboseMode: verboseLogging})
@@ -37,6 +39,12 @@ func SigV4Middleware(verboseLogging bool) httpclient.Middleware {
 
 		return rt
 	})
+}
+
+// SigV4Middleware applies AWS Signature Version 4 request signing for the outgoing request.
+// Deprecated: Use SigV4MiddlewareWithAuthSettings instead
+func SigV4Middleware(verboseLogging bool) httpclient.Middleware {
+	return SigV4MiddlewareWithAuthSettings(verboseLogging, *awsds.ReadAuthSettingsFromEnvironmentVariables())
 }
 
 func invalidSigV4Config(err error) http.RoundTripper {
