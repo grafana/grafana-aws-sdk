@@ -14,6 +14,7 @@ const SigV4MiddlewareName = "sigv4"
 var newSigV4Func = New
 
 // SigV4MiddlewareWithAuthSettings applies AWS Signature Version 4 request signing for the outgoing request.
+// AuthSettings can be gotten from the datasource instance's context with awsds.ReadSettingsFromContext
 func SigV4MiddlewareWithAuthSettings(verboseLogging bool, authSettings awsds.AuthSettings) httpclient.Middleware {
 	return httpclient.NamedMiddlewareFunc(SigV4MiddlewareName, func(opts httpclient.Options, next http.RoundTripper) http.RoundTripper {
 		if opts.SigV4 == nil {

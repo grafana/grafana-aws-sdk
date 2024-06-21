@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.28.0
+
+- Add SigV4MiddlewareWithAuthSettings and deprecate SigV4Middleware [#150](https://github.com/grafana/grafana-aws-sdk/pull/150)
+
 ## 0.27.1
 
 - add case sensitive metric name millisBehindLatest for KinesisAnalytics by @tristanburgess in https://github.com/grafana/grafana-aws-sdk/pull/148
