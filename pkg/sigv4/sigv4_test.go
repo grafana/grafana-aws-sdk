@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 
@@ -17,14 +18,14 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("Can't create new middleware without valid auth type", func(t *testing.T) {
-		rt, err := New(&Config{}, nil)
+		rt, err := New(&Config{}, awsds.AuthSettings{}, nil)
 		require.Error(t, err)
 		require.Nil(t, rt)
 
 	})
 	t.Run("Can create new middleware with any valid auth type", func(t *testing.T) {
 		for _, authType := range []string{"credentials", "sharedCreds", "keys", "default", "ec2_iam_role", "arn"} {
-			rt, err := New(&Config{AuthType: authType}, nil)
+			rt, err := New(&Config{AuthType: authType}, awsds.AuthSettings{}, nil)
 
 			require.NoError(t, err)
 			require.NotNil(t, rt)
@@ -33,7 +34,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can sign a request", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -63,7 +64,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can sign a request with extra headers which are not signed", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -96,7 +97,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Signed request overwrites existing Authorization header", func(t *testing.T) {
 		cfg := &Config{AuthType: "default"}
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -122,7 +123,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Can't sign a request without valid credentials", func(t *testing.T) {
 		cfg := &Config{AuthType: "ec2_iam_role"}
-		rt, err := New(cfg, &fakeTransport{})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -150,7 +151,7 @@ func TestNew(t *testing.T) {
 		fakeLogger := &fakeLogger{}
 		backend.Logger = fakeLogger
 
-		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: true})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{}, Opts{VerboseMode: true})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)
@@ -182,7 +183,7 @@ func TestNew(t *testing.T) {
 		fakeLogger := &fakeLogger{}
 		backend.Logger = fakeLogger
 
-		rt, err := New(cfg, &fakeTransport{}, Opts{VerboseMode: false})
+		rt, err := New(cfg, awsds.AuthSettings{}, &fakeTransport{}, Opts{VerboseMode: false})
 		require.NoError(t, err)
 		require.NotNil(t, rt)
 		r, err := http.NewRequest("GET", "http://grafana.sigv4.test", nil)

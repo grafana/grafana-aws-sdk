@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +32,7 @@ func TestSigV4Middleware(t *testing.T) {
 		origSigV4Func := newSigV4Func
 		newSigV4Called := false
 		middlewareCalled := false
-		newSigV4Func = func(config *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
+		newSigV4Func = func(config *Config, authSettings awsds.AuthSettings, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
 			newSigV4Called = true
 			return httpclient.RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				middlewareCalled = true
@@ -69,7 +70,7 @@ func TestSigV4Middleware(t *testing.T) {
 		origSigV4Func := newSigV4Func
 		newSigV4Called := false
 		middlewareCalled := false
-		newSigV4Func = func(config *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
+		newSigV4Func = func(config *Config, authSettings awsds.AuthSettings, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
 			newSigV4Called = true
 			return httpclient.RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 				middlewareCalled = true
@@ -106,7 +107,7 @@ func TestSigV4Middleware(t *testing.T) {
 
 	t.Run("With sigv4 error returned", func(t *testing.T) {
 		origSigV4Func := newSigV4Func
-		newSigV4Func = func(config *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
+		newSigV4Func = func(config *Config, authSettings awsds.AuthSettings, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
 			return nil, fmt.Errorf("problem")
 		}
 		t.Cleanup(func() {

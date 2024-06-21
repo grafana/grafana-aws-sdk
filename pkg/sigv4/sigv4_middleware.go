@@ -30,10 +30,9 @@ func SigV4MiddlewareWithAuthSettings(verboseLogging bool, authSettings awsds.Aut
 			AuthType:      opts.SigV4.AuthType,
 			ExternalID:    opts.SigV4.ExternalID,
 			Profile:       opts.SigV4.Profile,
-			AuthSettings:  authSettings,
 		}
 
-		rt, err := newSigV4Func(conf, next, Opts{VerboseMode: verboseLogging})
+		rt, err := newSigV4Func(conf, authSettings, next, Opts{VerboseMode: verboseLogging})
 		if err != nil {
 			return invalidSigV4Config(err)
 		}

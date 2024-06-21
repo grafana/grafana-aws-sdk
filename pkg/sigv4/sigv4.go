@@ -51,8 +51,6 @@ type Config struct {
 	AssumeRoleARN string
 	ExternalID    string
 	Region        string
-
-	AuthSettings awsds.AuthSettings
 }
 
 type Opts struct {
@@ -81,7 +79,7 @@ func (rt RoundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 
 // New instantiates a new signing middleware with an optional succeeding
 // middleware. The http.DefaultTransport will be used if nil
-func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
+func New(cfg *Config, authSettings awsds.AuthSettings, next http.RoundTripper, opts ...Opts) (http.RoundTripper, error) {
 	var sigv4Opts Opts
 	switch len(opts) {
 	case 0:
@@ -109,7 +107,7 @@ func New(cfg *Config, next http.RoundTripper, opts ...Opts) (http.RoundTripper, 
 			signer = cached
 		} else {
 			var err error
-			signer, err = createSigner(cfg, sigv4Opts.VerboseMode)
+			signer, err = createSigner(cfg, authSettings, sigv4Opts.VerboseMode)
 			if err != nil {
 				return nil, err
 			}
@@ -183,14 +181,14 @@ func cachedSigner(cfg *Config) (*v4.Signer, bool) {
 	return nil, false
 }
 
-func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
+func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool) (*v4.Signer, error) {
 	authType, err := awsds.ToAuthType(cfg.AuthType)
 	if err != nil {
 		return nil, err
 	}
 
 	authTypeAllowed := false
-	for _, provider := range cfg.AuthSettings.AllowedAuthProviders {
+	for _, provider := range authSettings.AllowedAuthProviders {
 		if provider == authType.String() {
 			authTypeAllowed = true
 			break
@@ -201,7 +199,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		return nil, fmt.Errorf("attempting to use an auth type for SigV4 that is not allowed: %q", authType.String())
 	}
 
-	if cfg.AssumeRoleARN != "" && !cfg.AuthSettings.AssumeRoleEnabled {
+	if cfg.AssumeRoleARN != "" && !authSettings.AssumeRoleEnabled {
 		return nil, fmt.Errorf("attempting to use assume role (ARN) for SigV4 which is not enabled")
 	}
 
