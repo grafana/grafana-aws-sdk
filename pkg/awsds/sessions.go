@@ -295,7 +295,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	return sess, nil
 }
 
-// AuthSettings can be grabed from the datasource instance's context with ReadSettingsFromContext
+// AuthSettings can be grabed from the datasource instance's context with ReadAuthSettingsFromContext
 func (sc *SessionCache) GetSessionWithAuthSettings(c GetSessionConfig, as AuthSettings) (*session.Session, error) {
 	return sc.GetSession(SessionConfig{
 		Settings:      c.Settings,
