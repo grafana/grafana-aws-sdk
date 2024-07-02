@@ -536,7 +536,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/EFS":                            {"FileSystemId", "StorageClass"},
 	"AWS/ELB":                            {"AvailabilityZone", "LoadBalancerName"},
 	"AWS/ES":                             {"ClientId", "DomainName", "NodeId"},
-	"AWS/ElastiCache":                    {"CacheClusterId", "CacheNodeId"},
+	"AWS/ElastiCache":                    {"CacheClusterId", "CacheNodeId", "ClusterId"},
 	"AWS/ElasticBeanstalk":               {"EnvironmentName", "InstanceId"},
 	"AWS/ElasticInference":               {"ElasticInferenceAcceleratorId", "InstanceId"},
 	"AWS/ElasticMapReduce":               {"ClusterId", "JobFlowId", "JobId"},
