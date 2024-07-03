@@ -316,6 +316,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"CurrConnections",
 		"CurrItems",
 		"CurrVolatileItems",
+		"DatabaseCapacityUsageCountedForEvictPercentage",
 		"DatabaseMemoryUsagePercentage",
 		"DatabaseMemoryUsageCountedForEvictPercentage",
 		"DB0AverageTTL",
