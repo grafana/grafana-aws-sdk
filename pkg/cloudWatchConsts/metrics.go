@@ -372,6 +372,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"NetworkBytesIn",
 		"NetworkBytesOut",
 		"NetworkConntrackAllowanceExceeded",
+		"NetworkLinkLocalAllowanceExceeded",
 		"NetworkMaxBytesIn",
 		"NetworkMaxBytesOut ",
 		"NetworkMaxPacketsIn",
