@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/grafana/sqlds/v3"
 )
 
@@ -117,10 +118,13 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			var frames data.Frames
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
-			response.Set(query.RefID, backend.DataResponse{
-				Frames: frames,
-				Error:  err,
-			})
+			if err != nil {
+				response.Set(query.RefID, errorsource.Response(err))
+			} else {
+				response.Set(query.RefID, backend.DataResponse{
+					Frames: frames,
+				})
+			}
 
 			wg.Done()
 		}(q)
