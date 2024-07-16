@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.29.0
+* Support errorsource by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/155
+* Add DatabaseCapacityUsageCountedForEvictPercentage for AWS/ElastiCache by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/152
+* Add some missing metrics to AWS/ElastiCache by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/153
+
 ## 0.28.0
 
 - Add SigV4MiddlewareWithAuthSettings and deprecate SigV4Middleware [#150](https://github.com/grafana/grafana-aws-sdk/pull/150)
