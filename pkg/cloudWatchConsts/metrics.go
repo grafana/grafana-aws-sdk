@@ -1668,6 +1668,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"SumOffsetLag",
 		"SwapFree",
 		"SwapUsed",
+		"TCPConnections",
 		"TcpConnections",
 		"TrafficBytes",
 		"TrafficShaping",
