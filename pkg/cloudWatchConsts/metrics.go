@@ -3204,4 +3204,6 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/Cassandra":                               {"Keyspace", "Operation", "TableName"},
 	"AWS/AmplifyHosting":                          {"App"},
 	"CloudWatchSynthetics":                        {"CanaryName", "StepName"},
+	"AWS/Scheduler":                               {"ScheduleGroup"},
+	"AWS/MWAA":                                    {"Cluster", "Queue", "Database"},
 }
