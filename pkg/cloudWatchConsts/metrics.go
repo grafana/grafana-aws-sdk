@@ -736,6 +736,9 @@ var NamespaceMetricsMap = map[string][]string{
 		"MemoryReservation",
 		"MemoryUtilization",
 	},
+	"AWS/ECR": {
+		"RepositoryPullCount",
+	},
 	"AWS/EFS": {
 		"BurstCreditBalance",
 		"ClientConnections",
