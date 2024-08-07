@@ -205,7 +205,6 @@ var NamespaceMetricsMap = map[string][]string{
 	"AWS/ApplicationELB": {
 		"ActiveConnectionCount",
 		"AnomalousHostCount",
-		"AvailabilityZone",
 		"ClientTLSNegotiationErrorCount",
 		"ConsumedLCUs",
 		"DesyncMitigationMode_NonCompliant_Request_Count",
@@ -240,7 +239,6 @@ var NamespaceMetricsMap = map[string][]string{
 		"LambdaInternalError",
 		"LambdaTargetProcessedBytes",
 		"LambdaUserError",
-		"LoadBalancer",
 		"MitigatedHostCount",
 		"NewConnectionCount",
 		"NonStickyRequestCount",
@@ -251,7 +249,6 @@ var NamespaceMetricsMap = map[string][]string{
 		"RuleEvaluations",
 		"StandardProcessedBytes",
 		"TargetConnectionErrorCount",
-		"TargetGroup",
 		"TargetResponseTime",
 		"TargetTLSNegotiationErrorCount",
 		"UnHealthyHostCount",
