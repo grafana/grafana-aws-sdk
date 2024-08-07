@@ -2917,8 +2917,14 @@ var NamespaceMetricsMap = map[string][]string{
 	"AWS/WAFV2": {
 		"AllowedRequests",
 		"BlockedRequests",
+		"CaptchaRequests",
+		"CaptchasAttempted",
+		"CaptchasSolved",
+		"ChallengeRequests",
 		"CountedRequests",
 		"PassedRequests",
+		"RequestsWithValidCaptchaToken",
+		"RequestsWithValidChallengeToken",
 	},
 	"AWS/WorkSpaces": {
 		"Available",
