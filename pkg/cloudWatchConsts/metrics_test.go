@@ -3,6 +3,7 @@ package cloudWatchConsts
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"slices"
 	"sort"
 	"testing"
 )
@@ -30,8 +31,9 @@ func printSortedNamespaceMetricsMapAsGoMap() {
 	for _, k := range keys {
 		metrics := NamespaceMetricsMap[k]
 		sort.Strings(metrics)
+		uniqMetrics := slices.Compact(metrics)
 		fmt.Printf("    \"%s\": {\n", k)
-		for _, metric := range metrics {
+		for _, metric := range uniqMetrics {
 			fmt.Printf("        \"%s\",\n", metric)
 		}
 		fmt.Println("    },")
