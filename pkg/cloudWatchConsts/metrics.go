@@ -2672,6 +2672,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"NumberOfNotificationsFailed",
 		"NumberOfNotificationsFilteredOut",
 		"NumberOfNotificationsFilteredOut-InvalidAttributes",
+		"NumberOfNotificationsFilteredOut-MessageBody",
 		"NumberOfNotificationsFilteredOut-NoMessageAttributes",
 		"PublishSize",
 		"SMSMonthToDateSpentUSD",
