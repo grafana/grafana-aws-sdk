@@ -2759,6 +2759,16 @@ var NamespaceMetricsMap = map[string][]string{
 		"StepStopped",
 		"StepSucceeded",
 	},
+	"AWS/Scheduler": {
+		"InvocationAttemptCount",
+		"InvocationDroppedCount",
+		"InvocationThrottleCount",
+		"InvocationsFailedToBeSentToDeadLetterCount",
+		"InvocationsSentToDeadLetterCount",
+		"InvocationsSentToDeadLetterCount_Truncated_MessageSizeExceeded",
+		"TargetErrorCount",
+		"TargetErrorThrottledCount",
+	},
 	"AWS/ServiceCatalog": {
 		"ProvisionedProductLaunch",
 	},
