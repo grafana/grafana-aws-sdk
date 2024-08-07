@@ -729,15 +729,15 @@ var NamespaceMetricsMap = map[string][]string{
 		"TargetCapacity",
 		"TerminatingCapacity",
 	},
+	"AWS/ECR": {
+		"RepositoryPullCount",
+	},
 	"AWS/ECS": {
 		"CPUReservation",
 		"CPUUtilization",
 		"GPUReservation",
 		"MemoryReservation",
 		"MemoryUtilization",
-	},
-	"AWS/ECR": {
-		"RepositoryPullCount",
 	},
 	"AWS/EFS": {
 		"BurstCreditBalance",
@@ -2890,6 +2890,10 @@ var NamespaceMetricsMap = map[string][]string{
 		"CpuUtilized",
 		"DeploymentCount",
 		"DesiredTaskCount",
+		"EBSFilesystemSize",
+		"EBSFilesystemUtilized",
+		"EphemeralStorageReserved",
+		"EphemeralStorageUtilized",
 		"MemoryReserved",
 		"MemoryUtilized",
 		"NetworkRxBytes",
@@ -2908,7 +2912,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"instance_filesystem_utilization",
 		"instance_memory_limit",
 		"instance_memory_reserved_capacity",
-		"instance_memory_utliization",
+		"instance_memory_utilization",
 		"instance_memory_working_set",
 		"instance_network_total_bytes",
 		"instance_number_of_running_tasks",
