@@ -3006,6 +3006,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"instance_memory_limit",
 		"instance_memory_reserved_capacity",
 		"instance_memory_utilization",
+		"instance_memory_utliization",
 		"instance_memory_working_set",
 		"instance_network_total_bytes",
 		"instance_number_of_running_tasks",
