@@ -3206,4 +3206,5 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"CloudWatchSynthetics":                        {"CanaryName", "StepName"},
 	"AWS/Scheduler":                               {"ScheduleGroup"},
 	"AWS/MWAA":                                    {"Cluster", "Queue", "Database"},
+	"AWS/ECR":                                     {"RepositoryName"},
 }
