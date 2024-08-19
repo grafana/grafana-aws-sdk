@@ -2,37 +2,30 @@ package cloudWatchConsts
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"slices"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // test to check NamespaceMetricsMap is sorted alphabetically
 func TestNamespaceMetricsMap(t *testing.T) {
-	var ok bool
-	var val string
-	if ok, val = isNamespaceMetricsMapSorted(NamespaceMetricsMap); !ok {
-		fmt.Println(val)
-		fmt.Println("NamespaceMetricsMap is not sorted alphabetically. Please use sorted version:")
-		printSortedNamespaceMetricsMapAsGoMap()
+	unsortedMetricNamespaces := namespacesWithUnsortedMetrics(NamespaceMetricsMap)
+	if len(unsortedMetricNamespaces) != 0 {
+		assert.Fail(t, "NamespaceMetricsMap is not sorted alphabetically. Please replace the printed services")
+		printNamespacesThatNeedSorted(unsortedMetricNamespaces)
 	}
-	assert.True(t, ok)
 }
 
-func printSortedNamespaceMetricsMapAsGoMap() {
-	keys := make([]string, 0, len(NamespaceMetricsMap))
-	for k := range NamespaceMetricsMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+func printNamespacesThatNeedSorted(unsortedMetricNamespaces []string) {
+	slices.Sort(unsortedMetricNamespaces)
 
-	fmt.Println("var NamespaceMetricsMap = map[string][]string{")
-	for _, k := range keys {
-		metrics := NamespaceMetricsMap[k]
-		sort.Strings(metrics)
+	for _, namespace := range unsortedMetricNamespaces {
+		metrics := NamespaceMetricsMap[namespace]
+		slices.Sort(metrics)
 		uniqMetrics := slices.Compact(metrics)
-		fmt.Printf("    \"%s\": {\n", k)
+		fmt.Printf("    \"%s\": {\n", namespace)
 		for _, metric := range uniqMetrics {
 			fmt.Printf("        \"%s\",\n", metric)
 		}
@@ -41,11 +34,8 @@ func printSortedNamespaceMetricsMapAsGoMap() {
 	fmt.Println("}")
 }
 
-// isNamespaceMetricsMapSorted checks if NamespaceMetricsMap is sorted alphabetically by keys and their metrics.
-func isNamespaceMetricsMapSorted(NamespaceMetricsMap map[string][]string) (bool, string) {
-	var report string
-	isSorted := true
-
+// namespacesWithUnsortedMetrics returns which namespaces have unsorted metrics
+func namespacesWithUnsortedMetrics(NamespaceMetricsMap map[string][]string) []string {
 	// Extract keys from the map and sort them
 	keys := make([]string, 0, len(NamespaceMetricsMap))
 	for k := range NamespaceMetricsMap {
@@ -53,9 +43,10 @@ func isNamespaceMetricsMapSorted(NamespaceMetricsMap map[string][]string) (bool,
 	}
 	sort.Strings(keys)
 
+	var unsortedNamespace []string
 	// Check if metrics are sorted for each key
-	for _, key := range keys {
-		metrics := NamespaceMetricsMap[key]
+	for _, namespace := range keys {
+		metrics := NamespaceMetricsMap[namespace]
 		sortedMetrics := make([]string, len(metrics))
 		copy(sortedMetrics, metrics)
 		sort.Strings(sortedMetrics)
@@ -63,12 +54,11 @@ func isNamespaceMetricsMapSorted(NamespaceMetricsMap map[string][]string) (bool,
 		// Compare the sorted metrics with the original to find unsorted metrics
 		for i, metric := range metrics {
 			if metric != sortedMetrics[i] {
-				isSorted = false
-				report += fmt.Sprintf("Metric '%s' in key '%s' is not sorted correctly.\n", metric, key)
+				unsortedNamespace = append(unsortedNamespace, namespace)
 				break // Only report the first unsorted metric per key
 			}
 		}
 	}
 
-	return isSorted, report
+	return unsortedNamespace
 }
