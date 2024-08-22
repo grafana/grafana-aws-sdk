@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 	"testing"
 
 	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
