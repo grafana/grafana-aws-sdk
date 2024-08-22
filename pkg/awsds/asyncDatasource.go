@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/grafana/sqlds/v4"
 )
 
@@ -77,7 +78,7 @@ func isAsyncFlow(query backend.DataQuery) bool {
 }
 
 func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	db, err := ds.driver.GetAsyncDB(settings, nil)
+	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -117,10 +118,11 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			var frames data.Frames
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
-			response.Set(query.RefID, backend.DataResponse{
-				Frames: frames,
-				Error:  err,
-			})
+			if err != nil {
+				response.Set(query.RefID, errorsource.Response(err))
+			} else {
+				response.Set(query.RefID, backend.DataResponse{Frames: frames})
+			}
 
 			wg.Done()
 		}(q)
@@ -153,7 +155,7 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 	}, nil
 }
 
-func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
+func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
 	}
@@ -174,7 +176,7 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(q *AsyncQuery, datasourceUID s
 	}
 
 	var err error
-	db, err := ds.driver.GetAsyncDB(dbConn.settings, q.ConnectionArgs)
+	db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, q.ConnectionArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +213,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		fillMode = q.FillMissing
 	}
 
-	asyncDB, err := ds.getAsyncDBFromQuery(q, datasourceUID)
+	asyncDB, err := ds.getAsyncDBFromQuery(ctx, q, datasourceUID)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}

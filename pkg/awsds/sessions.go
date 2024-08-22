@@ -39,11 +39,11 @@ func NewSessionCache() *SessionCache {
 }
 
 const (
-	// path to the shared credentials file in the instance for the aws/aws-sdk
+	// CredentialsPath is the path to the shared credentials file in the instance for the aws/aws-sdk
 	// if empty string, the path is ~/.aws/credentials
 	CredentialsPath = ""
 
-	// the profile containing credentials for GrafanaAssueRole auth type in the shared credentials file
+	// ProfileName is the profile containing credentials for GrafanaAssumeRole auth type in the shared credentials file
 	ProfileName = "assume_role_credentials"
 )
 
@@ -73,6 +73,12 @@ var newRemoteCredentials = func(sess *session.Session) *credentials.Credentials 
 	return credentials.NewCredentials(defaults.RemoteCredProvider(*sess.Config, sess.Handlers))
 }
 
+type GetSessionConfig struct {
+	Settings      AWSDatasourceSettings
+	HTTPClient    *http.Client
+	UserAgentName *string
+}
+
 type SessionConfig struct {
 	Settings      AWSDatasourceSettings
 	HTTPClient    *http.Client
@@ -100,7 +106,7 @@ func isOptInRegion(region string) bool {
 	return regions[region]
 }
 
-// GetSession returns a session from the config and possible region overrides -- implements AmazonSessionProvider
+// Deprecated: use GetSessionWithAuthSettings instead
 func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	if c.Settings.Region == "" && c.Settings.DefaultRegion != "" {
 		// DefaultRegion is deprecated, Region should be used instead
@@ -130,17 +136,17 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	// Hash the settings to use as a cache key
-	bldr := strings.Builder{}
+	b := strings.Builder{}
 	for i, s := range []string{
 		c.Settings.AuthType.String(), c.Settings.AccessKey, c.Settings.SecretKey, c.Settings.Profile, c.Settings.AssumeRoleARN, c.Settings.Region, c.Settings.Endpoint,
 	} {
 		if i != 0 {
-			bldr.WriteString(":")
+			b.WriteString(":")
 		}
-		bldr.WriteString(strings.ReplaceAll(s, ":", `\:`))
+		b.WriteString(strings.ReplaceAll(s, ":", `\:`))
 	}
 
-	hashedSettings := sha256.Sum256([]byte(bldr.String()))
+	hashedSettings := sha256.Sum256([]byte(b.String()))
 	cacheKey := fmt.Sprintf("%v", hashedSettings)
 
 	// Check if we have a valid session in the cache, if so return it
@@ -216,12 +222,19 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		duration = *c.AuthSettings.SessionDuration
 	}
 	expiration := time.Now().UTC().Add(duration)
+
+	if c.Settings.Endpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+	}
+
 	if c.Settings.AssumeRoleARN != "" && c.AuthSettings.AssumeRoleEnabled {
 		// We should assume a role in AWS
 		backend.Logger.Debug("Trying to assume role in AWS", "arn", c.Settings.AssumeRoleARN)
 
+		// If a FIPS endpoint is set, we need to use the FIPS STS endpoint
 		if c.Settings.Endpoint != "" {
-			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(getSTSEndpoint(c.Settings.Endpoint))})
+			var endpoint = aws.String(getSTSEndpoint(c.Settings.Endpoint))
+			cfgs = append(cfgs, &aws.Config{Endpoint: endpoint})
 		}
 
 		sess, err := newSession(cfgs...)
@@ -252,10 +265,11 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			regionCfg = &aws.Config{Region: aws.String(c.Settings.Region)}
 			cfgs = append(cfgs, regionCfg)
 		}
-	}
 
-	if c.Settings.Endpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+		// If a FIPS endpoint is set, we need to set the endpoint on the returned session
+		if isFIPSEndpoint(c.Settings.Endpoint) {
+			cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.Settings.Endpoint)})
+		}
 	}
 
 	sess, err := newSession(cfgs...)
@@ -279,6 +293,23 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	sc.sessCacheLock.Unlock()
 
 	return sess, nil
+}
+
+// AuthSettings can be grabed from the datasource instance's context with ReadAuthSettingsFromContext
+func (sc *SessionCache) GetSessionWithAuthSettings(c GetSessionConfig, as AuthSettings) (*session.Session, error) {
+	return sc.GetSession(SessionConfig{
+		Settings:      c.Settings,
+		HTTPClient:    c.HTTPClient,
+		UserAgentName: c.UserAgentName,
+		AuthSettings:  &as,
+	})
+}
+
+// getSTSEndpoint returns true if the set endpoint is a fips endpoint
+func isFIPSEndpoint(endpoint string) bool {
+	return strings.Contains(endpoint, "fips") ||
+		strings.Contains(endpoint, "us-gov-east-1") ||
+		strings.Contains(endpoint, "us-gov-west-1")
 }
 
 // getSTSEndpoint checks if the set endpoint is a fips endpoint, and if so, returns the STS fips endpoint for the same region
@@ -305,5 +336,5 @@ func getSTSEndpoint(endpoint string) string {
 	if strings.Contains(endpoint, "us-gov-west-1") {
 		return "sts.us-gov-west-1.amazonaws.com"
 	}
-	return ""
+	return endpoint
 }

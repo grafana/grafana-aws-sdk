@@ -28,12 +28,19 @@ const (
 	// ListMetricsPageLimitKeyName is the string literal for the cloudwatch list metrics page limit key name
 	ListMetricsPageLimitKeyName = "AWS_CW_LIST_METRICS_PAGE_LIMIT"
 
+	// SigV4AuthEnabledEnvVarKeyName is the string literal for the sigv4 auth enabled environment variable key name
+	SigV4AuthEnabledEnvVarKeyName = "AWS_SIGV4_AUTH_ENABLED"
+
+	// SigV4VerboseLoggingEnvVarKeyName is the string literal for the sigv4 verbose logging environment variable key name
+	SigV4VerboseLoggingEnvVarKeyName = "AWS_SIGV4_VERBOSE_LOGGING"
+
 	defaultAssumeRoleEnabled         = true
 	defaultListMetricsPageLimit      = 500
 	defaultSecureSocksDSProxyEnabled = false
 )
 
 // ReadAuthSettings gets the Grafana auth settings from the context if its available, the environment variables if not
+// Deprecated: This function is only for backwards compatibility, generally ReadAuthSettingsFromContext should be used instead
 func ReadAuthSettings(ctx context.Context) *AuthSettings {
 	settings, exists := ReadAuthSettingsFromContext(ctx)
 	if !exists {
@@ -192,4 +199,13 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	}
 
 	return authSettings
+}
+
+// ReadSigV4Settings gets the SigV4 settings from the context if its available
+func ReadSigV4Settings(ctx context.Context) *SigV4Settings {
+	cfg := backend.GrafanaConfigFromContext(ctx)
+	return &SigV4Settings{
+		Enabled:        cfg.Get(SigV4AuthEnabledEnvVarKeyName) == "true",
+		VerboseLogging: cfg.Get(SigV4VerboseLoggingEnvVarKeyName) == "true",
+	}
 }

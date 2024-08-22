@@ -42,7 +42,7 @@ type fakeDriver struct {
 	AsyncDriver
 }
 
-func (d fakeDriver) GetAsyncDB(backend.DataSourceInstanceSettings, json.RawMessage) (db AsyncDB, err error) {
+func (d fakeDriver) GetAsyncDB(context.Context, backend.DataSourceInstanceSettings, json.RawMessage) (db AsyncDB, err error) {
 	return d.openDBfn()
 }
 
@@ -96,7 +96,7 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 				ds.storeDBConnection(key, dbConnection{tt.existingDB, settings})
 			}
 
-			dbConn, err := ds.getAsyncDBFromQuery(&AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
+			dbConn, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}

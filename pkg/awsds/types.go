@@ -29,6 +29,12 @@ type AuthSettings struct {
 	SecureSocksDSProxyEnabled bool
 }
 
+// SigV4Settings stores the settings for SigV4 authentication
+type SigV4Settings struct {
+	Enabled        bool
+	VerboseLogging bool
+}
+
 // QueryStatus represents the status of an async query
 type QueryStatus uint32
 
@@ -110,5 +116,5 @@ type AsyncDB interface {
 // AsyncDriver extends the driver interface to also connect to async SQL datasources
 type AsyncDriver interface {
 	sqlds.Driver
-	GetAsyncDB(settings backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (AsyncDB, error)
+	GetAsyncDB(ctx context.Context, settings backend.DataSourceInstanceSettings, queryArgs json.RawMessage) (AsyncDB, error)
 }

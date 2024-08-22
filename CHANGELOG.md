@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.30.0
+
+- Sort NamespaceMetricsMap by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/156
+- Add expected casing for AWS/Kafka TCPConnections by @kgeckhart in https://github.com/grafana/grafana-aws-sdk/pull/158
+- Move AWS/DataLifeCycleManager metrics to AWS/EBS by @iwysiu in https://github.com/grafana/grafana-aws-sdk/pull/159
+
+## 0.29.0
+
+- Support errorsource by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/155
+- Add DatabaseCapacityUsageCountedForEvictPercentage for AWS/ElastiCache by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/152
+- Add some missing metrics to AWS/ElastiCache by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/153
+
+## 0.28.0
+
+- Add SigV4MiddlewareWithAuthSettings and deprecate SigV4Middleware [#150](https://github.com/grafana/grafana-aws-sdk/pull/150)
+
+[Breaking Change] `sigv4.New` now expects the auth settings to be passed in instead of fetched from environment variables.
+
+## 0.27.1
+
+- add case sensitive metric name millisBehindLatest for KinesisAnalytics by @tristanburgess in https://github.com/grafana/grafana-aws-sdk/pull/148
+
+## v0.27.0
+
+- Add GetSessionWithAuthSettings and Deprecate GetSession [#144](https://github.com/grafana/grafana-aws-sdk/pull/144)
+
+## v0.26.1
+
+- Add CloudWatch Metrics and Dimension Key maps by @iwysiu in [#142](https://github.com/grafana/grafana-aws-sdk/pull/142)
+
+## v0.26.0
+
+- **breaking**: Add more context handling @njvrzm in [#139](https://github.com/grafana/grafana-aws-sdk/pull/139)
+- upgrade all deps by @tristanburgess in [#134](https://github.com/grafana/grafana-aws-sdk/pull/134)
+- Cleanup: typos, unused methods & parameters, docstrings, etc. by @njvrzm in [#138](https://github.com/grafana/grafana-aws-sdk/pull/138)
+
+## v0.25.1
+
+- Fix: aws sts assume role with custom endpoint in [#136](https://github.com/grafana/grafana-aws-sdk/pull/136)
+
+## v0.25.0
+
+- Add SigV4 middleware from Grafana core.
+
+## v0.24.0
+
+- Sessions: Use STS regional endpoint in assume role for opt-in regions in [#129](https://github.com/grafana/grafana-aws-sdk/pull/129)
+- Add health check for async queries in [#124](https://github.com/grafana/grafana-aws-sdk/pull/125)
+
 ## v0.23.1
 
 -Fix warning for getting GF_SECURE_SOCKS_DATASOURCE_PROXY_SERVER_ENABLED env variable [#125](https://github.com/grafana/grafana-aws-sdk/pull/125)
