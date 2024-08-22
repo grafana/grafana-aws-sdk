@@ -5,13 +5,15 @@ import (
 	"database/sql/driver"
 	"testing"
 
+	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	sqlApi "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	sqlDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v3"
+	"github.com/grafana/sqlds/v4"
 )
 
 func TestNew(t *testing.T) {

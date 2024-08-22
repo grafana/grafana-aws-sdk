@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/sqlds/v3"
+	"github.com/grafana/sqlds/v4"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"

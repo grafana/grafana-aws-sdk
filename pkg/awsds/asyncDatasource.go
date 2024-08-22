@@ -243,11 +243,12 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
+	dbConn, _ := ds.getDBConnection(defaultKey(datasourceUID))
 	db, err := ds.GetDBFromQuery(ctx, &q.Query)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
-	res, err := queryAsync(ctx, db, ds.driver.Converters(), fillMode, q, d.Settings)
+	res, err := queryAsync(ctx, db, dbConn.settings, ds.driver.Converters(), fillMode, q)
 	if err == nil || errors.Is(err, sqlds.ErrorNoResults) {
 		if len(res) == 0 {
 			res = append(res, &data.Frame{})
@@ -259,7 +260,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	return getErrorFrameFromQuery(q), err
 }
 
-func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery, ds backend.DataSourceInstanceSettings) (data.Frames, error) {
-	newQuery := sqlds.NewQuery(conn, ds, converters, fillMode)
-	return newQuery.Run(ctx, &q.Query)
+func queryAsync(ctx context.Context, conn *sql.DB, settings backend.DataSourceInstanceSettings, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery) (data.Frames, error) {
+	query := sqlds.NewQuery(conn, settings, converters, fillMode)
+	return query.Run(ctx, &q.Query, sql.NamedArg{Name: "queryID", Value: q.QueryID})
 }
