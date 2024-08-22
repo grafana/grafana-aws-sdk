@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/sqlds/v3"
+	"github.com/grafana/sqlds/v4"
 )
 
 const defaultKeySuffix = "default"
@@ -243,11 +243,11 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 		}, nil
 	}
 
-	db, err := ds.GetDBFromQuery(ctx, &q.Query, datasourceUID)
+	db, err := ds.GetDBFromQuery(ctx, &q.Query)
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
-	res, err := queryAsync(ctx, db, ds.driver.Converters(), fillMode, q)
+	res, err := queryAsync(ctx, db, ds.driver.Converters(), fillMode, q, d.Settings)
 	if err == nil || errors.Is(err, sqlds.ErrorNoResults) {
 		if len(res) == 0 {
 			res = append(res, &data.Frame{})
@@ -259,6 +259,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	return getErrorFrameFromQuery(q), err
 }
 
-func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery) (data.Frames, error) {
-	return sqlds.QueryDB(ctx, conn, converters, fillMode, &q.Query, sql.NamedArg{Name: "queryID", Value: q.QueryID})
+func queryAsync(ctx context.Context, conn *sql.DB, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery, ds backend.DataSourceInstanceSettings) (data.Frames, error) {
+	newQuery := sqlds.NewQuery(conn, ds, converters, fillMode)
+	return newQuery.Run(ctx, &q.Query)
 }
