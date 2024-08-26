@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## 0.31.0
 
 - Update sqlds to v4.1.0 in https://github.com/grafana/grafana-aws-sdk/pull/166
+- Add AmazonMWAA and missing Aurora RDS Metrics in https://github.com/grafana/grafana-aws-sdk/pull/165
+- Add more metrics to the services in https://github.com/grafana/grafana-aws-sdk/pull/161
 
 ## 0.30.0
 
