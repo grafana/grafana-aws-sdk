@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.31.0
+
+- Update sqlds to v4.1.0 in https://github.com/grafana/grafana-aws-sdk/pull/166
+
 ## 0.30.0
 
 - Sort NamespaceMetricsMap by @andriikushch in https://github.com/grafana/grafana-aws-sdk/pull/156
