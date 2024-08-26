@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
-	"github.com/grafana/sqlds/v3"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/sqlds/v4"
 )
 
 func connectionKey(id int64, args sqlds.Options) string {
@@ -13,7 +13,7 @@ func connectionKey(id int64, args sqlds.Options) string {
 }
 
 func GetDatasourceID(ctx context.Context) int64 {
-	plugin := httpadapter.PluginConfigFromContext(ctx)
+	plugin := backend.PluginConfigFromContext(ctx)
 	if plugin.DataSourceInstanceSettings != nil {
 		return plugin.DataSourceInstanceSettings.ID
 	}
@@ -21,7 +21,7 @@ func GetDatasourceID(ctx context.Context) int64 {
 }
 
 func GetDatasourceLastUpdatedTime(ctx context.Context) string {
-	plugin := httpadapter.PluginConfigFromContext(ctx)
+	plugin := backend.PluginConfigFromContext(ctx)
 	if plugin.DataSourceInstanceSettings != nil {
 		return plugin.DataSourceInstanceSettings.Updated.String()
 	}
