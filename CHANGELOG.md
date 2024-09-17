@@ -1,6 +1,9 @@
 # Change Log
 
 All notable changes to this project will be documented in this file.
+## 0.31.1
+
+- Mark auth errors as downstream in sessions.go
 
 ## 0.31.0
 
