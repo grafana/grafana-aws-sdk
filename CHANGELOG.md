@@ -1,6 +1,9 @@
 # Change Log
 
 All notable changes to this project will be documented in this file.
+## 0.31.1
+
+- Mark dowstream errors in sessions.go in https://github.com/grafana/grafana-aws-sdk/pull/169
 
 ## 0.31.0
 
