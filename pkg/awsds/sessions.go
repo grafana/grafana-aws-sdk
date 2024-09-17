@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -52,7 +53,11 @@ const (
 //
 //nolint:gocritic
 var newSession = func(cfgs ...*aws.Config) (*session.Session, error) {
-	return session.NewSession(cfgs...)
+	s, err := session.NewSession(cfgs...)
+	if err != nil {
+		return nil, errorsource.DownstreamError(err, false)
+	}
+	return s, nil
 }
 
 // STS credentials factory.
@@ -128,11 +133,13 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 	}
 
 	if !authTypeAllowed {
-		return nil, fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String())
+		// user error, but mark as downstream
+		return nil, errorsource.DownstreamError(fmt.Errorf("attempting to use an auth type that is not allowed: %q", c.Settings.AuthType.String()), false)
 	}
 
 	if c.Settings.AssumeRoleARN != "" && !c.AuthSettings.AssumeRoleEnabled {
-		return nil, fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini")
+		// user error, but mark as downstream
+		return nil, errorsource.DownstreamError(fmt.Errorf("attempting to use assume role (ARN) which is disabled in grafana.ini"), false)
 	}
 
 	// Hash the settings to use as a cache key
@@ -214,7 +221,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 			Credentials: credentials.NewSharedCredentials(CredentialsPath, ProfileName),
 		})
 	default:
-		panic(fmt.Sprintf("Unrecognized authType: %d", c.Settings.AuthType))
+		return nil, fmt.Errorf("unrecognized authType: %d", c.Settings.AuthType)
 	}
 
 	duration := stscreds.DefaultDuration
