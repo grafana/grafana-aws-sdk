@@ -1,6 +1,11 @@
 # Change Log
 
 All notable changes to this project will be documented in this file.
+
+## 0.31.2
+
+- Upgrade grafana-plugin-sdk-go to v0.250.0 in https://github.com/grafana/grafana-aws-sdk/pull/170
+
 ## 0.31.1
 
 - Mark dowstream errors in sessions.go in https://github.com/grafana/grafana-aws-sdk/pull/169
