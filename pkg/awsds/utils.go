@@ -53,11 +53,6 @@ func GetUserAgentString(name string) string {
 	buildInfo, err := build.GetBuildInfo()
 	if err != nil {
 		buildInfo.Version = "dev"
-		buildInfo.Hash = "?"
-	}
-
-	if len(buildInfo.Hash) > 8 {
-		buildInfo.Hash = buildInfo.Hash[0:8]
 	}
 
 	grafanaVersion := os.Getenv("GF_VERSION")
@@ -68,14 +63,13 @@ func GetUserAgentString(name string) string {
 	// Determine if running in an Amazon Managed Grafana environment
 	_, amgEnv := os.LookupEnv("AMAZON_MANAGED_GRAFANA")
 
-	return fmt.Sprintf("%s/%s (%s; %s;) %s/%s-%s Grafana/%s AMG/%s",
+	return fmt.Sprintf("%s/%s (%s; %s;) %s/%s Grafana/%s AMG/%s",
 		aws.SDKName,
 		aws.SDKVersion,
 		runtime.Version(),
 		runtime.GOOS,
 		name,
 		buildInfo.Version,
-		buildInfo.Hash,
 		grafanaVersion,
 		strconv.FormatBool(amgEnv))
 }
