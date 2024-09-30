@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.31.3
+
+- Update CloudWatch Metrics for AWS IoT SiteWise in https://github.com/grafana/grafana-aws-sdk/pull/172
+
 ## 0.31.2
 
 - Upgrade grafana-plugin-sdk-go to v0.250.0 in https://github.com/grafana/grafana-aws-sdk/pull/170
