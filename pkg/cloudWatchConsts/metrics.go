@@ -1676,6 +1676,8 @@ var NamespaceMetricsMap = map[string][]string{
 		"ModbusTCPCollector.ActiveDataStreamCount",
 		"ModbusTCPCollector.Heartbeat",
 		"ModbusTCPCollector.IncomingValuesCount",
+		"OPCUACollector.ActiveDataStreamCount",
+		"OPCUACollector.Heartbeat",
 		"OpcUaCollector.ActiveDataStreamCount",
 		"OpcUaCollector.ConversionErrors",
 		"OpcUaCollector.Heartbeat",
