@@ -112,7 +112,7 @@ type AWSDatasourceSettings struct {
 
 // LoadSettings will read and validate Settings from the DataSourceConfg
 func (s *AWSDatasourceSettings) Load(config backend.DataSourceInstanceSettings) error {
-	if config.JSONData != nil && len(config.JSONData) > 1 {
+	if len(config.JSONData) > 1 {
 		if err := json.Unmarshal(config.JSONData, s); err != nil {
 			return fmt.Errorf("could not unmarshal DatasourceSettings json: %w", err)
 		}
