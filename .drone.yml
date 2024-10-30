@@ -16,9 +16,9 @@ steps:
       - mage --keep -v build
 
   - name: lint
-    image: grafana/grafana-plugin-ci:1.9.5
+    image: golangci/golangci-lint:v1.61.0
     commands:
-      - mage --keep -v lint
+      - golangci-lint run ./...
 
   - name: test
     image: grafana/grafana-plugin-ci:1.9.5
@@ -34,6 +34,6 @@ steps:
 
 ---
 kind: signature
-hmac: 63fe601a5a95e4be215a92d3d8a823f861825052fd323a7039063a7fd5a348e1
+hmac: 96b53fa91bf5f81092fd0f4e8780122d2eaae5ab3c1be3908ae7178874db163a
 
 ...
