@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.31.4
+
+- Update dependencies in https://github.com/grafana/grafana-aws-sdk/pull/175
+  - github.com/aws/aws-sdk-go from v1.51.31 to v1.55.5
+  - github.com/grafana/grafana-plugin-sdk-go from v0.250.0 to v0.258.0
+  - github.com/grafana/sqlds/v4 from v4.1.0 to v4.1.2
+- Update AWS/SES metrics and dimensions in https://github.com/grafana/grafana-aws-sdk/pull/174
+
 ## 0.31.3
 
 - Update CloudWatch Metrics for AWS IoT SiteWise in https://github.com/grafana/grafana-aws-sdk/pull/172
