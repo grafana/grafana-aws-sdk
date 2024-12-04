@@ -1,6 +1,7 @@
 package awsds
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -19,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
+
+	awsV2 "github.com/aws/aws-sdk-go-v2/aws"
 )
 
 type envelope struct {
@@ -344,4 +347,33 @@ func getSTSEndpoint(endpoint string) string {
 		return "sts.us-gov-west-1.amazonaws.com"
 	}
 	return endpoint
+}
+
+// CredentialsProviderV2 provides a CredentialsProvider suitable for use with aws-sdk-go-v2,
+// to be used while migrating datasources.
+// Experimental: this works but is not thoroughly tested yet
+func (sc *SessionCache) CredentialsProviderV2(ctx context.Context, cfg GetSessionConfig) (awsV2.CredentialsProvider, error) {
+	authSettings := ReadAuthSettings(ctx)
+	sess, err := sc.GetSessionWithAuthSettings(cfg, *authSettings)
+	if err != nil {
+		return nil, err
+	}
+	return &SessionCredentialsProvider{sess}, nil
+
+}
+
+type SessionCredentialsProvider struct {
+	session *session.Session
+}
+
+func (scp *SessionCredentialsProvider) Retrieve(_ context.Context) (awsV2.Credentials, error) {
+	creds := awsV2.Credentials{}
+	v1creds, err := scp.session.Config.Credentials.Get()
+	if err != nil {
+		return creds, err
+	}
+	creds.AccessKeyID = v1creds.AccessKeyID
+	creds.SecretAccessKey = v1creds.SecretAccessKey
+	creds.SessionToken = v1creds.SessionToken
+	return creds, nil
 }
