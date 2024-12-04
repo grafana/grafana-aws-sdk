@@ -40,7 +40,8 @@ const (
 )
 
 // ReadAuthSettings gets the Grafana auth settings from the context if its available, the environment variables if not
-// Deprecated: This function is only for backwards compatibility, generally ReadAuthSettingsFromContext should be used instead
+// Note: This function is mainly for backwards compatibility with older versions of Grafana; generally
+// ReadAuthSettingsFromContext should be used instead
 func ReadAuthSettings(ctx context.Context) *AuthSettings {
 	settings, exists := ReadAuthSettingsFromContext(ctx)
 	if !exists {
