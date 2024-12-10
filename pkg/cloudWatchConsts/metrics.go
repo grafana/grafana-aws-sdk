@@ -125,8 +125,8 @@ var NamespaceMetricsMap = map[string][]string{
 		"VolumeWriteOps",
 	},
 	"AWS/AmplifyHosting": {
-		"4XXErrors",
-		"5XXErrors",
+		"4xxErrors",
+		"5xxErrors",
 		"BytesDownloaded",
 		"BytesUploaded",
 		"Latency",
