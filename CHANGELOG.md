@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Update github.com/grafana/sqlds/v4 from 4.1.2 to 4.1.3 in https://github.com/grafana/grafana-aws-sdk/pull/178
 - Remove ReadAuthSettings deprecation warning in https://github.com/grafana/grafana-aws-sdk/pull/184
 - Add metrics for elasticache serverless in https://github.com/grafana/grafana-aws-sdk/pull/183
-- Update AWS/AmplifyHosting metrics
+- Update AWS/AmplifyHosting metrics in https://github.com/grafana/grafana-aws-sdk/pull/186
 
 ## 0.31.4
 
