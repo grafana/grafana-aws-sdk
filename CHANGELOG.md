@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.31.5
+
+- Update dependencies in https://github.com/grafana/grafana-aws-sdk/pull/176
+  - actions/checkout from 2 to 4
+  - tibdex/github-app-token from 1.8.0 to 2.1.0
+- Update github.com/grafana/sqlds/v4 from 4.1.2 to 4.1.3 in https://github.com/grafana/grafana-aws-sdk/pull/178
+- Remove ReadAuthSettings deprecation warning in https://github.com/grafana/grafana-aws-sdk/pull/184
+- Add metrics for elasticache serverless in https://github.com/grafana/grafana-aws-sdk/pull/183
+- Update AWS/AmplifyHosting metrics
+
 ## 0.31.4
 
 - Update dependencies in https://github.com/grafana/grafana-aws-sdk/pull/175
