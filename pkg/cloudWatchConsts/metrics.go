@@ -2786,9 +2786,11 @@ var NamespaceMetricsMap = map[string][]string{
 	},
 	"AWS/SQS": {
 		"ApproximateAgeOfOldestMessage",
+		"ApproximateNumberOfGroupsWithInflightMessages",
 		"ApproximateNumberOfMessagesDelayed",
 		"ApproximateNumberOfMessagesNotVisible",
 		"ApproximateNumberOfMessagesVisible",
+		"NumberOfDeduplicatedSentMessages",
 		"NumberOfEmptyReceives",
 		"NumberOfMessagesDeleted",
 		"NumberOfMessagesReceived",
