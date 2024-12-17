@@ -6,6 +6,7 @@ toolchain go1.23.2
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.47
 	github.com/google/go-cmp v0.6.0
 	github.com/grafana/grafana-plugin-sdk-go v0.258.0
 	github.com/grafana/sqlds/v4 v4.1.3
@@ -17,6 +18,8 @@ require (
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.2 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.32.6 // indirect
+	github.com/aws/smithy-go v1.22.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
