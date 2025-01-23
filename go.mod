@@ -5,10 +5,10 @@ go 1.23
 toolchain go1.23.2
 
 require (
-	github.com/aws/aws-sdk-go v1.55.5
-	github.com/aws/aws-sdk-go-v2 v1.32.8
+	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/aws-sdk-go-v2 v1.33.0
 	github.com/google/go-cmp v0.6.0
-	github.com/grafana/grafana-plugin-sdk-go v0.262.0
+	github.com/grafana/grafana-plugin-sdk-go v0.263.0
 	github.com/grafana/sqlds/v4 v4.1.7
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
