@@ -20,8 +20,8 @@ const (
 	AuthTypeGrafanaAssumeRole //cloud only
 )
 
-func (at AuthType) String() string {
-	switch at {
+func (at *AuthType) String() string {
+	switch *at {
 	case AuthTypeDefault:
 		return "default"
 	case AuthTypeSharedCreds:
