@@ -319,6 +319,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"InvocationServerErrors",
 		"InvocationThrottles",
 		"Invocations",
+		"LegacyModelInvocations",
 		"OutputImageCount",
 		"OutputTokenCount",
 	},
