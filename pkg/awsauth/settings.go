@@ -3,6 +3,7 @@ package awsauth
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -49,9 +50,18 @@ func (s Settings) WithRegion() LoadOptionsFunc {
 }
 
 func (s Settings) WithEndpoint() LoadOptionsFunc {
+	useFips := false
+	if strings.Contains(s.Endpoint, "-fips.") || strings.Contains(s.Region, "us-gov") {
+		// TODO: add fips support as an toggle option
+		s.Endpoint = ""
+		useFips = true
+	}
 	return func(options *config.LoadOptions) error {
 		if s.Endpoint != "" && s.Endpoint != "default" {
 			options.BaseEndpoint = s.Endpoint
+		}
+		if useFips {
+			options.UseFIPSEndpoint = aws.FIPSEndpointStateEnabled
 		}
 		return nil
 	}
