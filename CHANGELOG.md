@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.31.8
+
+- Bump github.com/grafana/grafana-plugin-sdk-go from 0.265.0 to 0.266.0 in the all-go-dependencies group by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/204
+- Bump the all-go-dependencies group across 1 directory with 2 updates by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/201
+- Add missing LegacyModelInvocations AWS bedrock metric by @drmdrew in https://github.com/grafana/grafana-aws-sdk/pull/200
+- Chore: add label to external contributions by @kevinwcyu in https://github.com/grafana/grafana-aws-sdk/pull/198
+- Update CloudWatch AWS/EBS metrics and dimensions by @idastambuk in https://github.com/grafana/grafana-aws-sdk/pull/197
+- Bump the all-go-dependencies group with 3 updates by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/194
+
+## 0.31.7
+
+- Bump the all-go-dependencies group across 1 directory with 4 updates by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/190
+- Bump the all-go-dependencies group across 1 directory with 3 updates by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/193
+
+## 0.31.6
+
+- Add new SQS FIFO metrics by @thepalbi in https://github.com/grafana/grafana-aws-sdk/pull/187
+- Add aws-sdk-go-v2 credentials provider (session wrapper) by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/185
+
 ## 0.31.5
 
 - Update dependencies in https://github.com/grafana/grafana-aws-sdk/pull/176
