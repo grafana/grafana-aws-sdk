@@ -7,13 +7,34 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
-// GetAWSConfig returns an aws.Config struct initialized from the given Settings
-func GetAWSConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
-	return getAWSConfigWithClient(ctx, authSettings, realAWSClient{})
+type ConfigProvider interface {
+	GetConfig(context.Context, Settings) (aws.Config, error)
 }
 
-func getAWSConfigWithClient(ctx context.Context, authSettings Settings, client AWSAPIClient) (aws.Config, error) {
+func NewConfigProvider() ConfigProvider {
+	return newAWSConfigProviderWithClient(realAWSAPIClient{})
+}
+
+func newAWSConfigProviderWithClient(client AWSAPIClient) *realAWSConfigProvider {
+	return &realAWSConfigProvider{client, make(map[uint64]aws.Config)}
+}
+
+type realAWSConfigProvider struct {
+	client AWSAPIClient
+	cache  map[uint64]aws.Config
+}
+
+func (rcp *realAWSConfigProvider) GetConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
 	logger := backend.Logger.FromContext(ctx)
+
+	key := authSettings.Hash()
+	cached, exists := rcp.cache[key]
+	if exists {
+		logger.Debug("returning config from cache")
+		return cached, nil
+	}
+	logger.Debug("creating new config")
+
 	options := authSettings.BaseOptions()
 
 	authType := authSettings.GetAuthType()
@@ -21,24 +42,24 @@ func getAWSConfigWithClient(ctx context.Context, authSettings Settings, client A
 	switch authType {
 	case AuthTypeDefault: // nothing else to do here
 	case AuthTypeKeys:
-		options = append(options, authSettings.WithStaticCredentials(client))
+		options = append(options, authSettings.WithStaticCredentials(rcp.client))
 	case AuthTypeSharedCreds, AuthTypeGrafanaAssumeRole:
 		options = append(options, authSettings.WithSharedCredentials())
 	case AuthTypeEC2IAMRole:
 		// TODO: test this
-		options = append(options, authSettings.WithEC2RoleCredentials(client))
+		options = append(options, authSettings.WithEC2RoleCredentials(rcp.client))
 	default:
 		return aws.Config{}, fmt.Errorf("unknown auth type: %s", authType)
 	}
 
-	cfg, err := client.LoadDefaultConfig(ctx, options...)
+	cfg, err := rcp.client.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return aws.Config{}, err
 	}
 
 	if authSettings.AssumeRoleARN != "" {
-		options = append(authSettings.BaseOptions(), authSettings.WithAssumeRole(cfg, client))
-		cfg, err = client.LoadDefaultConfig(ctx, options...)
+		options = append(authSettings.BaseOptions(), authSettings.WithAssumeRole(cfg, rcp.client))
+		cfg, err = rcp.client.LoadDefaultConfig(ctx, options...)
 		if err != nil {
 			return aws.Config{}, err
 		}
@@ -49,5 +70,6 @@ func getAWSConfigWithClient(ctx context.Context, authSettings Settings, client A
 		return aws.Config{}, fmt.Errorf("error retrieving credentials: %w", err)
 	}
 
+	rcp.cache[key] = cfg
 	return cfg, nil
 }

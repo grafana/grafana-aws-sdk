@@ -2,6 +2,7 @@ package awsauth
 
 import (
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,25 @@ type Settings struct {
 	Endpoint           string
 	ExternalID         string
 	ProxyOptions       *proxy.Options
+}
+
+// Hash returns a value suitable for caching the config associated with these settings
+func (s Settings) Hash() uint64 {
+	h := fnv.New64()
+	// In theory all of these except for region will be moot, because if any of them
+	// change the datasource instance will be recycled. However, to ensure no leakage
+	// of credentials between instances, we check everything except proxy options.
+	// If those change the datasource will definitely not be reused.
+	_, _ = h.Write([]byte(s.GetAuthType()))
+	_, _ = h.Write([]byte(s.AccessKey))
+	_, _ = h.Write([]byte(s.SecretKey))
+	_, _ = h.Write([]byte(s.Region))
+	_, _ = h.Write([]byte(s.CredentialsPath))
+	_, _ = h.Write([]byte(s.CredentialsProfile))
+	_, _ = h.Write([]byte(s.AssumeRoleARN))
+	_, _ = h.Write([]byte(s.Endpoint))
+	_, _ = h.Write([]byte(s.ExternalID))
+	return h.Sum64()
 }
 
 func (s Settings) GetAuthType() AuthType {
