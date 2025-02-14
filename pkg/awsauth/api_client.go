@@ -22,25 +22,25 @@ type AWSAPIClient interface {
 	NewEC2RoleCreds() aws.CredentialsProvider
 }
 
-type realAWSClient struct{}
+type realAWSAPIClient struct{}
 
-func (c realAWSClient) NewStaticCredentialsProvider(key, secret, session string) aws.CredentialsProvider {
+func (c realAWSAPIClient) NewStaticCredentialsProvider(key, secret, session string) aws.CredentialsProvider {
 	return credentials.NewStaticCredentialsProvider(key, secret, session)
 }
-func (c realAWSClient) LoadDefaultConfig(ctx context.Context, options ...LoadOptionsFunc) (aws.Config, error) {
+func (c realAWSAPIClient) LoadDefaultConfig(ctx context.Context, options ...LoadOptionsFunc) (aws.Config, error) {
 	return config.LoadDefaultConfig(ctx, options...)
 }
-func (c realAWSClient) NewSTSClientFromConfig(cfg aws.Config) stscreds.AssumeRoleAPIClient {
+func (c realAWSAPIClient) NewSTSClientFromConfig(cfg aws.Config) stscreds.AssumeRoleAPIClient {
 	return sts.NewFromConfig(cfg)
 }
 
-func (c realAWSClient) NewAssumeRoleProvider(client stscreds.AssumeRoleAPIClient, roleARN string, optFns ...func(*stscreds.AssumeRoleOptions)) aws.CredentialsProvider {
+func (c realAWSAPIClient) NewAssumeRoleProvider(client stscreds.AssumeRoleAPIClient, roleARN string, optFns ...func(*stscreds.AssumeRoleOptions)) aws.CredentialsProvider {
 	return stscreds.NewAssumeRoleProvider(client, roleARN, optFns...)
 }
 
-func (c realAWSClient) NewCredentialsCache(provider aws.CredentialsProvider, optFns ...func(options *aws.CredentialsCacheOptions)) aws.CredentialsProvider {
+func (c realAWSAPIClient) NewCredentialsCache(provider aws.CredentialsProvider, optFns ...func(options *aws.CredentialsCacheOptions)) aws.CredentialsProvider {
 	return aws.NewCredentialsCache(provider, optFns...)
 }
-func (c realAWSClient) NewEC2RoleCreds() aws.CredentialsProvider {
+func (c realAWSAPIClient) NewEC2RoleCreds() aws.CredentialsProvider {
 	return ec2rolecreds.New()
 }

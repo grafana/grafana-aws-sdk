@@ -4,15 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -38,14 +32,15 @@ type testCase struct {
 
 func (tc testCase) Run(t *testing.T) {
 	ctx := context.Background()
-	client := &mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}}
-	defer setUpAndRestoreEnvironment(tc.environment)() // a little goofy-looking but it works
+	client := &mockAWSAPIClient{&mockAssumeRoleAPIClient{}}
 
 	if tc.authSettings.AssumeRoleARN != "" {
 		client.assumeRoleClient.On("AssumeRole").Return(tc.assumeRoleShouldFail, tc.assumedCredentials)
 	}
+	provider := newAWSConfigProviderWithClient(client)
+	defer setUpAndRestoreEnvironment(tc.environment)() // a little goofy-looking but it works
 
-	cfg, err := getAWSConfigWithClient(ctx, tc.authSettings, client)
+	cfg, err := provider.GetConfig(ctx, tc.authSettings)
 
 	if tc.shouldError {
 		require.Error(t, err)
@@ -258,61 +253,4 @@ func TestGetAWSConfig_UnknownOrMissing(t *testing.T) {
 func TestGetAWSConfig_EC2IAMRole(t *testing.T) {
 	// TODO
 	t.Skip()
-}
-
-type mockAssumeRoleAPIClient struct {
-	mock.Mock
-}
-
-func (m *mockAssumeRoleAPIClient) AssumeRole(_ context.Context, params *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
-	args := m.Called()
-	if args.Bool(0) { // shouldError
-		return &sts.AssumeRoleOutput{}, fmt.Errorf("you can't do that")
-	}
-	return &sts.AssumeRoleOutput{
-		AssumedRoleUser: &ststypes.AssumedRoleUser{
-			Arn:           params.RoleArn,
-			AssumedRoleId: aws.String("auto-generated-id"),
-		},
-		Credentials: args.Get(1).(*ststypes.Credentials),
-	}, nil
-}
-
-type mockAWSAPIClient struct {
-	mock.Mock
-
-	assumeRoleClient *mockAssumeRoleAPIClient
-}
-
-func (m *mockAWSAPIClient) LoadDefaultConfig(ctx context.Context, options ...LoadOptionsFunc) (aws.Config, error) {
-	opts := []LoadOptionsFunc{func(opts *config.LoadOptions) error {
-		// Disable using EC2 instance metadata in config loading
-		opts.EC2IMDSClientEnableState = imds.ClientDisabled
-		// Disable endpoint discovery to avoid API calls out from tests
-		opts.EnableEndpointDiscovery = aws.EndpointDiscoveryDisabled
-		return nil
-	}}
-	opts = append(opts, options...)
-	return config.LoadDefaultConfig(ctx, opts...)
-}
-
-func (m *mockAWSAPIClient) NewStaticCredentialsProvider(key, secret, session string) aws.CredentialsProvider {
-	return credentials.NewStaticCredentialsProvider(key, secret, session)
-}
-
-func (m *mockAWSAPIClient) NewSTSClientFromConfig(_ aws.Config) stscreds.AssumeRoleAPIClient {
-	return m.assumeRoleClient
-}
-
-func (m *mockAWSAPIClient) NewAssumeRoleProvider(client stscreds.AssumeRoleAPIClient, arn string, opts ...func(*stscreds.AssumeRoleOptions)) aws.CredentialsProvider {
-	return stscreds.NewAssumeRoleProvider(client, arn, opts...)
-}
-
-func (m *mockAWSAPIClient) NewCredentialsCache(provider aws.CredentialsProvider, optFns ...func(options *aws.CredentialsCacheOptions)) aws.CredentialsProvider {
-	return aws.NewCredentialsCache(provider, optFns...)
-}
-
-func (m *mockAWSAPIClient) NewEC2RoleCreds() aws.CredentialsProvider {
-	// TODO
-	panic("not implemented")
 }
