@@ -2,16 +2,22 @@ package awsauth
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"hash/fnv"
 	"net/http"
+	"os"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	smithymiddleware "github.com/aws/smithy-go/middleware"
 
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
+	"github.com/grafana/grafana-plugin-sdk-go/build"
 )
 
 // Settings carries configuration for authenticating with AWS
@@ -27,6 +33,8 @@ type Settings struct {
 	AssumeRoleARN      string
 	Endpoint           string
 	ExternalID         string
+	UserAgent          string
+	HTTPClient         *http.Client
 	ProxyOptions       *proxy.Options
 }
 
@@ -57,7 +65,7 @@ func (s Settings) GetAuthType() AuthType {
 }
 
 func (s Settings) BaseOptions() []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithProxy()}
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(), s.WithUserAgent()}
 }
 
 func (s Settings) WithRegion() LoadOptionsFunc {
@@ -130,24 +138,59 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 	}
 }
 
-func (s Settings) WithProxy() LoadOptionsFunc {
-	if s.ProxyOptions == nil {
-		return func(*config.LoadOptions) error { return nil }
-	}
+func (s Settings) WithHTTPClient() LoadOptionsFunc {
 	return func(options *config.LoadOptions) error {
-		if client, ok := options.HTTPClient.(*http.Client); ok {
-			if client.Transport == nil {
-				client.Transport = http.DefaultTransport
-			} else if _, ok := client.Transport.(*http.Transport); !ok {
-				return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
-			}
-			err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(client.Transport.(*http.Transport))
-			if err != nil {
-				return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
-			}
-			return nil
-		} else {
-			return fmt.Errorf("cfg.HTTPClient is not *http.Client")
+		if s.HTTPClient != nil {
+			options.HTTPClient = s.HTTPClient
 		}
+		if s.ProxyOptions != nil {
+			if client, ok := options.HTTPClient.(*http.Client); ok {
+				if client.Transport == nil {
+					client.Transport = http.DefaultTransport
+				}
+				if transport, ok := client.Transport.(*http.Transport); ok {
+					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
+					if err != nil {
+						return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
+					}
+				} else {
+					return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
+				}
+			} else {
+				return fmt.Errorf("cfg.HTTPClient is not *http.Client")
+			}
+		}
+		return nil
+	}
+}
+
+// WithUserAgent adds info to the UserAgent header of API requests.
+// Adapted from grafana-aws-sdk/pkg/awsds/utils.go
+func (s Settings) WithUserAgent() LoadOptionsFunc {
+	buildInfo, err := build.GetBuildInfo()
+	version := buildInfo.Version
+	if err != nil {
+		version = "dev"
+	}
+	grafanaVersion := os.Getenv("GF_VERSION")
+	if grafanaVersion == "" {
+		grafanaVersion = "?"
+	}
+	_, amgEnv := os.LookupEnv("AMAZON_MANAGED_GRAFANA")
+
+	return func(options *config.LoadOptions) error {
+		apiOpts := []func(*smithymiddleware.Stack) error{
+			middleware.AddUserAgentKeyValue(aws.SDKName, aws.SDKVersion),
+			middleware.AddUserAgentKey(fmt.Sprintf("(%s; %s;)", runtime.Version(), runtime.GOOS)),
+		}
+		if s.UserAgent != "" {
+			apiOpts = append(apiOpts, middleware.AddUserAgentKeyValue(s.UserAgent, version))
+		}
+		apiOpts = append(apiOpts,
+			middleware.AddUserAgentKeyValue("Grafana", grafanaVersion),
+			middleware.AddUserAgentKeyValue("AMG", strconv.FormatBool(amgEnv)),
+		)
+		options.APIOptions = append(options.APIOptions, apiOpts...)
+		return nil
 	}
 }
