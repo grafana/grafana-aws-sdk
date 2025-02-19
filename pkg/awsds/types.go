@@ -47,6 +47,31 @@ const (
 	QueryFailed
 )
 
+type DownstreamErrorCause uint32
+
+const (
+	QueryFailedInternal DownstreamErrorCause = iota
+	QueryFailedUser
+)
+
+// QueryExecutionError error type can be returned from datasource's Execute or QueryStatus methods 
+// this will mark the downstream cause in errorResponse.Status
+type QueryExecutionError struct {
+	Err   error
+	Cause DownstreamErrorCause
+}
+
+func (e *QueryExecutionError) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return ""
+}
+
+func (e *QueryExecutionError) Unwrap() error {
+	return e.Err
+}
+
 func (qs QueryStatus) Finished() bool {
 	return qs == QueryCanceled || qs == QueryFailed || qs == QueryFinished
 }
