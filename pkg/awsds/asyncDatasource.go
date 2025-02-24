@@ -119,7 +119,20 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
 			if err != nil {
-				response.Set(query.RefID, errorsource.Response(err))
+				errorResponse := errorsource.Response(err)
+				var qeError *QueryExecutionError
+				// checking if we know the cause of downstream error
+				if errors.As(err, &qeError) {
+					errorResponse.Status = backend.StatusInternal
+					switch qeError.Cause {
+						// make sure error.status matches the downstream cause, if provided
+						case QueryFailedInternal:
+							errorResponse.Status = backend.StatusInternal
+						case QueryFailedUser:
+							errorResponse.Status = backend.StatusBadRequest
+						}
+				} 
+				response.Set(query.RefID, errorResponse)
 			} else {
 				response.Set(query.RefID, backend.DataResponse{Frames: frames})
 			}

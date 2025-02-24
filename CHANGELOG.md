@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.32.0
+
+- AWSDS: Add QueryExecutionError type
+
 ## 0.31.8
 
 - Bump github.com/grafana/grafana-plugin-sdk-go from 0.265.0 to 0.266.0 in the all-go-dependencies group by @dependabot in https://github.com/grafana/grafana-aws-sdk/pull/204
