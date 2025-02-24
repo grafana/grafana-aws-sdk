@@ -6,8 +6,8 @@ toolchain go1.23.6
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
-	github.com/aws/aws-sdk-go-v2 v1.36.1
-	github.com/google/go-cmp v0.6.0
+	github.com/aws/aws-sdk-go-v2 v1.36.2
+	github.com/google/go-cmp v0.7.0
 	github.com/grafana/grafana-plugin-sdk-go v0.266.0
 	github.com/grafana/sqlds/v4 v4.1.7
 	github.com/jpillora/backoff v1.0.0
