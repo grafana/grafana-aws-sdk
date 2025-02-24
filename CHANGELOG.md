@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.32.0
+
+- AWSDS: Add QueryExecutionError type 
+
 ## 0.31.5
 
 - Update dependencies in https://github.com/grafana/grafana-aws-sdk/pull/176
