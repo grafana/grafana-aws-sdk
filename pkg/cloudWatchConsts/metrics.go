@@ -3303,7 +3303,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/CloudFront":                     {"DistributionId", "Region"},
 	"AWS/CloudHSM":                       {"ClusterId", "HsmId", "Region"},
 	"AWS/CloudSearch":                    {"ClientId", "DomainName"},
-	"AWS/CodeBuild":                      {"ProjectName", "BuildId", "BuildNumber", "ProjectName"},
+	"AWS/CodeBuild":                      {"BuildId", "BuildNumber", "ProjectName"},
 	"AWS/CodeGuruProfiler":               {},
 	"AWS/Cognito":                        {"Operation", "RiskLevel", "UserPoolId", "UserPool", "UserPoolClient", "IdentityProvider"},
 	"AWS/Connect":                        {"InstanceId", "MetricGroup", "ContactFlowName", "SigningKeyId", "TypeOfConnection", "Participant", "QueueName", "StreamType"},
