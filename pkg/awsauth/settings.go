@@ -1,14 +1,16 @@
 package awsauth
 
 import (
+	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"hash/fnv"
 	"net/http"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -18,6 +20,12 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
+)
+
+const (
+	// awsTempCredsAccessKey and awsTempCredsSecretKey are the files containing the
+	awsTempCredsAccessKey = "~/tmp/aws.credentials/access-key-id"
+	awsTempCredsSecretKey = "~/tmp/aws.credentials/secret-access-key"
 )
 
 // Settings carries configuration for authenticating with AWS
@@ -104,12 +112,39 @@ func (s Settings) WithStaticCredentials(client AWSAPIClient) LoadOptionsFunc {
 
 // WithSharedCredentials returns a LoadOptionsFunc to initialize config from a credentials file
 func (s Settings) WithSharedCredentials() LoadOptionsFunc {
-	profile := s.CredentialsProfile
-	if s.GetAuthType() == AuthTypeGrafanaAssumeRole {
-		profile = "assume_role_credentials"
-	}
 	return func(options *config.LoadOptions) error {
-		options.SharedConfigProfile = profile
+		options.SharedConfigProfile = s.CredentialsProfile
+		if s.CredentialsPath != "" {
+			options.SharedCredentialsFiles = []string{s.CredentialsPath}
+		}
+		return nil
+	}
+}
+
+// WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
+func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
+	if IsEnabled(ctx, FlagMultiTenantTempCredentials) {
+		accessKey, err := os.ReadFile(awsTempCredsAccessKey)
+		if err != nil {
+			return func(opts *config.LoadOptions) error {
+				return err
+			}
+		}
+		secretKey, err := os.ReadFile(awsTempCredsSecretKey)
+		if err != nil {
+			return func(opts *config.LoadOptions) error {
+				return err
+			}
+		}
+		return func(opts *config.LoadOptions) error {
+			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
+			return nil
+		}
+	}
+
+	// if it is running in single tenant use the credentials file
+	return func(options *config.LoadOptions) error {
+		options.SharedConfigProfile = awsds.ProfileName
 		if s.CredentialsPath != "" {
 			options.SharedCredentialsFiles = []string{s.CredentialsPath}
 		}
