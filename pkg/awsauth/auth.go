@@ -3,6 +3,7 @@ package awsauth
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
@@ -45,6 +46,8 @@ func (rcp *realAWSConfigProvider) GetConfig(ctx context.Context, authSettings Se
 		options = append(options, authSettings.WithStaticCredentials(rcp.client))
 	case AuthTypeSharedCreds, AuthTypeGrafanaAssumeRole:
 		options = append(options, authSettings.WithSharedCredentials())
+	case AuthTypeGrafanaAssumeRole:
+		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
 	case AuthTypeEC2IAMRole:
 		// TODO: test this
 		options = append(options, authSettings.WithEC2RoleCredentials(rcp.client))
