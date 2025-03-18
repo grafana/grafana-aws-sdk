@@ -12,19 +12,19 @@ type ConfigProvider interface {
 }
 
 func NewConfigProvider() ConfigProvider {
-	return newAWSConfigProviderWithClient(realAWSAPIClient{})
+	return newAWSConfigProviderWithClient(awsAPIClient{})
 }
 
-func newAWSConfigProviderWithClient(client AWSAPIClient) *realAWSConfigProvider {
-	return &realAWSConfigProvider{client, make(map[uint64]aws.Config)}
+func newAWSConfigProviderWithClient(client AWSAPIClient) *awsConfigProvider {
+	return &awsConfigProvider{client, make(map[uint64]aws.Config)}
 }
 
-type realAWSConfigProvider struct {
+type awsConfigProvider struct {
 	client AWSAPIClient
 	cache  map[uint64]aws.Config
 }
 
-func (rcp *realAWSConfigProvider) GetConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
+func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
 	logger := backend.Logger.FromContext(ctx)
 
 	key := authSettings.Hash()
