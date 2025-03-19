@@ -125,13 +125,13 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 				if errors.As(err, &qeError) {
 					errorResponse.Status = backend.StatusInternal
 					switch qeError.Cause {
-						// make sure error.status matches the downstream cause, if provided
-						case QueryFailedInternal:
-							errorResponse.Status = backend.StatusInternal
-						case QueryFailedUser:
-							errorResponse.Status = backend.StatusBadRequest
-						}
-				} 
+					// make sure error.status matches the downstream cause, if provided
+					case QueryFailedInternal:
+						errorResponse.Status = backend.StatusInternal
+					case QueryFailedUser:
+						errorResponse.Status = backend.StatusBadRequest
+					}
+				}
 				response.Set(query.RefID, errorResponse)
 			} else {
 				response.Set(query.RefID, backend.DataResponse{Frames: frames})
@@ -263,7 +263,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	if err != nil {
 		return getErrorFrameFromQuery(q), err
 	}
-	res, err := queryAsync(ctx, db, dbConn.settings, ds.driver.Converters(), fillMode, q)
+	res, err := queryAsync(ctx, db, dbConn.settings, ds.driver.Converters(), fillMode, q, ds.GetRowLimit())
 	if err == nil || errors.Is(err, sqlds.ErrorNoResults) {
 		if len(res) == 0 {
 			res = append(res, &data.Frame{})
@@ -275,7 +275,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	return getErrorFrameFromQuery(q), err
 }
 
-func queryAsync(ctx context.Context, conn *sql.DB, settings backend.DataSourceInstanceSettings, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery) (data.Frames, error) {
-	query := sqlds.NewQuery(conn, settings, converters, fillMode)
+func queryAsync(ctx context.Context, conn *sql.DB, settings backend.DataSourceInstanceSettings, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery, rowLimit int64) (data.Frames, error) {
+	query := sqlds.NewQuery(conn, settings, converters, fillMode, rowLimit)
 	return query.Run(ctx, &q.Query, sql.NamedArg{Name: "queryID", Value: q.QueryID})
 }
