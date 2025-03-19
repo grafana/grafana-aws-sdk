@@ -35,7 +35,8 @@ func (m *mockAWSAPIClient) NewStaticCredentialsProvider(key, secret, session str
 	return credentials.NewStaticCredentialsProvider(key, secret, session)
 }
 
-func (m *mockAWSAPIClient) NewSTSClientFromConfig(_ aws.Config) stscreds.AssumeRoleAPIClient {
+func (m *mockAWSAPIClient) NewSTSClientFromConfig(cfg aws.Config) stscreds.AssumeRoleAPIClient {
+	m.assumeRoleClient.stsConfig = cfg
 	return m.assumeRoleClient
 }
 
@@ -54,6 +55,7 @@ func (m *mockAWSAPIClient) NewEC2RoleCreds() aws.CredentialsProvider {
 
 type mockAssumeRoleAPIClient struct {
 	mock.Mock
+	stsConfig aws.Config
 }
 
 func (m *mockAssumeRoleAPIClient) AssumeRole(_ context.Context, params *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {

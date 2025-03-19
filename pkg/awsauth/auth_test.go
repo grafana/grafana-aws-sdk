@@ -52,6 +52,10 @@ func (tc testCase) Run(t *testing.T) {
 		assert.Equal(t, accessKey, creds.AccessKeyID)
 		assert.Equal(t, secret, creds.SecretAccessKey)
 	}
+	if isStsEndpoint(&tc.authSettings.Endpoint) {
+		assert.Equal(t, tc.authSettings.Endpoint, *client.assumeRoleClient.stsConfig.BaseEndpoint)
+		assert.Nil(t, cfg.BaseEndpoint)
+	}
 }
 
 func (tc testCase) assertConfig(t *testing.T, cfg aws.Config) {
@@ -134,6 +138,15 @@ func TestGetAWSConfig_Keys(t *testing.T) {
 				Region:         "ap-south-1",
 			},
 		},
+		{
+			name: "static credentials, sts endpoint",
+			authSettings: Settings{
+				LegacyAuthType: awsds.AuthTypeKeys,
+				AccessKey:      "ubiquitous",
+				SecretKey:      "malevolent",
+				Region:         "ap-south-1",
+			},
+		},
 	}.runAll(t)
 }
 
@@ -146,6 +159,23 @@ func TestGetAWSConfig_Keys_AssumeRule(t *testing.T) {
 				AccessKey:     "tensile",
 				SecretKey:     "diaphanous",
 				Region:        "eu-north-1",
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("assumed"),
+				SecretAccessKey: aws.String("role"),
+				SessionToken:    aws.String("session"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "static assume role with sts endpoint - endpoint is nil",
+			authSettings: Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        "us-east-1",
+				Endpoint:      "sts.us-east-1.amazonaws.com",
 				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
 			},
 			assumedCredentials: &ststypes.Credentials{
@@ -227,25 +257,26 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 func TestGetAWSConfig_UnknownOrMissing(t *testing.T) {
 	testSuite{
 		{
-			name: "shared reads from specified file",
+			name: "unknown auth type fails",
 			authSettings: Settings{
 				AuthType: AuthTypeUnknown,
 			},
 			shouldError: true,
 		},
 		{
-			name: "grafana assume role uses the shared mechanism",
-			authSettings: Settings{
-				AuthType: AuthTypeMissing,
-			},
-			shouldError: true,
-		},
-		{
-			name: "grafana assume role uses the shared mechanism",
+			name: "random auth type fails",
 			authSettings: Settings{
 				AuthType: "rainbows",
 			},
 			shouldError: true,
+		},
+		{
+			name:         "missing auth type fails back to legacy default (and does not fail)",
+			authSettings: Settings{},
+			environment: map[string]string{
+				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("credentials"),
+			},
+			shouldError: false,
 		},
 	}.runAll(t)
 }

@@ -127,6 +127,9 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient) LoadOption
 	cache := client.NewCredentialsCache(provider)
 	return func(options *config.LoadOptions) error {
 		options.Credentials = cache
+		if isStsEndpoint(cfg.BaseEndpoint) {
+			options.BaseEndpoint = ""
+		}
 		return nil
 	}
 }
