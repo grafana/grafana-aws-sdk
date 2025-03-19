@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.34.0
+
+- feat: Add metrics for lambda event source mappings by @rrhodes in https://github.com/grafana/grafana-aws-sdk/pull/216
+- Enable dataproxy.row_limit configuration option from Grafana by @kevinwcyu in https://github.com/grafana/grafana-aws-sdk/pull/215
+
 ## 0.33.1
 - Fix: use alternate STS endpoint for STS interaction if given by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/214
 
