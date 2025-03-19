@@ -2,19 +2,45 @@ package cloudWatchConsts
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// test to check NamespaceMetricsMap is sorted alphabetically
-func TestNamespaceMetricsMap(t *testing.T) {
+// test to check NamespaceMetricsMap metrics are sorted alphabetically
+func TestNamespaceMetricsAlphabetized(t *testing.T) {
 	unsortedMetricNamespaces := namespacesWithUnsortedMetrics(NamespaceMetricsMap)
 	if len(unsortedMetricNamespaces) != 0 {
 		assert.Fail(t, "NamespaceMetricsMap is not sorted alphabetically. Please replace the printed services")
 		printNamespacesThatNeedSorted(unsortedMetricNamespaces)
+	}
+}
+
+func TestNamespaceMetricKeysAllHaveDimensions(t *testing.T) {
+	namespaceMetricsKeys := slices.Collect(maps.Keys(NamespaceMetricsMap))
+	namespaceDimensionKeys := slices.Collect(maps.Keys(NamespaceDimensionKeysMap))
+
+	namespaceMetricsMissingKeys := findMetricKeysFromAMissingInB(namespaceDimensionKeys, namespaceMetricsKeys)
+
+	if len(namespaceMetricsMissingKeys) != 0 {
+		assert.Fail(t, fmt.Sprintf("NamespaceMetricsMap is missing key(s) from NamespaceDimensionKeysMap."))
+		fmt.Println(strings.Join(namespaceMetricsMissingKeys, "\n"))
+	}
+}
+
+func TestNamespaceDimensionKeysAllHaveMetrics(t *testing.T) {
+	namespaceMetricsKeys := slices.Collect(maps.Keys(NamespaceMetricsMap))
+	namespaceDimensionKeys := slices.Collect(maps.Keys(NamespaceDimensionKeysMap))
+
+	namespaceDimensionMissingKeys := findMetricKeysFromAMissingInB(namespaceMetricsKeys, namespaceDimensionKeys)
+
+	if len(namespaceDimensionMissingKeys) != 0 {
+		assert.Fail(t, fmt.Sprintf("NamespaceDimensionKeysMap is missing key(s) from NamespaceMetricsMap."))
+		fmt.Println(strings.Join(namespaceDimensionMissingKeys, "\n"))
 	}
 }
 
@@ -37,10 +63,8 @@ func printNamespacesThatNeedSorted(unsortedMetricNamespaces []string) {
 // namespacesWithUnsortedMetrics returns which namespaces have unsorted metrics
 func namespacesWithUnsortedMetrics(NamespaceMetricsMap map[string][]string) []string {
 	// Extract keys from the map and sort them
-	keys := make([]string, 0, len(NamespaceMetricsMap))
-	for k := range NamespaceMetricsMap {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(NamespaceMetricsMap))
+
 	sort.Strings(keys)
 
 	var unsortedNamespace []string
@@ -61,4 +85,16 @@ func namespacesWithUnsortedMetrics(NamespaceMetricsMap map[string][]string) []st
 	}
 
 	return unsortedNamespace
+}
+
+func findMetricKeysFromAMissingInB(a []string, b []string) []string {
+	var missingKeys []string
+
+	for i := range a {
+		if !slices.Contains(b, a[i]) {
+			missingKeys = append(missingKeys, a[i])
+		}
+	}
+
+	return missingKeys
 }
