@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"strings"
 )
 
 type ConfigProvider interface {
@@ -72,4 +73,8 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 
 	rcp.cache[key] = cfg
 	return cfg, nil
+}
+
+func isStsEndpoint(ep *string) bool {
+	return ep != nil && (strings.HasPrefix(*ep, "sts.") || strings.HasPrefix(*ep, "sts-fips."))
 }

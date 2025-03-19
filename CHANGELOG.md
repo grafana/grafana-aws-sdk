@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.33.1
+- Fix: use alternate STS endpoint for STS interaction if given by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/214
+
 ## 0.33.0
 
 - Update CodeBuild metrics and dimensions by @hectorruiz-it in https://github.com/grafana/grafana-aws-sdk/pull/209
