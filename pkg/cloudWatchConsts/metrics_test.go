@@ -27,7 +27,7 @@ func TestNamespaceMetricKeysAllHaveDimensions(t *testing.T) {
 	namespaceMetricsMissingKeys := findMetricKeysFromAMissingInB(namespaceDimensionKeys, namespaceMetricsKeys)
 
 	if len(namespaceMetricsMissingKeys) != 0 {
-		assert.Fail(t, fmt.Sprintf("NamespaceMetricsMap is missing key(s) from NamespaceDimensionKeysMap."))
+		assert.Fail(t, "NamespaceMetricsMap is missing key(s) from NamespaceDimensionKeysMap.")
 		fmt.Println(strings.Join(namespaceMetricsMissingKeys, "\n"))
 	}
 }
@@ -39,7 +39,7 @@ func TestNamespaceDimensionKeysAllHaveMetrics(t *testing.T) {
 	namespaceDimensionMissingKeys := findMetricKeysFromAMissingInB(namespaceMetricsKeys, namespaceDimensionKeys)
 
 	if len(namespaceDimensionMissingKeys) != 0 {
-		assert.Fail(t, fmt.Sprintf("NamespaceDimensionKeysMap is missing key(s) from NamespaceMetricsMap."))
+		assert.Fail(t, "NamespaceDimensionKeysMap is missing key(s) from NamespaceMetricsMap.")
 		fmt.Println(strings.Join(namespaceDimensionMissingKeys, "\n"))
 	}
 }
