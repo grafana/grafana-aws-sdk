@@ -2600,6 +2600,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"DBLoad",
 		"DBLoadCPU",
 		"DBLoadNonCPU",
+		"DBLoadRelativeToNumVCPUs",
 		"DDLLatency",
 		"DDLThroughput",
 		"DMLLatency",
