@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.35.0
+
+- Update Namespace Metrics and Dimensions tests, add missing dimensions by @rrhodes in https://github.com/grafana/grafana-aws-sdk/pull/218
+- Add DBLoadRelativeToNumVCPUs metric to RDS by @tristanburgess in https://github.com/grafana/grafana-aws-sdk/pull/219
+- Add support for multi tenant temporary credentials by @iwysiu in https://github.com/grafana/grafana-aws-sdk/pull/213
+
 ## 0.34.0
 
 - feat: Add metrics for lambda event source mappings by @rrhodes in https://github.com/grafana/grafana-aws-sdk/pull/216
 - Enable dataproxy.row_limit configuration option from Grafana by @kevinwcyu in https://github.com/grafana/grafana-aws-sdk/pull/215
 
 ## 0.33.1
+
 - Fix: use alternate STS endpoint for STS interaction if given by @njvrzm in https://github.com/grafana/grafana-aws-sdk/pull/214
 
 ## 0.33.0
