@@ -181,6 +181,9 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
 		}
+		if options.HTTPClient == nil {
+			options.HTTPClient = http.DefaultClient
+		}
 		if s.ProxyOptions != nil {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
