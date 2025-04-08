@@ -24,8 +24,8 @@ import (
 
 const (
 	// awsTempCredsAccessKey and awsTempCredsSecretKey are the files containing the
-	awsTempCredsAccessKey = "~/tmp/aws.credentials/access-key-id"
-	awsTempCredsSecretKey = "~/tmp/aws.credentials/secret-access-key"
+	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
+	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
 )
 
 // Settings carries configuration for authenticating with AWS
