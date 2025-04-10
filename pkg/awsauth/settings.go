@@ -187,7 +187,7 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		if s.ProxyOptions != nil {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
-					client.Transport = http.DefaultTransport
+					client.Transport = http.DefaultTransport.(*http.Transport).Clone()
 				}
 				if transport, ok := client.Transport.(*http.Transport); ok {
 					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
