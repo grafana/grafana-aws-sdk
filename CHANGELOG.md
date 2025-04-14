@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.38.0
 
-- Add multitenant temporary credentials support to the sdk v1 path
+- Add support for multitenant temporary credentials to v1 path by @iwysiu in [#231](https://github.com/grafana/grafana-aws-sdk/pull/231)
 
 ## 0.37.0
 
