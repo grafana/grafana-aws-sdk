@@ -2,11 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.0
+
+- Add multitenant temporary credentials support to the sdk v1 path
+
 ## 0.37.0
+
 - Fix: clone default transport instead of using it for PDC by @njvrzm in [#229](https://github.com/grafana/grafana-aws-sdk/pull/229)
 - Fix paths for multitenant [#228](https://github.com/grafana/grafana-aws-sdk/pull/228)
 
 ## 0.36.0
+
 - Add dimensions to msk connect and pipe metric namespaces by @rrhodes in [#223](https://github.com/grafana/grafana-aws-sdk/pull/223)
 - Fix: Use DefaultClient in awsauth if given nil HTTPClient by @njvrzm in [#226](https://github.com/grafana/grafana-aws-sdk/pull/226)
 

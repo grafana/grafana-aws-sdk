@@ -26,7 +26,8 @@ type AuthSettings struct {
 	ListMetricsPageLimit int
 
 	// necessary for a work around until https://github.com/grafana/grafana/issues/39089 is implemented
-	SecureSocksDSProxyEnabled bool
+	SecureSocksDSProxyEnabled  bool
+	MultiTenantTempCredentials bool
 }
 
 // SigV4Settings stores the settings for SigV4 authentication
@@ -54,7 +55,7 @@ const (
 	QueryFailedUser
 )
 
-// QueryExecutionError error type can be returned from datasource's Execute or QueryStatus methods 
+// QueryExecutionError error type can be returned from datasource's Execute or QueryStatus methods
 // this will mark the downstream cause in errorResponse.Status
 type QueryExecutionError struct {
 	Err   error
