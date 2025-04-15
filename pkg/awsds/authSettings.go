@@ -60,8 +60,8 @@ func defaultAuthSettings() *AuthSettings {
 		AssumeRoleEnabled:          defaultAssumeRoleEnabled,
 		SessionDuration:            &stscreds.DefaultDuration,
 		ListMetricsPageLimit:       defaultListMetricsPageLimit,
-		SecureSocksDSProxyEnabled:  defaultSecureSocksDSProxyEnabled,
 		MultiTenantTempCredentials: defaultMultiTenantTempCredentials,
+		SecureSocksDSProxyEnabled:  defaultSecureSocksDSProxyEnabled,
 	}
 }
 

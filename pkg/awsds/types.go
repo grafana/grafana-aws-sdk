@@ -19,15 +19,15 @@ type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*sessio
 
 // AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {
-	AllowedAuthProviders []string
-	AssumeRoleEnabled    bool
-	SessionDuration      *time.Duration
-	ExternalID           string
-	ListMetricsPageLimit int
+	AllowedAuthProviders       []string
+	AssumeRoleEnabled          bool
+	SessionDuration            *time.Duration
+	ExternalID                 string
+	ListMetricsPageLimit       int
+	MultiTenantTempCredentials bool
 
 	// necessary for a work around until https://github.com/grafana/grafana/issues/39089 is implemented
-	SecureSocksDSProxyEnabled  bool
-	MultiTenantTempCredentials bool
+	SecureSocksDSProxyEnabled bool
 }
 
 // SigV4Settings stores the settings for SigV4 authentication
