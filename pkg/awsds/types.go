@@ -19,11 +19,12 @@ type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*sessio
 
 // AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {
-	AllowedAuthProviders []string
-	AssumeRoleEnabled    bool
-	SessionDuration      *time.Duration
-	ExternalID           string
-	ListMetricsPageLimit int
+	AllowedAuthProviders       []string
+	AssumeRoleEnabled          bool
+	SessionDuration            *time.Duration
+	ExternalID                 string
+	ListMetricsPageLimit       int
+	MultiTenantTempCredentials bool
 
 	// necessary for a work around until https://github.com/grafana/grafana/issues/39089 is implemented
 	SecureSocksDSProxyEnabled bool
@@ -54,7 +55,7 @@ const (
 	QueryFailedUser
 )
 
-// QueryExecutionError error type can be returned from datasource's Execute or QueryStatus methods 
+// QueryExecutionError error type can be returned from datasource's Execute or QueryStatus methods
 // this will mark the downstream cause in errorResponse.Status
 type QueryExecutionError struct {
 	Err   error

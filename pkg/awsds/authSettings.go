@@ -34,9 +34,13 @@ const (
 	// SigV4VerboseLoggingEnvVarKeyName is the string literal for the sigv4 verbose logging environment variable key name
 	SigV4VerboseLoggingEnvVarKeyName = "AWS_SIGV4_VERBOSE_LOGGING"
 
-	defaultAssumeRoleEnabled         = true
-	defaultListMetricsPageLimit      = 500
-	defaultSecureSocksDSProxyEnabled = false
+	// FlagMultiTenantTempCredentials is the flag for whether temporary credentials is running multitenant
+	FlagMultiTenantTempCredentials = "multiTenantTempCredentials"
+
+	defaultAssumeRoleEnabled          = true
+	defaultListMetricsPageLimit       = 500
+	defaultSecureSocksDSProxyEnabled  = false
+	defaultMultiTenantTempCredentials = false
 )
 
 // ReadAuthSettings gets the Grafana auth settings from the context if its available, the environment variables if not
@@ -52,11 +56,12 @@ func ReadAuthSettings(ctx context.Context) *AuthSettings {
 
 func defaultAuthSettings() *AuthSettings {
 	return &AuthSettings{
-		AllowedAuthProviders:      []string{"default", "keys", "credentials"},
-		AssumeRoleEnabled:         defaultAssumeRoleEnabled,
-		SessionDuration:           &stscreds.DefaultDuration,
-		ListMetricsPageLimit:      defaultListMetricsPageLimit,
-		SecureSocksDSProxyEnabled: defaultSecureSocksDSProxyEnabled,
+		AllowedAuthProviders:       []string{"default", "keys", "credentials"},
+		AssumeRoleEnabled:          defaultAssumeRoleEnabled,
+		SessionDuration:            &stscreds.DefaultDuration,
+		ListMetricsPageLimit:       defaultListMetricsPageLimit,
+		MultiTenantTempCredentials: defaultMultiTenantTempCredentials,
+		SecureSocksDSProxyEnabled:  defaultSecureSocksDSProxyEnabled,
 	}
 }
 
@@ -128,6 +133,7 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 		hasSettings = true
 	}
 
+	settings.MultiTenantTempCredentials = cfg.FeatureToggles().IsEnabled(FlagMultiTenantTempCredentials)
 	return settings, hasSettings
 }
 

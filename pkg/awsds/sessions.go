@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -22,6 +23,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 
 	awsV2 "github.com/aws/aws-sdk-go-v2/aws"
+)
+
+const (
+	// awsTempCredsAccessKey and awsTempCredsSecretKey are the files containing the
+	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
+	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
 )
 
 type envelope struct {
@@ -220,9 +227,23 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
 		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
-		cfgs = append(cfgs, &aws.Config{
-			Credentials: credentials.NewSharedCredentials(CredentialsPath, ProfileName),
-		})
+		if c.AuthSettings.MultiTenantTempCredentials {
+			accessKey, err := os.ReadFile(awsTempCredsAccessKey)
+			if err != nil {
+				return nil, err
+			}
+			secretKey, err := os.ReadFile(awsTempCredsSecretKey)
+			if err != nil {
+				return nil, err
+			}
+			cfgs = append(cfgs, &aws.Config{
+				Credentials: credentials.NewStaticCredentials(string(accessKey), string(secretKey), ""),
+			})
+		} else {
+			cfgs = append(cfgs, &aws.Config{
+				Credentials: credentials.NewSharedCredentials(CredentialsPath, ProfileName),
+			})
+		}
 	default:
 		return nil, fmt.Errorf("unrecognized authType: %d", c.Settings.AuthType)
 	}
