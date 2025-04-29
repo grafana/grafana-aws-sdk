@@ -6,6 +6,10 @@ on:
       - opened
 concurrency:
   group: pr-commands-${{ github.event.number }}
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   main:
     runs-on: ubuntu-latest
@@ -13,12 +17,13 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          repository: 'grafana/grafana-github-actions'
+          repository: "grafana/grafana-github-actions"
           path: ./actions
           ref: main
+          persist-credentials: false
       - name: Install Actions
         run: npm install --production --prefix ./actions
-      - name: 'Generate token'
+      - name: "Generate token"
         id: generate_token
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a
         with:
