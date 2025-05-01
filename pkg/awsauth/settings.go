@@ -123,25 +123,21 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	accessKey, err := os.ReadFile(awsTempCredsAccessKey)
-	// if we don't find the file assume it's running single tenant and use the credentials file
-	if err != nil {
-		return func(options *config.LoadOptions) error {
-			options.SharedConfigProfile = awsds.ProfileName
-			if s.CredentialsPath != "" {
-				options.SharedCredentialsFiles = []string{s.CredentialsPath}
-			}
+	accessKey, keyErr := os.ReadFile(awsTempCredsAccessKey)
+	secretKey, secretErr := os.ReadFile(awsTempCredsSecretKey)
+	if keyErr == nil && secretErr == nil {
+		return func(opts *config.LoadOptions) error {
+			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
 			return nil
 		}
 	}
-	secretKey, err := os.ReadFile(awsTempCredsSecretKey)
-	if err != nil {
-		return func(opts *config.LoadOptions) error {
-			return err
+
+	// if we don't find the files assume it's running single tenant and use the credentials file
+	return func(options *config.LoadOptions) error {
+		options.SharedConfigProfile = awsds.ProfileName
+		if s.CredentialsPath != "" {
+			options.SharedCredentialsFiles = []string{s.CredentialsPath}
 		}
-	}
-	return func(opts *config.LoadOptions) error {
-		opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
 		return nil
 	}
 }
