@@ -42,6 +42,7 @@ type Settings struct {
 	Endpoint           string
 	ExternalID         string
 	UserAgent          string
+	SessionToken       string
 	HTTPClient         *http.Client
 	ProxyOptions       *proxy.Options
 }
@@ -105,7 +106,7 @@ func (s Settings) WithEndpoint() LoadOptionsFunc {
 
 func (s Settings) WithStaticCredentials(client AWSAPIClient) LoadOptionsFunc {
 	return func(opts *config.LoadOptions) error {
-		opts.Credentials = client.NewStaticCredentialsProvider(s.AccessKey, s.SecretKey, "")
+		opts.Credentials = client.NewStaticCredentialsProvider(s.AccessKey, s.SecretKey, s.SessionToken)
 		return nil
 	}
 }

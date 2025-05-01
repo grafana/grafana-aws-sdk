@@ -48,6 +48,9 @@ func (tc testCase) Run(t *testing.T) {
 		require.NoError(t, err)
 		tc.assertConfig(t, cfg)
 		creds, _ := cfg.Credentials.Retrieve(ctx)
+		if tc.authSettings.GetAuthType() == AuthTypeKeys && tc.authSettings.SessionToken != "" {
+			assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
+		}
 		accessKey, secret := tc.getExpectedKeyAndSecret(t)
 		assert.Equal(t, accessKey, creds.AccessKeyID)
 		assert.Equal(t, secret, creds.SecretAccessKey)
@@ -145,6 +148,16 @@ func TestGetAWSConfig_Keys(t *testing.T) {
 				AccessKey:      "ubiquitous",
 				SecretKey:      "malevolent",
 				Region:         "ap-south-1",
+			},
+		},
+		{
+			name: "static credentials with session token",
+			authSettings: Settings{
+				LegacyAuthType: awsds.AuthTypeKeys,
+				AccessKey:      "ubiquitous",
+				SecretKey:      "malevolent",
+				Region:         "ap-south-1",
+				SessionToken:   "alphabet",
 			},
 		},
 	}.runAll(t)
