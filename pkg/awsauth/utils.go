@@ -8,6 +8,7 @@ import (
 
 const (
 	FlagMultiTenantTempCredentials = "multiTenantTempCredentials"
+	FlagCloudwatchRemoteDatasource = "cloudwatchRemoteDatasource"
 )
 
 func IsEnabled(ctx context.Context, feature string) bool {

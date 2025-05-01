@@ -123,7 +123,7 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	if IsEnabled(ctx, FlagMultiTenantTempCredentials) {
+	if IsEnabled(ctx, FlagMultiTenantTempCredentials) && IsEnabled(ctx, FlagCloudwatchRemoteDatasource) {
 		accessKey, err := os.ReadFile(awsTempCredsAccessKey)
 		if err != nil {
 			return func(opts *config.LoadOptions) error {

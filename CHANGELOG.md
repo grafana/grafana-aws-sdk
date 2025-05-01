@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.1
+
+- Cleanup github actions files in [#233](https://github.com/grafana/grafana-aws-sdk/pull/233)
+- Fix check for multitenant temporary credentials by @iwysiu in []
+
 ## 0.38.0
 
 - Add support for multitenant temporary credentials to v1 path by @iwysiu in [#231](https://github.com/grafana/grafana-aws-sdk/pull/231)
