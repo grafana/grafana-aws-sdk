@@ -123,31 +123,25 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	if IsEnabled(ctx, FlagMultiTenantTempCredentials) && IsEnabled(ctx, FlagCloudwatchRemoteDatasource) {
-		accessKey, err := os.ReadFile(awsTempCredsAccessKey)
-		if err != nil {
-			return func(opts *config.LoadOptions) error {
-				return err
+	accessKey, err := os.ReadFile(awsTempCredsAccessKey)
+	// if we don't find the file assume it's running single tenant and use the credentials file
+	if err != nil {
+		return func(options *config.LoadOptions) error {
+			options.SharedConfigProfile = awsds.ProfileName
+			if s.CredentialsPath != "" {
+				options.SharedCredentialsFiles = []string{s.CredentialsPath}
 			}
-		}
-		secretKey, err := os.ReadFile(awsTempCredsSecretKey)
-		if err != nil {
-			return func(opts *config.LoadOptions) error {
-				return err
-			}
-		}
-		return func(opts *config.LoadOptions) error {
-			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
 			return nil
 		}
 	}
-
-	// if it is running in single tenant use the credentials file
-	return func(options *config.LoadOptions) error {
-		options.SharedConfigProfile = awsds.ProfileName
-		if s.CredentialsPath != "" {
-			options.SharedCredentialsFiles = []string{s.CredentialsPath}
+	secretKey, err := os.ReadFile(awsTempCredsSecretKey)
+	if err != nil {
+		return func(opts *config.LoadOptions) error {
+			return err
 		}
+	}
+	return func(opts *config.LoadOptions) error {
+		opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
 		return nil
 	}
 }

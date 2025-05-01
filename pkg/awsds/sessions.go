@@ -227,15 +227,10 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 		cfgs = append(cfgs, &aws.Config{Credentials: newRemoteCredentials(sess)})
 	case AuthTypeGrafanaAssumeRole:
 		backend.Logger.Debug("Authenticating towards AWS with Grafana Assume Role", "region", c.Settings.Region)
-		if c.AuthSettings.MultiTenantTempCredentials {
-			accessKey, err := os.ReadFile(awsTempCredsAccessKey)
-			if err != nil {
-				return nil, err
-			}
-			secretKey, err := os.ReadFile(awsTempCredsSecretKey)
-			if err != nil {
-				return nil, err
-			}
+		accessKey, keyErr := os.ReadFile(awsTempCredsAccessKey)
+		secretKey, secretErr := os.ReadFile(awsTempCredsSecretKey)
+		// if we don't find the files assume it's running single tenant and use the credentials file
+		if keyErr == nil && secretErr == nil {
 			cfgs = append(cfgs, &aws.Config{
 				Credentials: credentials.NewStaticCredentials(string(accessKey), string(secretKey), ""),
 			})
