@@ -235,8 +235,9 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 			if err != nil {
 				return nil, err
 			}
-			return getAssumeRoleSigner(s, cfg, signerOpts) 
+			c = stscreds.NewCredentials(s, cfg.AssumeRoleARN)
 		}
+
 		return v4.NewSigner(c, signerOpts), nil
 	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
@@ -249,6 +250,7 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 		if cfg.AssumeRoleARN != "" {
 			return getAssumeRoleSigner(s, cfg, signerOpts)
 		}
+
 		return v4.NewSigner(s.Config.Credentials, signerOpts), nil
 	default:
 		if cfg.AssumeRoleARN != "" {
