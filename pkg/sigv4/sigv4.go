@@ -235,9 +235,14 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 			if err != nil {
 				return nil, err
 			}
-			c = stscreds.NewCredentials(s, cfg.AssumeRoleARN)
+			if cfg.ExternalID != "" {
+				c = stscreds.NewCredentials(s, cfg.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
+					p.ExternalID = aws.String(cfg.ExternalID)
+				})
+			} else {
+				c = stscreds.NewCredentials(s, cfg.AssumeRoleARN)
+			}
 		}
-
 		return v4.NewSigner(c, signerOpts), nil
 	case awsds.AuthTypeDefault:
 		s, err := session.NewSession(&aws.Config{
@@ -248,6 +253,9 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 		}
 
 		if cfg.AssumeRoleARN != "" {
+			if cfg.ExternalID != "" {
+				return getSignerWithExternalID(s, cfg, signerOpts)
+			} 
 			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 		}
 
@@ -260,6 +268,9 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 			if err != nil {
 				return nil, err
 			}
+			if cfg.ExternalID != "" {
+				return getSignerWithExternalID(s, cfg, signerOpts)
+			} 
 			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 		}
 		return nil, fmt.Errorf("invalid SigV4 auth type %q", authType)
@@ -273,10 +284,20 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 		if err != nil {
 			return nil, err
 		}
+		if cfg.ExternalID != "" {
+			return getSignerWithExternalID(s, cfg, signerOpts)
+		}
+
 		return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
 	}
 
 	return v4.NewSigner(c, signerOpts), nil
+}
+
+func getSignerWithExternalID(s *session.Session  , cfg *Config, signerOpts func(s *v4.Signer)) (*v4.Signer, error) {
+	return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
+		p.ExternalID = aws.String(cfg.ExternalID)
+	}), signerOpts), nil
 }
 
 func copyHeaderWithoutOverwrite(dst, src http.Header) {
