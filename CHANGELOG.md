@@ -2,9 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.38.1
+## 0.38.2
+- Support passing session token with v2 auth by @njvrzm in [#234](https://github.com/grafana/grafana-aws-sdk/pull/234)
+- Add vault tokens and zizmor config by @katebrenner in [#236](https://github.com/grafana/grafana-aws-sdk/pull/236)
+- Update network firewall metrics by @tristanburgess in [#237](https://github.com/grafana/grafana-aws-sdk/pull/237)
 
-- Cleanup github actions files in [#233](https://github.com/grafana/grafana-aws-sdk/pull/233)
+## 0.38.1
+- Cleanup github actions files by @iwysiu in [#233](https://github.com/grafana/grafana-aws-sdk/pull/233)
 - Fix check for multitenant temporary credentials by @iwysiu in [#235](https://github.com/grafana/grafana-aws-sdk/pull/235)
 
 ## 0.38.0
