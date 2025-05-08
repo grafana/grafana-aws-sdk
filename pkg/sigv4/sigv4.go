@@ -281,7 +281,7 @@ func createSigner(cfg *Config, authSettings awsds.AuthSettings, verboseMode bool
 	return newV4Signer(c, signerOpts), nil
 }
 
-func getAssumeRoleSigner(s *session.Session  , cfg *Config, signerOpts func(s *v4.Signer)) (*v4.Signer, error) {
+func getAssumeRoleSigner(s *session.Session, cfg *Config, signerOpts func(s *v4.Signer)) (*v4.Signer, error) {
 	if cfg.ExternalID != "" {
 		return newV4Signer(newStsCreds(s, cfg.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
 			p.ExternalID = aws.String(cfg.ExternalID)
