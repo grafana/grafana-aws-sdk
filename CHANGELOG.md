@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.3
+
+- Chore: add zizmore ignore rule in [#239](https://github.com/grafana/grafana-aws-sdk/pull/239)
+- Bugfix: Sigv4: Use externalId when signing with sigv4 in [#238](https://github.com/grafana/grafana-aws-sdk/pull/238)
+
 ## 0.38.2
 - Support passing session token with v2 auth by @njvrzm in [#234](https://github.com/grafana/grafana-aws-sdk/pull/234)
 - Add vault tokens and zizmor config by @katebrenner in [#236](https://github.com/grafana/grafana-aws-sdk/pull/236)
