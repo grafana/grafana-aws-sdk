@@ -10,7 +10,9 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 
 	"github.com/stretchr/testify/require"
@@ -299,6 +301,71 @@ func TestConfig(t *testing.T) {
 
 		require.Equal(t, sha1, sha2)
 	})
+}
+
+func TestCreateSigner_UsesExternalID_WhenProvided(t *testing.T) {
+	for _, tc := range []struct {
+		authType string
+	}{
+		{authType: "default"},
+		{authType: "credentials"},
+		{authType: "keys"},
+		{authType: "ec2_iam_role"},
+		{authType: "grafana_assume_role"},
+	} {
+		t.Run(fmt.Sprintf("AuthType: %s", tc.authType), func(t *testing.T) {
+			// Capture the external ID passed into the AssumeRoleProvider
+			var capturedExternalID string
+			var signerCalled bool
+
+			// Mock stscreds.NewCredentials
+			newStsCreds = func(c client.ConfigProvider, arn string, optFns ...func(*stscreds.AssumeRoleProvider)) *credentials.Credentials {
+				provider := &stscreds.AssumeRoleProvider{}
+				for _, opt := range optFns {
+					opt(provider)
+				}
+				if provider.ExternalID != nil {
+					capturedExternalID = *provider.ExternalID
+				}
+				return credentials.NewStaticCredentials("mock-access", "mock-secret", "mock-token")
+			}
+
+			// Mock v4.NewSigner
+			newV4Signer = func(creds *credentials.Credentials, opts ...func(s *v4.Signer)) *v4.Signer {
+				signerCalled = true
+				return &v4.Signer{}
+			}
+
+			// Restore mocks
+			defer func() {
+				newStsCreds = stscreds.NewCredentials
+				newV4Signer = v4.NewSigner
+			}()
+
+			cfg := &Config{
+				Region:        "us-east-2",
+				AuthType:      tc.authType,
+				AssumeRoleARN: "arn:aws:iam::123456789:role/test-role",
+				ExternalID:    "external-id-123",
+			}
+
+			signer, err := createSigner(cfg, awsds.AuthSettings{
+				AllowedAuthProviders: []string{
+					"default",
+					"credentials",
+					"keys",
+					"ec2_iam_role",
+					"grafana_assume_role",
+				},
+				AssumeRoleEnabled: true,
+			}, false)
+
+			require.NoError(t, err)
+			require.NotNil(t, signer)
+			require.True(t, signerCalled)
+			require.Equal(t, "external-id-123", capturedExternalID)
+		})
+	}
 }
 
 type mockCredentialsProvider struct {
