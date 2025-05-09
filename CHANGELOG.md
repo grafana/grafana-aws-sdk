@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.3
+
+- Chore: add zizmore ignore rule in [#239](https://github.com/grafana/grafana-aws-sdk/pull/239)
+- Bugfix: Sigv4: Use externalId when signing with sigv4 in [#238](https://github.com/grafana/grafana-aws-sdk/pull/238)
+- Bump the all-go-dependencies with 9 updates, update go lint and vulnerability check image tags in [#232](https://github.com/grafana/grafana-aws-sdk/pull/232)
+- Bump golang.org/x/net from 0.34.0 to 0.36.0 in the go_modules group in [#210](https://github.com/grafana/grafana-aws-sdk/pull/210)
+
 ## 0.38.2
 - Support passing session token with v2 auth by @njvrzm in [#234](https://github.com/grafana/grafana-aws-sdk/pull/234)
 - Add vault tokens and zizmor config by @katebrenner in [#236](https://github.com/grafana/grafana-aws-sdk/pull/236)
