@@ -502,6 +502,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"VolumePacketsPerSecond",
 	},
 	"AWS/DMS": {
+		"AvailableMemory",
 		"CDCChangesDiskSource",
 		"CDCChangesDiskTarget",
 		"CDCChangesMemorySource",
