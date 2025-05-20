@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.4
+- Add AvailableMemory metric for the DMS service by @andriikushch in [#244](https://github.com/grafana/grafana-aws-sdk/pull/244)
+- Github actions: Add token write permission by @idastambuk in [#243](https://github.com/grafana/grafana-aws-sdk/pull/243)
+- Fix: Workspace IAM Role auth method does not need special handling by @njvrzm in [#245](https://github.com/grafana/grafana-aws-sdk/pull/245)
+
 ## 0.38.3
 
 - Chore: add zizmore ignore rule in [#239](https://github.com/grafana/grafana-aws-sdk/pull/239)
