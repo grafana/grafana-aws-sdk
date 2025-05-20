@@ -42,16 +42,13 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	authType := authSettings.GetAuthType()
 	logger.Debug(fmt.Sprintf("Using auth type: %s", authType))
 	switch authType {
-	case AuthTypeDefault: // nothing else to do here
+	case AuthTypeDefault, AuthTypeEC2IAMRole: // nothing else to do here
 	case AuthTypeKeys:
 		options = append(options, authSettings.WithStaticCredentials(rcp.client))
 	case AuthTypeSharedCreds:
 		options = append(options, authSettings.WithSharedCredentials())
 	case AuthTypeGrafanaAssumeRole:
 		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
-	case AuthTypeEC2IAMRole:
-		// TODO: test this
-		options = append(options, authSettings.WithEC2RoleCredentials(rcp.client))
 	default:
 		return aws.Config{}, fmt.Errorf("unknown auth type: %s", authType)
 	}
