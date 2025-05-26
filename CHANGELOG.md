@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.5
+- Fix externalID handling by @njvrzm in [#246](https://github.com/grafana/grafana-aws-sdk/pull/246)
+- Add CloudWatch AWS/EKS metrics and dimensions by @jangaraj in [#242](https://github.com/grafana/grafana-aws-sdk/pull/242)
+- Bump github.com/grafana/grafana-plugin-sdk-go by @dependabot in [#241](https://github.com/grafana/grafana-aws-sdk/pull/241)
+
 ## 0.38.4
 - Add AvailableMemory metric for the DMS service by @andriikushch in [#244](https://github.com/grafana/grafana-aws-sdk/pull/244)
 - Github actions: Add token write permission by @idastambuk in [#243](https://github.com/grafana/grafana-aws-sdk/pull/243)
