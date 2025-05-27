@@ -66,11 +66,6 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 		}
 	}
 
-	_, err = cfg.Credentials.Retrieve(ctx)
-	if err != nil {
-		return aws.Config{}, fmt.Errorf("error retrieving credentials: %w", err)
-	}
-
 	rcp.cache[key] = cfg
 	return cfg, nil
 }

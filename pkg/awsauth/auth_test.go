@@ -46,14 +46,18 @@ func (tc testCase) Run(t *testing.T) {
 		require.Error(t, err)
 	} else {
 		require.NoError(t, err)
-		tc.assertConfig(t, cfg)
-		creds, _ := cfg.Credentials.Retrieve(ctx)
-		if tc.authSettings.GetAuthType() == AuthTypeKeys && tc.authSettings.SessionToken != "" {
-			assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
+		creds, err := cfg.Credentials.Retrieve(ctx)
+		if tc.assumeRoleShouldFail {
+			require.Error(t, err)
+		} else {
+			tc.assertConfig(t, cfg)
+			if tc.authSettings.GetAuthType() == AuthTypeKeys && tc.authSettings.SessionToken != "" {
+				assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
+			}
+			accessKey, secret := tc.getExpectedKeyAndSecret(t)
+			assert.Equal(t, accessKey, creds.AccessKeyID)
+			assert.Equal(t, secret, creds.SecretAccessKey)
 		}
-		accessKey, secret := tc.getExpectedKeyAndSecret(t)
-		assert.Equal(t, accessKey, creds.AccessKeyID)
-		assert.Equal(t, secret, creds.SecretAccessKey)
 	}
 	if isStsEndpoint(&tc.authSettings.Endpoint) {
 		assert.Equal(t, tc.authSettings.Endpoint, *client.assumeRoleClient.stsConfig.BaseEndpoint)
@@ -208,7 +212,6 @@ func TestGetAWSConfig_Keys_AssumeRule(t *testing.T) {
 				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
 			},
 			assumeRoleShouldFail: true,
-			shouldError:          true,
 		},
 	}.runAll(t)
 }
