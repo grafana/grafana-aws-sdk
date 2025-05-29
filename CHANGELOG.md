@@ -2,12 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.6
+
+- Fix: use configured externalID when not using Grafana Assume Role by @njvrzm in [#248](https://github.com/grafana/grafana-aws-sdk/pull/248)
+
 ## 0.38.5
+
 - Fix externalID handling by @njvrzm in [#246](https://github.com/grafana/grafana-aws-sdk/pull/246)
 - Add CloudWatch AWS/EKS metrics and dimensions by @jangaraj in [#242](https://github.com/grafana/grafana-aws-sdk/pull/242)
 - Bump github.com/grafana/grafana-plugin-sdk-go by @dependabot in [#241](https://github.com/grafana/grafana-aws-sdk/pull/241)
 
 ## 0.38.4
+
 - Add AvailableMemory metric for the DMS service by @andriikushch in [#244](https://github.com/grafana/grafana-aws-sdk/pull/244)
 - Github actions: Add token write permission by @idastambuk in [#243](https://github.com/grafana/grafana-aws-sdk/pull/243)
 - Fix: Workspace IAM Role auth method does not need special handling by @njvrzm in [#245](https://github.com/grafana/grafana-aws-sdk/pull/245)
@@ -20,11 +26,13 @@ All notable changes to this project will be documented in this file.
 - Bump golang.org/x/net from 0.34.0 to 0.36.0 in the go_modules group in [#210](https://github.com/grafana/grafana-aws-sdk/pull/210)
 
 ## 0.38.2
+
 - Support passing session token with v2 auth by @njvrzm in [#234](https://github.com/grafana/grafana-aws-sdk/pull/234)
 - Add vault tokens and zizmor config by @katebrenner in [#236](https://github.com/grafana/grafana-aws-sdk/pull/236)
 - Update network firewall metrics by @tristanburgess in [#237](https://github.com/grafana/grafana-aws-sdk/pull/237)
 
 ## 0.38.1
+
 - Cleanup github actions files by @iwysiu in [#233](https://github.com/grafana/grafana-aws-sdk/pull/233)
 - Fix check for multitenant temporary credentials by @iwysiu in [#235](https://github.com/grafana/grafana-aws-sdk/pull/235)
 
