@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -30,8 +31,11 @@ type testCase struct {
 	environment          map[string]string
 }
 
+const StackID = "42"
+
 func (tc testCase) Run(t *testing.T) {
-	ctx := context.Background()
+	ctx := backend.WithGrafanaConfig(context.Background(),
+		backend.NewGrafanaCfg(map[string]string{awsds.GrafanaAssumeRoleExternalIdKeyName: StackID}))
 	client := &mockAWSAPIClient{&mockAssumeRoleAPIClient{}}
 
 	if tc.authSettings.AssumeRoleARN != "" {
@@ -50,9 +54,15 @@ func (tc testCase) Run(t *testing.T) {
 		if tc.assumeRoleShouldFail {
 			require.Error(t, err)
 		} else {
+			require.NoError(t, err)
 			tc.assertConfig(t, cfg)
 			if tc.authSettings.GetAuthType() == AuthTypeKeys && tc.authSettings.SessionToken != "" {
 				assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
+			}
+			if tc.authSettings.GetAuthType() == AuthTypeGrafanaAssumeRole {
+				assert.Equal(t, client.assumeRoleClient.calledExternalId, StackID)
+			} else if tc.authSettings.AssumeRoleARN != "" && tc.authSettings.ExternalID != "" {
+				assert.Equal(t, client.assumeRoleClient.calledExternalId, tc.authSettings.ExternalID)
 			}
 			accessKey, secret := tc.getExpectedKeyAndSecret(t)
 			assert.Equal(t, accessKey, creds.AccessKeyID)
@@ -177,6 +187,23 @@ func TestGetAWSConfig_Keys_AssumeRule(t *testing.T) {
 				SecretKey:     "diaphanous",
 				Region:        "eu-north-1",
 				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("assumed"),
+				SecretAccessKey: aws.String("role"),
+				SessionToken:    aws.String("session"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "static assume role with external ID - external ID is used",
+			authSettings: Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        "eu-north-1",
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+				ExternalID:    "cows_with_parasols",
 			},
 			assumedCredentials: &ststypes.Credentials{
 				AccessKeyId:     aws.String("assumed"),

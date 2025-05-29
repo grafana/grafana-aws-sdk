@@ -55,11 +55,15 @@ func (m *mockAWSAPIClient) NewEC2RoleCreds() aws.CredentialsProvider {
 
 type mockAssumeRoleAPIClient struct {
 	mock.Mock
-	stsConfig aws.Config
+	stsConfig        aws.Config
+	calledExternalId string
 }
 
 func (m *mockAssumeRoleAPIClient) AssumeRole(_ context.Context, params *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
 	args := m.Called()
+	if params.ExternalId != nil {
+		m.calledExternalId = *params.ExternalId
+	}
 	if args.Bool(0) { // shouldError
 		return &sts.AssumeRoleOutput{}, fmt.Errorf("assume role failed")
 	}

@@ -3,6 +3,7 @@ package awsauth
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -48,6 +49,8 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	case AuthTypeSharedCreds:
 		options = append(options, authSettings.WithSharedCredentials())
 	case AuthTypeGrafanaAssumeRole:
+		settings, _ := awsds.ReadAuthSettingsFromContext(ctx)
+		authSettings.ExternalID = settings.ExternalID
 		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
 	default:
 		return aws.Config{}, fmt.Errorf("unknown auth type: %s", authType)
