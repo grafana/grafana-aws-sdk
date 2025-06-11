@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.38.7
+
+- Cloudwatch metrics: fix uppercase for metrics in [#252](https://github.com/grafana/grafana-aws-sdk/pull/252)
+
 ## 0.38.6
 
 - Fix: use configured externalID when not using Grafana Assume Role by @njvrzm in [#248](https://github.com/grafana/grafana-aws-sdk/pull/248)
