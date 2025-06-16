@@ -1,8 +1,6 @@
 module github.com/grafana/grafana-aws-sdk
 
-go 1.24.1
-
-toolchain go1.24.2
+go 1.24.4
 
 require (
 	github.com/aws/aws-sdk-go v1.55.7
