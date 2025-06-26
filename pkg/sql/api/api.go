@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/sqlds/v4"
@@ -37,15 +36,15 @@ type ExecuteQueryStatus struct {
 }
 
 type SQL interface {
-	Execute(aws.Context, *ExecuteQueryInput) (*ExecuteQueryOutput, error)
-	Status(aws.Context, *ExecuteQueryOutput) (*ExecuteQueryStatus, error)
+	Execute(context.Context, *ExecuteQueryInput) (*ExecuteQueryOutput, error)
+	Status(context.Context, *ExecuteQueryOutput) (*ExecuteQueryStatus, error)
 	Stop(*ExecuteQueryOutput) error
 }
 
 type Resources interface {
-	Regions(aws.Context) ([]string, error)
-	Databases(aws.Context, sqlds.Options) ([]string, error)
-	CancelQuery(aws.Context, sqlds.Options, string) error
+	Regions(context.Context) ([]string, error)
+	Databases(context.Context, sqlds.Options) ([]string, error)
+	CancelQuery(context.Context, sqlds.Options, string) error
 }
 
 type AWSAPI interface {

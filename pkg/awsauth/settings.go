@@ -27,6 +27,7 @@ const (
 	// awsTempCredsAccessKey and awsTempCredsSecretKey are the files containing the
 	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
 	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
+	profileName           = "assume_role_credentials"
 )
 
 // Settings carries configuration for authenticating with AWS
@@ -136,7 +137,7 @@ func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient
 
 	// if we don't find the files assume it's running single tenant and use the credentials file
 	return func(options *config.LoadOptions) error {
-		options.SharedConfigProfile = awsds.ProfileName
+		options.SharedConfigProfile = profileName
 		if s.CredentialsPath != "" {
 			options.SharedCredentialsFiles = []string{s.CredentialsPath}
 		}

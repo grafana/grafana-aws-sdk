@@ -9,7 +9,6 @@ import (
 	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	sqlApi "github.com/grafana/grafana-aws-sdk/pkg/sql/api"
 	sqlDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
@@ -25,7 +24,7 @@ func (m fakeLoader) LoadSettings(_ context.Context) models.Settings {
 	return &fakeSettings{}
 }
 
-func (m fakeLoader) LoadAPI(_ context.Context, _ *awsds.SessionCache, _ models.Settings) (sqlApi.AWSAPI, error) {
+func (m fakeLoader) LoadAPI(_ context.Context, _ models.Settings) (sqlApi.AWSAPI, error) {
 	return fakeAPI{}, nil
 }
 
@@ -43,13 +42,9 @@ func newFakeLoader(db *sql.DB) Loader {
 
 func TestNew(t *testing.T) {
 	ds := New(newFakeLoader(nil))
-	impl, ok := ds.(*awsClient)
+	_, ok := ds.(*awsClient)
 	if !ok {
 		t.Errorf("unexpected underlying type: %t", ds)
-	}
-
-	if impl.sessionCache == nil {
-		t.Errorf("missing initialization")
 	}
 }
 
