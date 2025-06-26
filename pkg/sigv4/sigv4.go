@@ -210,6 +210,10 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 			s.Debug = aws.LogDebugWithSigning
 		}
 	}
+	assumeRoleRegion := aws.String(cfg.Region)
+	if awsds.IsOptInRegion(cfg.Region) {
+		assumeRoleRegion = aws.String("us-east-1")
+	}
 
 	var c *credentials.Credentials
 	switch authType {
@@ -229,7 +233,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 		if cfg.AssumeRoleARN != "" {
 			s, err = session.NewSession(&aws.Config{
 				CredentialsChainVerboseErrors: aws.Bool(true),
-				Region:                        aws.String(cfg.Region),
+				Region:                        assumeRoleRegion,
 				Credentials:                   c,
 			})
 			if err != nil {
@@ -240,22 +244,29 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 
 		return v4.NewSigner(c, signerOpts), nil
 	case awsds.AuthTypeDefault:
-		s, err := session.NewSession(&aws.Config{
-			Region: aws.String(cfg.Region),
-		})
-		if err != nil {
-			return nil, err
-		}
-
+		var s *session.Session
 		if cfg.AssumeRoleARN != "" {
+			s, err = session.NewSession(&aws.Config{
+				Region: assumeRoleRegion,
+			})
+			if err != nil {
+				return nil, err
+			}
 			return v4.NewSigner(stscreds.NewCredentials(s, cfg.AssumeRoleARN), signerOpts), nil
+		} else {
+			s, err = session.NewSession(&aws.Config{
+				Region: aws.String(cfg.Region),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return v4.NewSigner(s.Config.Credentials, signerOpts), nil
 		}
 
-		return v4.NewSigner(s.Config.Credentials, signerOpts), nil
 	default:
 		if cfg.AssumeRoleARN != "" {
 			s, err := session.NewSession(&aws.Config{
-				Region: aws.String(cfg.Region),
+				Region: assumeRoleRegion,
 			})
 			if err != nil {
 				return nil, err
@@ -267,7 +278,7 @@ func createSigner(cfg *Config, verboseMode bool) (*v4.Signer, error) {
 
 	if cfg.AssumeRoleARN != "" {
 		s, err := session.NewSession(&aws.Config{
-			Region:      aws.String(cfg.Region),
+			Region:      assumeRoleRegion,
 			Credentials: c},
 		)
 		if err != nil {
