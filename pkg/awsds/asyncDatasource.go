@@ -220,7 +220,7 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 	}
 
 	// Apply the default FillMode, overwritting it if the query specifies it
-	driverSettings := ds.SQLDatasource.DriverSettings()
+	driverSettings := ds.DriverSettings()
 	fillMode := driverSettings.FillMode
 	if q.FillMissing != nil {
 		fillMode = q.FillMissing

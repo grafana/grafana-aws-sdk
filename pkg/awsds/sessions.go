@@ -280,7 +280,7 @@ func (sc *SessionCache) GetSession(c SessionConfig) (*session.Session, error) {
 				// The previous session is used to obtain STS Credentials
 				Credentials: newSTSCredentials(sess, c.Settings.AssumeRoleARN, func(p *stscreds.AssumeRoleProvider) {
 					// Not sure if this is necessary, overlaps with p.Duration and is undocumented
-					p.Expiry.SetExpiration(expiration, 0)
+					p.SetExpiration(expiration, 0)
 					p.Duration = duration
 					if c.Settings.AuthType == AuthTypeGrafanaAssumeRole {
 						p.ExternalID = aws.String(c.AuthSettings.ExternalID)
