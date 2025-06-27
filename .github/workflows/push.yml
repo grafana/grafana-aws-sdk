@@ -1,4 +1,4 @@
-name: CI GO Lib
+name: Go CI
 
 on:
   push:
