@@ -61,7 +61,7 @@ type Opts struct {
 
 func (c Config) asSha256() (string, error) {
 	h := sha256.New()
-	_, err := h.Write([]byte(fmt.Sprintf("%v", c)))
+	_, err := fmt.Fprintf(h, "%s", c)
 	if err != nil {
 		return "", err
 	}

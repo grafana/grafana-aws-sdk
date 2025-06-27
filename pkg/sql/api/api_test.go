@@ -64,7 +64,7 @@ func TestWaitOnQuery(t *testing.T) {
 			&fakeDS{
 				statusCounter: 0,
 				status:        []*ExecuteQueryStatus{{}},
-				statusErr:     StatusError,
+				statusErr:     ErrorStatus,
 			},
 			nil,
 		},
