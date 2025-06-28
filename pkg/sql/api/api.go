@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	ExecuteError = errors.New("error executing query")
-	StatusError  = errors.New("error getting query query status")
-	StopError    = errors.New("error stopping query")
+	ErrorExecute = errors.New("error executing query")
+	ErrorStatus  = errors.New("error getting query query status")
+	ErrorStop    = errors.New("error stopping query")
 
 	backoffMin = 200 * time.Millisecond
 	backoffMax = 10 * time.Minute
