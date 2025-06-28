@@ -10,12 +10,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 	"github.com/grafana/sqlds/v4"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
-
-// AmazonSessionProvider will return a session (perhaps cached) for given region and settings
-type AmazonSessionProvider func(region string, s AWSDatasourceSettings) (*session.Session, error)
 
 // AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {

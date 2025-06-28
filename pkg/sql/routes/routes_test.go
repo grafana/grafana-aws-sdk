@@ -2,13 +2,13 @@ package routes
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/google/go-cmp/cmp"
 	"github.com/grafana/sqlds/v4"
 )
@@ -56,11 +56,11 @@ var ds = &fakeDS{
 	},
 }
 
-func (f *fakeDS) Regions(aws.Context) ([]string, error) {
+func (f *fakeDS) Regions(context.Context) ([]string, error) {
 	return f.regions, nil
 }
 
-func (f *fakeDS) Databases(ctx aws.Context, options sqlds.Options) ([]string, error) {
+func (f *fakeDS) Databases(_ context.Context, options sqlds.Options) ([]string, error) {
 	dbs, ok := f.databases[options["region"]]
 	if !ok {
 		return nil, fmt.Errorf("error")
@@ -68,7 +68,7 @@ func (f *fakeDS) Databases(ctx aws.Context, options sqlds.Options) ([]string, er
 	return dbs, nil
 }
 
-func (f *fakeDS) CancelQuery(ctx aws.Context, options sqlds.Options, queryID string) error {
+func (f *fakeDS) CancelQuery(context.Context, sqlds.Options, string) error {
 	return nil
 }
 func TestDefaultRoutes(t *testing.T) {
