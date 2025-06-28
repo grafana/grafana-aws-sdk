@@ -18,6 +18,7 @@ import (
 	smithymiddleware "github.com/aws/smithy-go/middleware"
 
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk/pkg/common"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
 )
@@ -144,6 +145,9 @@ func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient
 }
 
 func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient) LoadOptionsFunc {
+	if common.IsOptInRegion(cfg.Region) {
+		cfg.Region = "us-east-1"
+	}
 	stsClient := client.NewSTSClientFromConfig(cfg)
 	provider := client.NewAssumeRoleProvider(stsClient, s.AssumeRoleARN, func(options *stscreds.AssumeRoleOptions) {
 		if s.ExternalID != "" {
