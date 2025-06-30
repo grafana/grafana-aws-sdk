@@ -67,7 +67,6 @@ func TestSignerRoundTripper_SignHTTP(t *testing.T) {
 			require.NotEmpty(t, req.Header["Authorization"])
 
 			if tt.customHeaders != nil {
-				s.customHeaders = tt.customHeaders
 				reqWithHeaders, _ := http.NewRequest("GET", "https://service.aws.amazon.notreally", strings.NewReader(tt.requestBody))
 				reqWithHeaders.Header = tt.customHeaders
 				_, err = s.RoundTrip(reqWithHeaders)

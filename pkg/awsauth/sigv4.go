@@ -35,8 +35,7 @@ func (s SignerMiddleware) MiddlewareName() string {
 
 func NewSignerRoundTripper(opts httpclient.Options, next http.RoundTripper, signer v4.HTTPSigner) SignerRoundTripper {
 	return SignerRoundTripper{
-		sigV4Config:       opts.SigV4,
-		customHeaders:     opts.Header,
+		httpOptions:       opts,
 		next:              next,
 		awsConfigProvider: NewConfigProvider(),
 		signer:            signer,
@@ -45,8 +44,7 @@ func NewSignerRoundTripper(opts httpclient.Options, next http.RoundTripper, sign
 }
 
 type SignerRoundTripper struct {
-	sigV4Config       *httpclient.SigV4Config
-	customHeaders     http.Header
+	httpOptions       httpclient.Options
 	next              http.RoundTripper
 	awsConfigProvider ConfigProvider
 	signer            v4.HTTPSigner
@@ -55,15 +53,14 @@ type SignerRoundTripper struct {
 
 func (s SignerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	awsAuthSettings := Settings{
-		AuthType:           AuthType(s.sigV4Config.AuthType),
-		AccessKey:          s.sigV4Config.AccessKey,
-		SecretKey:          s.sigV4Config.SecretKey,
-		Region:             s.sigV4Config.Region,
-		CredentialsProfile: s.sigV4Config.Profile,
-		AssumeRoleARN:      s.sigV4Config.AssumeRoleARN,
-		ExternalID:         s.sigV4Config.ExternalID,
-		// TODO: support PDC:
-		//ProxyOptions:       nil,
+		AuthType:           AuthType(s.httpOptions.SigV4.AuthType),
+		AccessKey:          s.httpOptions.SigV4.AccessKey,
+		SecretKey:          s.httpOptions.SigV4.SecretKey,
+		Region:             s.httpOptions.SigV4.Region,
+		CredentialsProfile: s.httpOptions.SigV4.Profile,
+		AssumeRoleARN:      s.httpOptions.SigV4.AssumeRoleARN,
+		ExternalID:         s.httpOptions.SigV4.ExternalID,
+		ProxyOptions:       s.httpOptions.ProxyOptions,
 	}
 	ctx := req.Context()
 	cfg, err := s.awsConfigProvider.GetConfig(ctx, awsAuthSettings)
@@ -82,13 +79,13 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 }
 
 func (s SignerRoundTripper) SignHTTP(ctx context.Context, req *http.Request, credentials aws.Credentials) error {
-	// remove any custom headers from req, so they don't get included in the signature
-	for k := range s.customHeaders {
-		req.Header.Del(k)
-	}
+	// we start req with empty headers since that's what the signer is expecting,
+	// but add them back at the end
+	headers := req.Header
+	req.Header = make(http.Header)
 	defer func() {
 		// replace the custom headers before returning
-		for k, v := range s.customHeaders {
+		for k, v := range headers {
 			req.Header[k] = v
 		}
 	}()
@@ -96,7 +93,7 @@ func (s SignerRoundTripper) SignHTTP(ctx context.Context, req *http.Request, cre
 	if err != nil {
 		return err
 	}
-	return s.signer.SignHTTP(ctx, credentials, req, payloadHash, s.sigV4Config.Service, s.sigV4Config.Region, s.clock.Now().UTC())
+	return s.signer.SignHTTP(ctx, credentials, req, payloadHash, s.httpOptions.SigV4.Service, s.httpOptions.SigV4.Region, s.clock.Now().UTC())
 }
 
 func getRequestBodyHash(req *http.Request) (string, error) {
