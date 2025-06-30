@@ -3,9 +3,8 @@ package awsauth
 import (
 	"context"
 	"fmt"
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"strings"
 )
