@@ -25,7 +25,7 @@ type AWSClient interface {
 
 type Loader interface {
 	LoadSettings(context.Context) models.Settings
-	LoadAPI(context.Context, *awsds.SessionCache, models.Settings) (api.AWSAPI, error)
+	LoadAPI(context.Context, models.Settings) (api.AWSAPI, error)
 	LoadDriver(context.Context, api.AWSAPI) (driver.Driver, error)
 	LoadAsyncDriver(context.Context, api.AWSAPI) (asyncDriver.Driver, error)
 }
@@ -37,15 +37,14 @@ type Loader interface {
 //     It does not depend on connection options (only one per datasource)
 //   - api: API instance with the common methods to contact the data source API.
 type awsClient struct {
-	sessionCache *awsds.SessionCache
-	config       sync.Map
-	api          sync.Map
+	config sync.Map
+	api    sync.Map
 
 	loader Loader
 }
 
 func New(loader Loader) AWSClient {
-	ds := &awsClient{sessionCache: awsds.NewSessionCache(), loader: loader}
+	ds := &awsClient{loader: loader}
 	return ds
 }
 
@@ -86,7 +85,7 @@ func (ds *awsClient) loadAPI(id int64, args sqlds.Options) (api.AWSAPI, bool) {
 }
 
 func (ds *awsClient) createAPI(ctx context.Context, id int64, args sqlds.Options, settings models.Settings) (api.AWSAPI, error) {
-	dsAPI, err := ds.loader.LoadAPI(ctx, ds.sessionCache, settings)
+	dsAPI, err := ds.loader.LoadAPI(ctx, settings)
 	if err != nil {
 		return nil, fmt.Errorf("%w: Failed to create client", err)
 	}

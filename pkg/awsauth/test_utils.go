@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// mockAWSAPIClient is used for internal testing. Most of the aws-sdk-go machinery is used,
+// mockAWSAPIClient is used for internal testing. Most of the aws-sdk-go-v2 machinery is used,
 // but anything that reaches out to AWS is faked or disabled.
 type mockAWSAPIClient struct {
 	assumeRoleClient *mockAssumeRoleAPIClient

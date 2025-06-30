@@ -5,8 +5,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
 )
 
 type fakeDS struct {
@@ -16,7 +14,7 @@ type fakeDS struct {
 	stopped       bool
 }
 
-func (s *fakeDS) Execute(_ aws.Context, _ *ExecuteQueryInput) (*ExecuteQueryOutput, error) {
+func (s *fakeDS) Execute(context.Context, *ExecuteQueryInput) (*ExecuteQueryOutput, error) {
 	return &ExecuteQueryOutput{}, nil
 }
 
@@ -25,7 +23,7 @@ func (s *fakeDS) Stop(*ExecuteQueryOutput) error {
 	return nil
 }
 
-func (s *fakeDS) Status(aws.Context, *ExecuteQueryOutput) (*ExecuteQueryStatus, error) {
+func (s *fakeDS) Status(context.Context, *ExecuteQueryOutput) (*ExecuteQueryStatus, error) {
 	i := s.statusCounter
 	s.statusCounter++
 	return s.status[i], s.statusErr
