@@ -3,16 +3,18 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "weekly"
-    groups:
-      all-go-dependencies:
-        patterns:
-          - "*"
+      interval: "daily"
+    cooldown:
+      semver-major-days: 30
+      semver-minor-days: 14
+      semver-patch-days: 7
+      exclude:
+        - "github.com/grafana/*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-    groups:
-      all-github-action-dependencies:
-        patterns:
-          - "*"
+      interval: "daily"
+    cooldown:
+      default-days: 7
+      exclude:
+        - "grafana/*"
