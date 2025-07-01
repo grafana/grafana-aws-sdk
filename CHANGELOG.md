@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0
+- Add SigV4 middleware for aws-sdk-go-v2 by @njvrzm in [#257](https://github.com/grafana/grafana-aws-sdk/pull/257)
+- Remove aws-sdk-go v1 entirely )@njvrzm in [#258](https://github.com/grafana/grafana-aws-sdk/pull/258)
+- Chore: Migrate to github actions for CI by @idastambuk in [#259](https://github.com/grafana/grafana-aws-sdk/pull/259)
+- fix: bump to address vulnerabilities in go1.24.2 by @njvrzm in [#254](https://github.com/grafana/grafana-aws-sdk/pull/254)
+- Add missing opt in regions (thailand/mexico/malaysia/taipei) by @chriscerie in [#250]
+- Dependency updates:
+  - Bump the all-go-dependencies group across 1 directory with 7 updates by @dependabot in [#256](https://github.com/grafana/grafana-aws-sdk/pull/256)
+
 ## 0.38.7
 
 - Cloudwatch metrics: fix uppercase for metrics in [#252](https://github.com/grafana/grafana-aws-sdk/pull/252)
