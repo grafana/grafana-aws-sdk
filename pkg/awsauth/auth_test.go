@@ -9,10 +9,18 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"maps"
 	"os"
 	"testing"
 	"time"
 )
+
+const StackID = "42"
+
+var defaultGrafanaConfig = map[string]string{
+	awsds.GrafanaAssumeRoleExternalIdKeyName: StackID,
+	awsds.AllowedAuthProvidersEnvVarKeyName:  "keys,default,grafana_assume_role,credentials",
+}
 
 type testSuite []testCase
 
@@ -29,13 +37,13 @@ type testCase struct {
 	assumedCredentials   *ststypes.Credentials
 	assumeRoleShouldFail bool
 	environment          map[string]string
+	grafanaConfig        map[string]string
 }
 
-const StackID = "42"
-
 func (tc testCase) Run(t *testing.T) {
-	ctx := backend.WithGrafanaConfig(context.Background(),
-		backend.NewGrafanaCfg(map[string]string{awsds.GrafanaAssumeRoleExternalIdKeyName: StackID}))
+	grafanaCfg := maps.Clone(defaultGrafanaConfig)
+	maps.Copy(grafanaCfg, tc.grafanaConfig)
+	ctx := backend.WithGrafanaConfig(context.Background(), backend.NewGrafanaCfg(grafanaCfg))
 	client := &mockAWSAPIClient{&mockAssumeRoleAPIClient{}}
 
 	if tc.authSettings.AssumeRoleARN != "" {
@@ -268,6 +276,38 @@ func TestGetAWSConfig_Default(t *testing.T) {
 	}.runAll(t)
 }
 
+func TestGetAWSConfig_AuthTypeNotAllowed(t *testing.T) {
+	testSuite{
+		{
+			name: "don't allow auth types not in allowed list",
+			authSettings: Settings{
+				AuthType: AuthTypeKeys,
+			},
+			environment: map[string]string{
+				"AWS_ACCESS_KEY_ID":     "something",
+				"AWS_SECRET_ACCESS_KEY": "beautiful",
+				"AWS_REGION":            "us-north-1",
+			},
+			grafanaConfig: map[string]string{
+				awsds.AllowedAuthProvidersEnvVarKeyName: "default",
+			},
+			shouldError: true,
+		},
+		{
+			name: "don't allow assume role if it is disabled",
+			authSettings: Settings{
+				AuthType:      AuthTypeDefault,
+				AssumeRoleARN: "arn:whatever",
+			},
+			grafanaConfig: map[string]string{
+				awsds.AllowedAuthProvidersEnvVarKeyName: "default",
+				awsds.AssumeRoleEnabledEnvVarKeyName:    "false",
+			},
+			shouldError: true,
+		},
+	}.runAll(t)
+}
+
 func TestGetAWSConfig_Shared(t *testing.T) {
 	testSuite{
 		{
@@ -322,9 +362,4 @@ func TestGetAWSConfig_UnknownOrMissing(t *testing.T) {
 			shouldError: false,
 		},
 	}.runAll(t)
-}
-
-func TestGetAWSConfig_EC2IAMRole(t *testing.T) {
-	// TODO
-	t.Skip()
 }

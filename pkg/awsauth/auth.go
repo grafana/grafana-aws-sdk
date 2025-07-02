@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"slices"
 	"strings"
 )
 
@@ -29,6 +30,15 @@ type awsConfigProvider struct {
 func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
 	logger := backend.Logger.FromContext(ctx)
 
+	authType := authSettings.GetAuthType()
+	grafanaAuthSettings, _ := awsds.ReadAuthSettingsFromContext(ctx)
+	if !slices.Contains(grafanaAuthSettings.AllowedAuthProviders, string(authType)) {
+		return aws.Config{}, fmt.Errorf("trying to use non-allowed auth method %s", authType)
+	}
+	if authSettings.AssumeRoleARN != "" && !grafanaAuthSettings.AssumeRoleEnabled {
+		return aws.Config{}, fmt.Errorf("trying to use assume role but it is disabled in grafana config")
+	}
+
 	key := authSettings.Hash()
 	cached, exists := rcp.cache[key]
 	if exists {
@@ -39,7 +49,6 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 
 	options := authSettings.BaseOptions()
 
-	authType := authSettings.GetAuthType()
 	logger.Debug(fmt.Sprintf("Using auth type: %s", authType))
 	switch authType {
 	case AuthTypeDefault, AuthTypeEC2IAMRole: // nothing else to do here
@@ -48,8 +57,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	case AuthTypeSharedCreds:
 		options = append(options, authSettings.WithSharedCredentials())
 	case AuthTypeGrafanaAssumeRole:
-		settings, _ := awsds.ReadAuthSettingsFromContext(ctx)
-		authSettings.ExternalID = settings.ExternalID
+		authSettings.ExternalID = grafanaAuthSettings.ExternalID
 		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
 	default:
 		return aws.Config{}, fmt.Errorf("unknown auth type: %s", authType)
@@ -61,7 +69,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	}
 
 	if authSettings.AssumeRoleARN != "" {
-		options = append(authSettings.BaseOptions(), authSettings.WithAssumeRole(cfg, rcp.client))
+		options = append(authSettings.BaseOptions(), authSettings.WithAssumeRole(cfg, rcp.client, grafanaAuthSettings.SessionDuration))
 		cfg, err = rcp.client.LoadDefaultConfig(ctx, options...)
 		if err != nil {
 			return aws.Config{}, err

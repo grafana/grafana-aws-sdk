@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.2
+- Add some missing auth config handling by @njvrzm in [#263](https://github.com/grafana/grafana-aws-sdk/pull/263)
+
 ## 1.0.1
 - Fix: Use empty sha256 hash if request's GetBody method is nil by @njvrzm in [#262](https://github.com/grafana/grafana-aws-sdk/pull/262)
 
