@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
@@ -19,6 +20,7 @@ import (
 
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-aws-sdk/pkg/common"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/grafana/grafana-plugin-sdk-go/build"
 )
@@ -145,7 +147,7 @@ func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient
 	}
 }
 
-func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient) LoadOptionsFunc {
+func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDuration *time.Duration) LoadOptionsFunc {
 	if common.IsOptInRegion(cfg.Region) {
 		cfg.Region = "us-east-1"
 	}
@@ -153,6 +155,9 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient) LoadOption
 	provider := client.NewAssumeRoleProvider(stsClient, s.AssumeRoleARN, func(options *stscreds.AssumeRoleOptions) {
 		if s.ExternalID != "" {
 			options.ExternalID = aws.String(s.ExternalID)
+		}
+		if sessionDuration != nil {
+			options.Duration = *sessionDuration
 		}
 	})
 	cache := client.NewCredentialsCache(provider)
@@ -183,7 +188,7 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		if s.ProxyOptions != nil {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
-					client.Transport = http.DefaultTransport.(*http.Transport).Clone()
+					client.Transport = httpclient.NewHTTPTransport()
 				}
 				if transport, ok := client.Transport.(*http.Transport); ok {
 					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
