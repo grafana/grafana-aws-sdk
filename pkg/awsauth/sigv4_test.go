@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-const EmptySha256Hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-
 var OnceUponATime = time.Unix(1234567890, 0) // 2009-02-13 UTC
 var AtALaterTime = time.Unix(1234567891, 0)  // 2009-02-13 UTC
 

@@ -14,6 +14,8 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 )
 
+const EmptySha256Hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
 func NewSigV4Middleware(signerOpts ...func(signer *v4.SignerOptions)) httpclient.Middleware {
 	return SignerMiddleware{signerOpts}
 }
@@ -97,6 +99,9 @@ func (s SignerRoundTripper) SignHTTP(ctx context.Context, req *http.Request, cre
 }
 
 func getRequestBodyHash(req *http.Request) (string, error) {
+	if req.GetBody == nil {
+		return EmptySha256Hash, nil
+	}
 	body, err := req.GetBody()
 	if err != nil {
 		return "", err
