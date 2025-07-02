@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.1
+- Fix: Use empty sha256 hash if request's GetBody method is nil by @njvrzm in [#262](https://github.com/grafana/grafana-aws-sdk/pull/262)
+
 ## 1.0.0
 - Add SigV4 middleware for aws-sdk-go-v2 by @njvrzm in [#257](https://github.com/grafana/grafana-aws-sdk/pull/257)
 - Remove aws-sdk-go v1 entirely )@njvrzm in [#258](https://github.com/grafana/grafana-aws-sdk/pull/258)
