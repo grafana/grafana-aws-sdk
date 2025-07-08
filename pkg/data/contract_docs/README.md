@@ -1,1 +1,0 @@
-Repo Moved to [grafana/dataplane/docs/contracts](https://github.com/grafana/dataplane/tree/main/docs/contract). View at https://grafana.github.io/dataplane/contract
