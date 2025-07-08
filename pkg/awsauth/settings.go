@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -19,10 +20,8 @@ import (
 	smithymiddleware "github.com/aws/smithy-go/middleware"
 
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/awsds"
-	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/common"
-	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/httpclient"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/proxy"
-	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/build"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/common"
 )
 
 const (
@@ -188,7 +187,7 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		if s.ProxyOptions != nil {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
-					client.Transport = httpclient.NewHTTPTransport()
+					client.Transport = NewHTTPTransport()
 				}
 				if transport, ok := client.Transport.(*http.Transport); ok {
 					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
@@ -205,15 +204,27 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		return nil
 	}
 }
+func NewHTTPTransport() http.RoundTripper {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+			return dialer.DialContext
+		}(&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}),
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+}
 
 // WithUserAgent adds info to the UserAgent header of API requests.
 // Adapted from grafana-aws-sdk/pkg/awsds/utils.go
 func (s Settings) WithUserAgent() LoadOptionsFunc {
-	buildInfo, err := build.GetBuildInfo()
-	version := buildInfo.Version
-	if err != nil {
-		version = "dev"
-	}
+	version := "frankenstein"
 	grafanaVersion := os.Getenv("GF_VERSION")
 	if grafanaVersion == "" {
 		grafanaVersion = "?"

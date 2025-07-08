@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/proxy"
 )
 

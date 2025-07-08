@@ -3,11 +3,11 @@ package backend
 import (
 	"context"
 	"encoding/json"
-	"time"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/httpclient"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/proxy"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/useragent"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/internal/tenant"
+	"time"
 )
 
 const dataCustomOptionsKey = "grafanaData"
@@ -21,48 +21,10 @@ type User struct {
 	Role  string
 }
 
-// AppInstanceSettings represents settings for an app instance.
+// DataSourceInstanceSettings represents settings for an app instance.
 //
 // In Grafana an app instance is an app plugin of certain
 // type that have been configured and enabled in a Grafana organization.
-type AppInstanceSettings struct {
-	// JSONData repeats the properties at this level of the object (excluding DataSourceConfig), and also includes any
-	// custom properties associated with the plugin config instance.
-	JSONData json.RawMessage
-
-	// DecryptedSecureJSONData contains key,value pairs where the encrypted configuration plugin instance in Grafana
-	// server have been decrypted before passing them to the plugin.
-	DecryptedSecureJSONData map[string]string
-
-	// Updated is the last time this plugin instance's configuration was updated.
-	Updated time.Time
-
-	// The API Version when settings were saved
-	// NOTE: this may be older than the current version
-	APIVersion string
-}
-
-// HTTPClientOptions creates httpclient.Options based on settings.
-func (s *AppInstanceSettings) HTTPClientOptions(_ context.Context) (httpclient.Options, error) {
-	httpSettings, err := parseHTTPSettings(s.JSONData, s.DecryptedSecureJSONData)
-	if err != nil {
-		return httpclient.Options{}, err
-	}
-
-	opts := httpSettings.HTTPClientOptions()
-	setCustomOptionsFromHTTPSettings(&opts, httpSettings)
-
-	return opts, nil
-}
-
-func (s *AppInstanceSettings) GVK() GroupVersionKind {
-	return GroupVersionKind{
-		Group:   "grafana-plugin-sdk-go", // raw protobuf
-		Version: s.APIVersion,
-		Kind:    "AppInstanceSettings",
-	}
-}
-
 // DataSourceInstanceSettings represents settings for a data source instance.
 //
 // In Grafana a data source instance is a data source plugin of certain
@@ -150,14 +112,6 @@ func (s *DataSourceInstanceSettings) HTTPClientOptions(ctx context.Context) (htt
 	}
 
 	return opts, nil
-}
-
-func (s *DataSourceInstanceSettings) GVK() GroupVersionKind {
-	return GroupVersionKind{
-		Group:   "grafana-plugin-sdk-go", // raw protobuf
-		Version: s.APIVersion,
-		Kind:    "DataSourceInstanceSettings",
-	}
 }
 
 // PluginContext holds contextual information about a plugin request, such as
