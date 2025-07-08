@@ -2,13 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.3
+
+- Fix transport and cache bugs by @njvrzm in [#267](https://github.com/grafana/grafana-aws-sdk/pull/267)
+
 ## 1.0.2
+
 - Add some missing auth config handling by @njvrzm in [#263](https://github.com/grafana/grafana-aws-sdk/pull/263)
 
 ## 1.0.1
+
 - Fix: Use empty sha256 hash if request's GetBody method is nil by @njvrzm in [#262](https://github.com/grafana/grafana-aws-sdk/pull/262)
 
 ## 1.0.0
+
 - Add SigV4 middleware for aws-sdk-go-v2 by @njvrzm in [#257](https://github.com/grafana/grafana-aws-sdk/pull/257)
 - Remove aws-sdk-go v1 entirely )@njvrzm in [#258](https://github.com/grafana/grafana-aws-sdk/pull/258)
 - Chore: Migrate to github actions for CI by @idastambuk in [#259](https://github.com/grafana/grafana-aws-sdk/pull/259)
