@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"slices"
 	"strings"
+	"sync"
 )
 
 type ConfigProvider interface {
@@ -19,12 +20,12 @@ func NewConfigProvider() ConfigProvider {
 }
 
 func newAWSConfigProviderWithClient(client AWSAPIClient) *awsConfigProvider {
-	return &awsConfigProvider{client, make(map[uint64]aws.Config)}
+	return &awsConfigProvider{client: client}
 }
 
 type awsConfigProvider struct {
 	client AWSAPIClient
-	cache  map[uint64]aws.Config
+	cache  sync.Map
 }
 
 func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settings) (aws.Config, error) {
@@ -40,10 +41,10 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	}
 
 	key := authSettings.Hash()
-	cached, exists := rcp.cache[key]
+	cached, exists := rcp.cache.Load(key)
 	if exists {
 		logger.Debug("returning config from cache")
-		return cached, nil
+		return cached.(aws.Config), nil
 	}
 	logger.Debug("creating new config")
 
@@ -76,7 +77,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 		}
 	}
 
-	rcp.cache[key] = cfg
+	rcp.cache.Store(key, cfg)
 	return cfg, nil
 }
 
