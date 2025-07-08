@@ -5,15 +5,13 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"sync"
-	"testing"
-
-	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v4"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data/sqlutil"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/sqlds"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"sync"
+	"testing"
 )
 
 type fakeAsyncDB struct{}

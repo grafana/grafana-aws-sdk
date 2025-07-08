@@ -18,11 +18,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	smithymiddleware "github.com/aws/smithy-go/middleware"
 
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-aws-sdk/pkg/common"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
-	"github.com/grafana/grafana-plugin-sdk-go/build"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/common"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/httpclient"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/proxy"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/build"
 )
 
 const (

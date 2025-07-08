@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/build"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/build"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data"
 )
 
 // ShouldCacheQuery checks whether resp contains a running query, and returns false if it does

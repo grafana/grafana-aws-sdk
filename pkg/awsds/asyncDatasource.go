@@ -6,14 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/instancemgmt"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data/sqlutil"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/experimental/errorsource"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/sqlds"
 	"sync"
-
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
-	"github.com/grafana/sqlds/v4"
 )
 
 const defaultKeySuffix = "default"

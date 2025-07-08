@@ -2,9 +2,8 @@ package awsds
 
 import (
 	"testing"
-
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data"
 	"github.com/stretchr/testify/assert"
 )
 

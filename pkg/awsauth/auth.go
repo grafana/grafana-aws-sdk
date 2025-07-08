@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
 	"slices"
 	"strings"
 )
