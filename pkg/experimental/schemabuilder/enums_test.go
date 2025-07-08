@@ -11,8 +11,7 @@ import (
 func TestFindEnums(t *testing.T) {
 	t.Run("data", func(t *testing.T) {
 		fields, err := findEnumFields(
-			1
-		"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data",
+			"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data",
 			"../../data")
 		require.NoError(t, err)
 
@@ -23,8 +22,7 @@ func TestFindEnums(t *testing.T) {
 	t.Run("verify enum extraction", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
 			fields, err := findEnumFields(
-				1
-			"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/experimental/schemabuilder/example",
+				"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/experimental/schemabuilder/example",
 				"./example")
 			require.NoError(t, err)
 			require.Equal(t, 3, len(fields))

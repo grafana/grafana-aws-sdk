@@ -3,15 +3,15 @@ package v0alpha1
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
-	"slices"
-	"strconv"
-	"unsafe"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data/converters"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/data/utils/jsoniter"
-j "github.com/json-iterator/go"
+	j "github.com/json-iterator/go"
+	"maps"
+	"slices"
+	"strconv"
+	"unsafe"
 )
 
 func init() { //nolint:gochecknoinits

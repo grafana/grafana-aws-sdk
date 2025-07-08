@@ -62,6 +62,11 @@ require (
 )
 
 require (
+	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 // indirect
+)
+
+require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -137,10 +142,9 @@ require (
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
-	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
+	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
-	sigs.k8s.io/randfill v1.0.0 // indirect
 )

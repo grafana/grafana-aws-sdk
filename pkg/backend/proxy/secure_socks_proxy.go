@@ -7,17 +7,15 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
-	"time"
+
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/backend/log"
 	"github.com/grafana/grafana-aws-sdk-frankenstein/pkg/experimental/status"
-"github.com/prometheus/client_golang/prometheus"
-"github.com/prometheus/client_golang/prometheus/promauto"
-"golang.org/x/net/proxy"
 )
 
 const (
@@ -34,12 +32,7 @@ const (
 )
 
 var (
-	socksUnknownError           = regexp.MustCompile(`unknown code: (\d+)`)
-	secureSocksRequestsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "grafana",
-		Name:      "secure_socks_requests_duration",
-		Help:      "Duration of requests to the secure socks proxy",
-	}, []string{"code", "datasource", "datasource_type"})
+	socksUnknownError            = regexp.MustCompile(`unknown code: (\d+)`)
 	errUseOfHTTPDefaultTransport = errors.New("use of the http.DefaultTransport is not allowed with secure proxy")
 )
 
@@ -286,7 +279,6 @@ func (d *instrumentedSocksDialer) DialContext(ctx context.Context, n, addr strin
 		return nil, ctx.Err()
 	}
 
-	start := time.Now()
 	dialer, ok := d.dialer.(proxy.ContextDialer)
 	if !ok {
 		return nil, errors.New("unable to cast socks proxy dialer to context proxy dialer")
@@ -342,6 +334,5 @@ func (d *instrumentedSocksDialer) DialContext(ctx context.Context, n, addr strin
 		err = status.DownstreamError(err)
 	}
 
-	secureSocksRequestsDuration.WithLabelValues(code, d.datasourceName, d.datasourceType).Observe(time.Since(start).Seconds())
 	return c, err
 }
