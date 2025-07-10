@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -53,7 +54,12 @@ type SignerRoundTripper struct {
 	clock             Clock
 }
 
-func (s SignerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e error) {
+	defer func() {
+		if err := recover(); err != nil {
+			e = fmt.Errorf("panic caught in SignerRoundTripper.RoundTrip(): %v", err)
+		}
+	}()
 	awsAuthSettings := Settings{
 		AuthType:           AuthType(s.httpOptions.SigV4.AuthType),
 		AccessKey:          s.httpOptions.SigV4.AccessKey,
@@ -63,6 +69,7 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error)
 		AssumeRoleARN:      s.httpOptions.SigV4.AssumeRoleARN,
 		ExternalID:         s.httpOptions.SigV4.ExternalID,
 		ProxyOptions:       s.httpOptions.ProxyOptions,
+		HTTPClient:         &http.Client{},
 	}
 	ctx := req.Context()
 	cfg, err := s.awsConfigProvider.GetConfig(ctx, awsAuthSettings)
