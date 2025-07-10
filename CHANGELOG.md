@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.4
+- Fix: handle (and try to avoid) panic in sigv4 middleware by @njvrzm in [#269](https://github.com/grafana/grafana-aws-sdk/pull/269)
+- Remove pr_commands by @kevinwcyu in [#266](https://github.com/grafana/grafana-aws-sdk/pull/266)
+
 ## 1.0.3
 
 - Fix transport and cache bugs by @njvrzm in [#267](https://github.com/grafana/grafana-aws-sdk/pull/267)
