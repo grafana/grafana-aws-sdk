@@ -2547,6 +2547,11 @@ var NamespaceMetricsMap = map[string][]string{
 		"TLSRevocationStatusUnknownConnections",
 		"TLSTimedOutConnections",
 	},
+	"AWS/NetworkMonitor": {
+		"HealthIndicator",
+		"PacketLoss",
+		"RTT",
+	},
 	"AWS/OpsWorks": {
 		"cpu_idle",
 		"cpu_nice",
@@ -3467,6 +3472,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/NetworkELB":                     {"AvailabilityZone", "LoadBalancer", "TargetGroup"},
 	"AWS/GatewayELB":                     {"AvailabilityZone", "LoadBalancer", "TargetGroup"},
 	"AWS/NetworkFirewall":                {"AvailabilityZone", "CustomAction", "Engine", "FirewallName"},
+	"AWS/NetworkMonitor":                 {"Monitor", "Probe"},
 	"AWS/OpsWorks":                       {"InstanceId", "LayerId", "StackId"},
 	"AWS/Polly":                          {"Operation"},
 	"AWS/PrivateLinkEndpoints":           {"Endpoint Type", "Service Name", "Subnet Id", "VPC Endpoint Id", "VPC Id"},
