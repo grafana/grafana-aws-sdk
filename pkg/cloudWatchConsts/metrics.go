@@ -2551,7 +2551,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"HealthIndicator",
 		"PacketLoss",
 		"RTT",
-	}
+	},
 	"AWS/OpsWorks": {
 		"cpu_idle",
 		"cpu_nice",
