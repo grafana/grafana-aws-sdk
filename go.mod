@@ -1,4 +1,4 @@
-module github.com/grafana/grafana-aws-sdk-frankenstein
+module github.com/grafana/grafana-aws-sdk
 
 go 1.24.4
 
