@@ -3,12 +3,13 @@ package awsauth
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
 type ConfigProvider interface {
@@ -34,10 +35,10 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	authType := authSettings.GetAuthType()
 	grafanaAuthSettings, _ := awsds.ReadAuthSettingsFromContext(ctx)
 	if !slices.Contains(grafanaAuthSettings.AllowedAuthProviders, string(authType)) {
-		return aws.Config{}, fmt.Errorf("trying to use non-allowed auth method %s", authType)
+		return aws.Config{}, backend.DownstreamErrorf("trying to use non-allowed auth method %s", authType)
 	}
 	if authSettings.AssumeRoleARN != "" && !grafanaAuthSettings.AssumeRoleEnabled {
-		return aws.Config{}, fmt.Errorf("trying to use assume role but it is disabled in grafana config")
+		return aws.Config{}, backend.DownstreamErrorf("trying to use assume role but it is disabled in grafana config")
 	}
 
 	key := authSettings.Hash()
@@ -61,7 +62,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 		authSettings.ExternalID = grafanaAuthSettings.ExternalID
 		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
 	default:
-		return aws.Config{}, fmt.Errorf("unknown auth type: %s", authType)
+		return aws.Config{}, backend.DownstreamErrorf("unknown auth type: %s", authType)
 	}
 
 	cfg, err := rcp.client.LoadDefaultConfig(ctx, options...)
