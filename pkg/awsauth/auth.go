@@ -83,5 +83,5 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 }
 
 func isStsEndpoint(ep *string) bool {
-	return ep != nil && (strings.HasPrefix(*ep, "sts.") || strings.HasPrefix(*ep, "sts-fips."))
+	return ep != nil && (strings.Contains(*ep, "sts.") || strings.Contains(*ep, "sts-fips."))
 }

@@ -98,7 +98,7 @@ func (s Settings) WithEndpoint() LoadOptionsFunc {
 		useFips = true
 	}
 	return func(options *config.LoadOptions) error {
-		if s.Endpoint != "" && s.Endpoint != "default" {
+		if s.Endpoint != "" && s.Endpoint != "default" && !isStsEndpoint(&s.Endpoint) {
 			options.BaseEndpoint = s.Endpoint
 		}
 		if useFips {
@@ -163,9 +163,6 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDur
 	cache := client.NewCredentialsCache(provider)
 	return func(options *config.LoadOptions) error {
 		options.Credentials = cache
-		if isStsEndpoint(cfg.BaseEndpoint) {
-			options.BaseEndpoint = ""
-		}
 		return nil
 	}
 }
