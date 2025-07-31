@@ -237,6 +237,23 @@ func TestGetAWSConfig_Keys_AssumeRule(t *testing.T) {
 			},
 		},
 		{
+			name: "static assume role with sts fips endpoint - endpoint is nil",
+			authSettings: Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        "us-east-1",
+				Endpoint:      "sts-fips.us-east-1.amazonaws.com",
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("assumed"),
+				SecretAccessKey: aws.String("role"),
+				SessionToken:    aws.String("session"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
 			name: "static assume role with failure",
 			authSettings: Settings{
 				AuthType:      "keys",
