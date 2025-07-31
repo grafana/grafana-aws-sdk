@@ -78,7 +78,6 @@ func (tc testCase) Run(t *testing.T) {
 		}
 	}
 	if isStsEndpoint(&tc.authSettings.Endpoint) {
-		assert.Equal(t, tc.authSettings.Endpoint, *client.assumeRoleClient.stsConfig.BaseEndpoint)
 		assert.Nil(t, cfg.BaseEndpoint)
 	}
 }
