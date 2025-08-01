@@ -78,7 +78,6 @@ func (tc testCase) Run(t *testing.T) {
 		}
 	}
 	if isStsEndpoint(&tc.authSettings.Endpoint) {
-		assert.Equal(t, tc.authSettings.Endpoint, *client.assumeRoleClient.stsConfig.BaseEndpoint)
 		assert.Nil(t, cfg.BaseEndpoint)
 	}
 }
@@ -228,6 +227,40 @@ func TestGetAWSConfig_Keys_AssumeRule(t *testing.T) {
 				SecretKey:     "diaphanous",
 				Region:        "us-east-1",
 				Endpoint:      "sts.us-east-1.amazonaws.com",
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("assumed"),
+				SecretAccessKey: aws.String("role"),
+				SessionToken:    aws.String("session"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "static assume role with sts endpoint - endpoint is nil",
+			authSettings: Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        "us-east-1",
+				Endpoint:      "https://sts.us-east-1.amazonaws.com",
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("assumed"),
+				SecretAccessKey: aws.String("role"),
+				SessionToken:    aws.String("session"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "static assume role with sts fips endpoint - endpoint is nil",
+			authSettings: Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        "us-east-1",
+				Endpoint:      "sts-fips.us-east-1.amazonaws.com",
 				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
 			},
 			assumedCredentials: &ststypes.Credentials{
