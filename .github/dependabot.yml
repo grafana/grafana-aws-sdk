@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "08:00"
+    open-pull-requests-limit: 3
     cooldown:
       semver-major-days: 30
       semver-minor-days: 14
@@ -14,6 +16,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "12:00"
+    open-pull-requests-limit: 3
     cooldown:
       default-days: 7
       exclude:
