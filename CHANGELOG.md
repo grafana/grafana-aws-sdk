@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0
+
+- Bugifx: Fix custom sts endpoint in [#283](https://github.com/grafana/grafana-aws-sdk/pull/283)
+- Add missing EMRServerless dimensions in [#282](https://github.com/grafana/grafana-aws-sdk/pull/282)
+
 ## 1.0.6
 
 - Add support for auto-merging dependabot updates by @kevinwcyu in https://github.com/grafana/grafana-aws-sdk/pull/255
