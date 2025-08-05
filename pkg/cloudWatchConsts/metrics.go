@@ -3432,7 +3432,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/ElasticBeanstalk":               {"EnvironmentName", "InstanceId"},
 	"AWS/ElasticInference":               {"ElasticInferenceAcceleratorId", "InstanceId"},
 	"AWS/ElasticMapReduce":               {"ClusterId", "JobFlowId", "JobId"},
-	"AWS/EMRServerless":                  {"ApplicationId", "WorkerType", "CapacityAllocationType"},
+	"AWS/EMRServerless":                  {"ApplicationId", "ApplicationName", "CapacityAllocationType","JobId", "JobName", "WorkerType"},
 	"AWS/ElasticTranscoder":              {"Operation", "PipelineId"},
 	"AWS/EventBridge/Pipes":              {"AwsAccountId", "PipeName"},
 	"AWS/Events":                         {"EventBusName", "EventSourceName", "RuleName"},

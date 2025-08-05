@@ -2,7 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0
+
+- Bugifx: Fix custom sts endpoint in [#283](https://github.com/grafana/grafana-aws-sdk/pull/283)
+- Add missing EMRServerless dimensions in [#282](https://github.com/grafana/grafana-aws-sdk/pull/282)
+
+## 1.0.6
+
+- Add support for auto-merging dependabot updates by @kevinwcyu in https://github.com/grafana/grafana-aws-sdk/pull/255
+- Bump github.com/grafana/sqlds/v4 from 4.2.3 to 4.2.4 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/271
+- Add CloudWatch Network Monitor namespace by @jacobwoffenden in https://github.com/grafana/grafana-aws-sdk/pull/272
+- Add Application Signals metrics by @iwysiu in https://github.com/grafana/grafana-aws-sdk/pull/273
+- Mark unsupported auth type errors as downstream by @iwysiu in https://github.com/grafana/grafana-aws-sdk/pull/275
+
+## 1.0.5
+
+- Rerelease for internal reasons
+
 ## 1.0.4
+
 - Fix: handle (and try to avoid) panic in sigv4 middleware by @njvrzm in [#269](https://github.com/grafana/grafana-aws-sdk/pull/269)
 - Remove pr_commands by @kevinwcyu in [#266](https://github.com/grafana/grafana-aws-sdk/pull/266)
 

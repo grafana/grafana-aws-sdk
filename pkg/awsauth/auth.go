@@ -82,6 +82,20 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	return cfg, nil
 }
 
+var stsEndpointPrefixes = []string{
+	"sts.",
+	"sts-fips.",
+	"https://sts.",
+	"https://sts-fips.",
+}
 func isStsEndpoint(ep *string) bool {
-	return ep != nil && (strings.HasPrefix(*ep, "sts.") || strings.HasPrefix(*ep, "sts-fips."))
+	if ep == nil {
+		return false
+	}
+	for _, prefix := range stsEndpointPrefixes {
+		if strings.HasPrefix(*ep, prefix) {
+			return true
+		}
+	}
+	return false
 }
