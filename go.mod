@@ -11,7 +11,7 @@ require (
 	github.com/aws/smithy-go v1.22.4
 	github.com/google/go-cmp v0.7.0
 	github.com/grafana/grafana-plugin-sdk-go v0.278.0
-	github.com/grafana/sqlds/v4 v4.2.4
+	github.com/grafana/sqlds/v4 v4.2.6
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
 	github.com/stretchr/testify v1.10.0
