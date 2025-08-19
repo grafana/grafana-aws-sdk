@@ -3,10 +3,10 @@ module github.com/grafana/grafana-aws-sdk
 go 1.24.4
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.37.2
+	github.com/aws/aws-sdk-go-v2 v1.38.0
 	github.com/aws/aws-sdk-go-v2/config v1.30.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.3
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.2
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.36.0
 	github.com/aws/smithy-go v1.22.5
 	github.com/google/go-cmp v0.7.0
