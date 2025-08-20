@@ -92,7 +92,7 @@ func (s Settings) WithRegion() LoadOptionsFunc {
 
 func (s Settings) WithEndpoint() LoadOptionsFunc {
 	useFips := false
-	if strings.Contains(s.Endpoint, "-fips.") || strings.Contains(s.Region, "us-gov") {
+	if strings.Contains(s.Endpoint, "-fips.") {
 		// TODO: add fips support as an toggle option
 		s.Endpoint = ""
 		useFips = true
