@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.1
+
+- Stop automatically setting us-gov endpoints as fips in [#302](https://github.com/grafana/grafana-aws-sdk/pull/302)
+- Bump github.com/aws/aws-sdk-go-v2/config from 1.29.17 to 1.29.18 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/277
+- Bump github.com/grafana/sqlds/v4 from 4.2.4 to 4.2.6 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/280
+- Bump github.com/aws/smithy-go from 1.22.4 to 1.22.5 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/286
+- Bump github.com/grafana/sqlds/v4 from 4.2.6 to 4.2.7 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/287
+- Bump github.com/aws/aws-sdk-go-v2/feature/ec2/imds from 1.16.33 to 1.17.0 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/288
+- Bump github.com/aws/aws-sdk-go-v2/service/sts from 1.34.1 to 1.35.0 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/289
+- Bump github.com/aws/aws-sdk-go-v2/config from 1.29.18 to 1.30.1 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/293
+- Bump github.com/aws/aws-sdk-go-v2 from 1.37.0 to 1.37.2 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/294
+- Bump github.com/aws/aws-sdk-go-v2/service/sts from 1.35.0 to 1.35.1 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/295
+- Bump github.com/aws/aws-sdk-go-v2/credentials from 1.17.71 to 1.18.1 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/296
+- Bump github.com/aws/aws-sdk-go-v2/config from 1.30.1 to 1.30.3 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/297
+- Bump github.com/aws/aws-sdk-go-v2/feature/ec2/imds from 1.18.2 to 1.18.3 by @dependabot[bot] in https://github.com/grafana/grafana-aws-sdk/pull/300
+
 ## 1.1.0
 
 - Bugifx: Fix custom sts endpoint in [#283](https://github.com/grafana/grafana-aws-sdk/pull/283)
