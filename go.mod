@@ -14,7 +14,7 @@ require (
 	github.com/grafana/sqlds/v4 v4.2.7
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
