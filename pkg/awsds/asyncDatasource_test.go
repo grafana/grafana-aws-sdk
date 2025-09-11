@@ -227,3 +227,89 @@ func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 		})
 	}
 }
+
+func Test_isAsyncFlow(t *testing.T) {
+	tests := []struct {
+		name     string
+		json     []byte
+		expected bool
+	}{
+		{
+			name:     "async flow enabled",
+			json:     []byte(`{"meta": {"queryFlow": "async"}}`),
+			expected: true,
+		},
+		{
+			name:     "async flow disabled",
+			json:     []byte(`{"meta": {"queryFlow": "sync"}}`),
+			expected: false,
+		},
+		{
+			name:     "no meta field",
+			json:     []byte(`{"rawSql": "SELECT 1"}`),
+			expected: false,
+		},
+		{
+			name:     "empty meta",
+			json:     []byte(`{"meta": {}}`),
+			expected: false,
+		},
+		{
+			name:     "malformed JSON - incomplete object",
+			json:     []byte(`{malformed json`),
+			expected: false,
+		},
+		{
+			name:     "malformed JSON - invalid syntax",
+			json:     []byte(`{"meta": {"queryFlow": "async"`),
+			expected: false,
+		},
+		{
+			name:     "malformed JSON - not JSON",
+			json:     []byte(`not json at all`),
+			expected: false,
+		},
+		{
+			name:     "empty JSON",
+			json:     []byte(``),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := backend.DataQuery{
+				RefID: "A",
+				JSON:  tt.json,
+			}
+
+			result := isAsyncFlow(query)
+			assert.Equal(t, tt.expected, result, "isAsyncFlow result should match expected for: %s", tt.name)
+		})
+	}
+}
+
+func Test_QueryData_MalformedJSON_FallsBackToSync(t *testing.T) {
+	req := &backend.QueryDataRequest{
+		Queries: []backend.DataQuery{
+			{
+				RefID: "A",
+				JSON:  []byte(`{malformed json`), // Invalid JSON that will cause GetQuery to fail
+			},
+		},
+	}
+
+	syncCalled := false
+	mockSyncHandler := func(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+		syncCalled = true
+		return &backend.QueryDataResponse{}, nil
+	}
+
+	ds := &AsyncAWSDatasource{
+		sqldsQueryDataHandler: mockSyncHandler,
+	}
+
+	_, err := ds.QueryData(context.Background(), req)
+	assert.NoError(t, err, "QueryData should not error when handling malformed JSON")
+	assert.True(t, syncCalled, "QueryData should fall back to sync flow when isAsyncFlow returns false due to malformed JSON")
+}

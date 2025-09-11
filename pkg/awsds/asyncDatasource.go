@@ -73,7 +73,12 @@ func NewAsyncAWSDatasource(driver AsyncDriver) *AsyncAWSDatasource {
 
 // isAsyncFlow checks the feature flag in query to see if it is async
 func isAsyncFlow(query backend.DataQuery) bool {
-	q, _ := GetQuery(query)
+	q, err := GetQuery(query)
+	if err != nil {
+		backend.Logger.Error("Error parsing query", "error", err)
+		return false
+	}
+
 	return q.Meta.QueryFlow == "async"
 }
 
