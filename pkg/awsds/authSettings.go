@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/gtime"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/proxy"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/gtime"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/proxy"
 )
 
 const (

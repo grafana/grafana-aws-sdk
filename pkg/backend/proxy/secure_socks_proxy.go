@@ -14,8 +14,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/log"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/experimental/status"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/log"
+	"github.com/grafana/grafana-aws-sdk/pkg/experimental/status"
 )
 
 const (

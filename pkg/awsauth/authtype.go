@@ -1,6 +1,6 @@
 package awsauth
 
-import "github.com/grafana/grafana-aws-sdk-for-backport/pkg/awsds"
+import "github.com/grafana/grafana-aws-sdk/pkg/awsds"
 
 // AuthType enumerates the kinds of authentication that are supported
 type AuthType string

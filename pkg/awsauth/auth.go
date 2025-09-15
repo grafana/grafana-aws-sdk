@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/awsds"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend"
 )
 
 type ConfigProvider interface {

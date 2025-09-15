@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"time"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/proxy"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/proxy"
 )
 
 // ConfigureClientFunc function signature for configuring http.Client.

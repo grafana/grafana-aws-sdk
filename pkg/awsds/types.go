@@ -1,5 +1,9 @@
 package awsds
 
+import (
+	"time"
+)
+
 // AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {
 	AllowedAuthProviders       []string

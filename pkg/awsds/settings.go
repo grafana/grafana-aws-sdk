@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend"
 )
 
 const defaultRegion = "default"

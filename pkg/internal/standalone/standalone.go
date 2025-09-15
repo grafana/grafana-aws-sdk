@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/internal"
+	"github.com/grafana/grafana-aws-sdk/pkg/internal"
 )
 
 var (

@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/log"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/log"
 )
 
 // Logger is the default logger instance. This can be used directly to log from

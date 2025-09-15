@@ -2,7 +2,7 @@ package awsauth
 
 import (
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend/httpclient"
+	"github.com/grafana/grafana-aws-sdk/pkg/backend/httpclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
