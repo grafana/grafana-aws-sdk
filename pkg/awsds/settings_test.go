@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-aws-sdk-for-backport/pkg/backend"
 	"github.com/stretchr/testify/assert"
 )
 
