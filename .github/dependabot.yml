@@ -12,6 +12,10 @@ updates:
       semver-patch-days: 7
       exclude:
         - "github.com/grafana/*"
+    groups:
+      aws-sdk-go-v2:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
