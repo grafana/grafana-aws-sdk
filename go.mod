@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.11
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.7
-	github.com/aws/aws-sdk-go-v2/service/sts v1.38.3
+	github.com/aws/aws-sdk-go-v2/service/sts v1.38.4
 	github.com/aws/smithy-go v1.23.0
 	github.com/google/go-cmp v0.7.0
 	github.com/grafana/grafana-plugin-sdk-go v0.279.0
