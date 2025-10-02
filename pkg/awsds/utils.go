@@ -2,13 +2,13 @@ package awsds
 
 import (
 	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 	"os"
 	"runtime"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/build"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
@@ -50,7 +50,7 @@ func ShouldCacheQuery(resp *backend.QueryDataResponse) bool {
 // GetUserAgentString returns an agent that can be parsed in server logs
 func GetUserAgentString(name string) string {
 	// Build info is set from compile time flags
-	buildInfo, err := build.GetBuildInfo()
+	buildInfo, err := buildinfo.GetBuildInfo()
 	if err != nil {
 		buildInfo.Version = "dev"
 	}

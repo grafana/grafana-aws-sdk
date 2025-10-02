@@ -64,6 +64,7 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e
 		AuthType:           AuthType(s.httpOptions.SigV4.AuthType),
 		AccessKey:          s.httpOptions.SigV4.AccessKey,
 		SecretKey:          s.httpOptions.SigV4.SecretKey,
+		SessionToken:       s.httpOptions.SigV4.SessionToken,
 		Region:             s.httpOptions.SigV4.Region,
 		CredentialsProfile: s.httpOptions.SigV4.Profile,
 		AssumeRoleARN:      s.httpOptions.SigV4.AssumeRoleARN,
