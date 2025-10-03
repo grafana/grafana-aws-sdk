@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.0
+- Feat: add session token support for sigv4 (to support the auth service) in [#340](https://github.com/grafana/grafana-aws-sdk/pull/340)
+- add error check to stop panic [#325](https://github.com/grafana/grafana-aws-sdk/pull/325)
+- Update workflows and templates [#333](https://github.com/grafana/grafana-aws-sdk/pull/333)
+- Update dependabot groups [#332](https://github.com/grafana/grafana-aws-sdk/pull/332)
+- Dependency updates:
+  - bump to match go.mod [#326](https://github.com/grafana/grafana-aws-sdk/pull/326)
+  - Bump the aws-sdk-go-v2 group with 2 updates [#337](https://github.com/grafana/grafana-aws-sdk/pull/337)
+  - Bump actions/stale from 9 to 10 [#327](https://github.com/grafana/grafana-aws-sdk/pull/327)
+  - Bump actions/checkout from 4 to 5 [#298](https://github.com/grafana/grafana-aws-sdk/pull/298)
+  - Bump github.com/aws/aws-sdk-go-v2/config from 1.31.7 to 1.31.8 [#334](https://github.com/grafana/grafana-aws-sdk/pull/334)
+  - Bump github.com/aws/aws-sdk-go-v2/config from 1.31.6 to 1.31.7 [#329](https://github.com/grafana/grafana-aws-sdk/pull/329)
+  - Bump github.com/aws/aws-sdk-go-v2/feature/ec2/imds from 1.18.6 to 1.18.7 [#328](https://github.com/grafana/grafana-aws-sdk/pull/328)
+  - Bump github.com/aws/aws-sdk-go-v2/config from 1.31.5 to 1.31.6 [#324](https://github.com/grafana/grafana-aws-sdk/pull/324)
+  - Bump github.com/aws/aws-sdk-go-v2/credentials from 1.18.9 to 1.18.10 [#323](https://github.com/grafana/grafana-aws-sdk/pull/323)
+  - Bump github.com/aws/aws-sdk-go-v2 from 1.38.2 to 1.38.3 [#322](https://github.com/grafana/grafana-aws-sdk/pull/322)
+  - Bump github.com/stretchr/testify from 1.11.0 to 1.11.1 [#319](https://github.com/grafana/grafana-aws-sdk/pull/319)
+  - Bump github.com/aws/aws-sdk-go-v2/config from 1.31.2 to 1.31.5 [#321](https://github.com/grafana/grafana-aws-sdk/pull/321)
+  - Bump github.com/grafana/grafana-plugin-sdk-go from 0.278.0 to 0.279.0 [#313](https://github.com/grafana/grafana-aws-sdk/pull/313)
+  - Bump github.com/aws/aws-sdk-go-v2/credentials from 1.18.6 to 1.18.8 [#317](https://github.com/grafana/grafana-aws-sdk/pull/317)
+
 ## 1.2.0
 
 - Add clusterId dimension to AWS/ElastiCache namespace in [#305](https://github.com/grafana/grafana-aws-sdk/pull/305)
