@@ -3,6 +3,7 @@ package awsauth
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 	"hash/fnv"
 	"net/http"
 	"os"
@@ -22,7 +23,6 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/common"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
-	"github.com/grafana/grafana-plugin-sdk-go/build"
 )
 
 const (
@@ -210,10 +210,10 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 // WithUserAgent adds info to the UserAgent header of API requests.
 // Adapted from grafana-aws-sdk/pkg/awsds/utils.go
 func (s Settings) WithUserAgent() LoadOptionsFunc {
-	buildInfo, err := build.GetBuildInfo()
-	version := buildInfo.Version
-	if err != nil {
-		version = "dev"
+	version := "dev"
+	buildInfo, err := buildinfo.GetBuildInfo()
+	if err == nil {
+		version = buildInfo.Version
 	}
 	grafanaVersion := os.Getenv("GF_VERSION")
 	if grafanaVersion == "" {
