@@ -26,11 +26,15 @@ import (
 )
 
 const (
-	// awsTempCredsAccessKey and awsTempCredsSecretKey are the files containing the
-	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
-	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
-	profileName           = "assume_role_credentials"
+	// oldAwsTempCredsAccessKey and oldAwsTempCredsSecretKey are the files containing the keys for the old Grafana Assume Role implementation
+	oldAwsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
+	oldAwsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
+
+	profileName = "assume_role_credentials"
 )
+
+// grafanaAssumeRoleKeysFolders are the folders for the keys for the Grafana Assume Role implementation
+var grafanaAssumeRoleKeysFolders = []string{"aws-temp-credentials-1", "aws-temp-credentials-2"}
 
 // Settings carries configuration for authenticating with AWS
 type Settings struct {
@@ -128,8 +132,30 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	accessKey, keyErr := os.ReadFile(awsTempCredsAccessKey)
-	secretKey, secretErr := os.ReadFile(awsTempCredsSecretKey)
+	// Iterate over the key folders until we get an active key
+	for _, folder := range grafanaAssumeRoleKeysFolders {
+		accessKeyFile := fmt.Sprintf("/tmp/%s/access-key-id", folder)
+		secretKeyFile := fmt.Sprintf("/tmp/%s/secret-access-key", folder)
+
+		accessKey, keyErr := os.ReadFile(accessKeyFile)
+		secretKey, secretErr := os.ReadFile(secretKeyFile)
+		if keyErr != nil || secretErr != nil {
+			continue
+		}
+
+		creds := client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
+		_, err := creds.Retrieve(ctx)
+		// if the credentials are valid, return them. Otherwise try the next credentials folder
+		if err == nil {
+			return func(opts *config.LoadOptions) error {
+				opts.Credentials = creds
+				return nil
+			}
+		}
+	}
+
+	accessKey, keyErr := os.ReadFile(oldAwsTempCredsAccessKey)
+	secretKey, secretErr := os.ReadFile(oldAwsTempCredsSecretKey)
 	if keyErr == nil && secretErr == nil {
 		return func(opts *config.LoadOptions) error {
 			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
