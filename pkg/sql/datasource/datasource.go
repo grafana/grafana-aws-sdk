@@ -12,7 +12,7 @@ import (
 	asyncDriver "github.com/grafana/grafana-aws-sdk/pkg/sql/driver/async"
 	"github.com/grafana/grafana-aws-sdk/pkg/sql/models"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/sqlds/v4"
+	"github.com/grafana/sqlds/v5"
 )
 
 // AWSClient provides creation and caching of sessions, database connections, and API clients
