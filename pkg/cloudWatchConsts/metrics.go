@@ -2804,7 +2804,7 @@ var NamespaceMetricsMap = map[string][]string{
 	},
 	"AWS/Route53Resolver": {
 		"InboundQueryVolume",
-		"OutboundQueryAggregatedVolume",
+		"OutboundQueryAggregateVolume",
 		"OutboundQueryVolume",
 	},
 	"AWS/S3": {
@@ -3432,7 +3432,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/ElasticBeanstalk":               {"EnvironmentName", "InstanceId"},
 	"AWS/ElasticInference":               {"ElasticInferenceAcceleratorId", "InstanceId"},
 	"AWS/ElasticMapReduce":               {"ClusterId", "JobFlowId", "JobId"},
-	"AWS/EMRServerless":                  {"ApplicationId", "ApplicationName", "CapacityAllocationType","JobId", "JobName", "WorkerType"},
+	"AWS/EMRServerless":                  {"ApplicationId", "ApplicationName", "CapacityAllocationType", "JobId", "JobName", "WorkerType"},
 	"AWS/ElasticTranscoder":              {"Operation", "PipelineId"},
 	"AWS/EventBridge/Pipes":              {"AwsAccountId", "PipeName"},
 	"AWS/Events":                         {"EventBusName", "EventSourceName", "RuleName"},
