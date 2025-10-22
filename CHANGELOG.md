@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.1
+
+- Update bedrock support with new metrics and dimensions in [#350](https://github.com/grafana/grafana-aws-sdk/pull/350)
+- Bump github.com/grafana/grafana-plugin-sdk-go from 0.280.0 to 0.281.0 in [#351](https://github.com/grafana/grafana-aws-sdk/pull/351)
+- Fix typo in Route53Resolver metric name in [#349](https://github.com/grafana/grafana-aws-sdk/pull/349)
+- Bump the aws-sdk-go-v2 group with 2 updates in [#343](https://github.com/grafana/grafana-aws-sdk/pull/343)
+- Bump the aws-sdk-go-v2 group with 5 updates in [#342](https://github.com/grafana/grafana-aws-sdk/pull/342)
+
 ## 1.3.0
 - Feat: add session token support for sigv4 (to support the auth service) in [#340](https://github.com/grafana/grafana-aws-sdk/pull/340)
 - add error check to stop panic [#325](https://github.com/grafana/grafana-aws-sdk/pull/325)
