@@ -10,6 +10,7 @@ func IsOptInRegion(region string) bool {
 		"ap-southeast-3": true,
 		"ap-southeast-4": true,
 		"ap-southeast-5": true,
+		"ap-southeast-6": true,
 		"ap-southeast-7": true,
 		"ca-west-1":      true,
 		"eu-central-2":   true,
