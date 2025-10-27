@@ -331,8 +331,8 @@ var NamespaceMetricsMap = map[string][]string{
 	},
 	"AWS/Bedrock/Agents": {
 		"InputTokenCount",
-		"InvocationCount",
 		"InvocationClientErrors",
+		"InvocationCount",
 		"InvocationServerErrors",
 		"InvocationThrottles",
 		"ModelInvocationClientErrors",
