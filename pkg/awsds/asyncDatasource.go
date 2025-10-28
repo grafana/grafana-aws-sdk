@@ -13,7 +13,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
-	"github.com/grafana/sqlds/v4"
+	"github.com/grafana/sqlds/v5"
 )
 
 const defaultKeySuffix = "default"
