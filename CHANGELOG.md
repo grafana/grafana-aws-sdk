@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.2
+- Add AWS/NetworkManager namespace metrics and dimensions [#358](https://github.com/grafana/grafana-aws-sdk/pull/358)
+- fix bedrock metrics with split namespaces [#356](https://github.com/grafana/grafana-aws-sdk/pull/356)
+- Bump the aws-sdk-go-v2 group with 5 updates [#354](https://github.com/grafana/grafana-aws-sdk/pull/354)
+
 ## 1.3.1
 
 - Update bedrock support with new metrics and dimensions in [#350](https://github.com/grafana/grafana-aws-sdk/pull/350)
