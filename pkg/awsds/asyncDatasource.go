@@ -13,7 +13,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
-	"github.com/grafana/sqlds/v4"
+	"github.com/grafana/sqlds/v5"
 )
 
 const defaultKeySuffix = "default"
@@ -282,5 +282,5 @@ func (ds *AsyncAWSDatasource) handleAsyncQuery(ctx context.Context, req backend.
 
 func queryAsync(ctx context.Context, conn *sql.DB, settings backend.DataSourceInstanceSettings, converters []sqlutil.Converter, fillMode *data.FillMissing, q *AsyncQuery, rowLimit int64) (data.Frames, error) {
 	query := sqlds.NewQuery(conn, settings, converters, fillMode, rowLimit)
-	return query.Run(ctx, &q.Query, sql.NamedArg{Name: "queryID", Value: q.QueryID})
+	return query.Run(ctx, &q.Query, nil, sql.NamedArg{Name: "queryID", Value: q.QueryID})
 }
