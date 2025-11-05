@@ -104,10 +104,16 @@ type AWSDatasourceSettings struct {
 	//go:deprecated Use Region instead
 	DefaultRegion string `json:"defaultRegion"`
 
+	// HTTP proxy settings
+	ProxyType     string `json:"proxyType"`
+	ProxyUrl      string `json:"proxyUrl"`
+	ProxyUsername string `json:"proxyUsername"`
+
 	// Loaded from DecryptedSecureJSONData (not the json object)
-	AccessKey    string `json:"-"`
-	SecretKey    string `json:"-"`
-	SessionToken string `json:"-"`
+	AccessKey     string `json:"-"`
+	SecretKey     string `json:"-"`
+	SessionToken  string `json:"-"`
+	ProxyPassword string `json:"-"`
 }
 
 // LoadSettings will read and validate Settings from the DataSourceConfg
@@ -129,6 +135,6 @@ func (s *AWSDatasourceSettings) Load(config backend.DataSourceInstanceSettings) 
 	s.AccessKey = config.DecryptedSecureJSONData["accessKey"]
 	s.SecretKey = config.DecryptedSecureJSONData["secretKey"]
 	s.SessionToken = config.DecryptedSecureJSONData["sessionToken"]
-
+	s.ProxyPassword = config.DecryptedSecureJSONData["proxyPassword"]
 	return nil
 }
