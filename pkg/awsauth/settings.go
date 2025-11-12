@@ -205,32 +205,35 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 			}
 			options.HTTPClient = client
 		}
-		if client, ok := options.HTTPClient.(*http.Client); ok {
-			if client.Transport == nil {
-				client.Transport = httpclient.NewHTTPTransport()
-			}
-			if transport, ok := client.Transport.(*http.Transport); ok {
-				// handle datasource level proxy url
-				if s.ProxyType == ProxyTypeUrl {
-					u, err := GetProxyUrl(s)
-					if err != nil {
-						return err
-					}
-					transport.Proxy = http.ProxyURL(u)
+		if s.ProxyOptions != nil || s.ProxyType == ProxyTypeUrl {
+			if client, ok := options.HTTPClient.(*http.Client); ok {
+				if client.Transport == nil {
+					client.Transport = httpclient.NewHTTPTransport()
 				}
-
-				// handle secure socks proxy
-				if s.ProxyOptions != nil {
-					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
-					if err != nil {
-						return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
+				fmt.Printf("transport %T\n", client.Transport)
+				if transport, ok := client.Transport.(*http.Transport); ok {
+					// handle datasource level proxy url
+					if s.ProxyType == ProxyTypeUrl {
+						u, err := GetProxyUrl(s)
+						if err != nil {
+							return err
+						}
+						transport.Proxy = http.ProxyURL(u)
 					}
+
+					// handle secure socks proxy
+					if s.ProxyOptions != nil {
+						err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
+						if err != nil {
+							return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
+						}
+					}
+				} else {
+					return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
 				}
 			} else {
-				return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
+				return fmt.Errorf("cfg.HTTPClient is not *http.Client")
 			}
-		} else {
-			return fmt.Errorf("cfg.HTTPClient is not *http.Client")
 		}
 		return nil
 	}
