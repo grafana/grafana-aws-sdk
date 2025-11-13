@@ -96,8 +96,8 @@ func (s Settings) GetAuthType() AuthType {
 	return fromLegacy(s.LegacyAuthType)
 }
 
-func (s Settings) BaseOptions() []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(), s.WithUserAgent()}
+func (s Settings) BaseOptions(ctx context.Context) []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(ctx), s.WithUserAgent()}
 }
 
 func (s Settings) WithRegion() LoadOptionsFunc {
@@ -193,7 +193,7 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 	}
 }
 
-func (s Settings) WithHTTPClient() LoadOptionsFunc {
+func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 	return func(options *config.LoadOptions) error {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
@@ -205,15 +205,16 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 			}
 			options.HTTPClient = client
 		}
-		if s.ProxyOptions != nil || s.ProxyType == ProxyTypeUrl {
+
+		setHTTPProxy := backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled("awsDatasourcesHttpProxy") && s.ProxyType == ProxyTypeUrl
+		if s.ProxyOptions != nil || setHTTPProxy {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
 					client.Transport = httpclient.NewHTTPTransport()
 				}
-				fmt.Printf("transport %T\n", client.Transport)
 				if transport, ok := client.Transport.(*http.Transport); ok {
 					// handle datasource level proxy url
-					if s.ProxyType == ProxyTypeUrl {
+					if setHTTPProxy {
 						u, err := GetProxyUrl(s)
 						if err != nil {
 							return err
