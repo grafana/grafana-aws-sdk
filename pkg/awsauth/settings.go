@@ -33,6 +33,7 @@ const (
 	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
 	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
 	profileName           = "assume_role_credentials"
+	featureFlagHTTPProxy  = "awsDatasourcesHttpProxy"
 )
 
 type ProxyType string
@@ -194,6 +195,7 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 }
 
 func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
+	logger := backend.Logger.FromContext(ctx)
 	return func(options *config.LoadOptions) error {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
@@ -206,7 +208,7 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 			options.HTTPClient = client
 		}
 
-		setHTTPProxy := backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled("awsDatasourcesHttpProxy") && s.ProxyType == ProxyTypeUrl
+		setHTTPProxy := backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(featureFlagHTTPProxy)
 		if s.ProxyOptions != nil || setHTTPProxy {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
@@ -215,11 +217,22 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 				if transport, ok := client.Transport.(*http.Transport); ok {
 					// handle datasource level proxy url
 					if setHTTPProxy {
-						u, err := GetProxyUrl(s)
-						if err != nil {
-							return err
+						switch s.ProxyType {
+						case ProxyTypeUrl:
+							logger.Debug("proxy type is set to url. Using the proxy", "proxy_url", s.ProxyUrl)
+							u, err := GetProxyUrl(s)
+							if err != nil {
+								logger.Error("error getting proxy url", "err", err.Error(), "proxy_url", s.ProxyUrl, "proxy_username", s.ProxyUsername)
+								return err
+							}
+							transport.Proxy = http.ProxyURL(u)
+						case ProxyTypeNone:
+							logger.Debug("proxy type is set to none. Not using the proxy")
+							transport.Proxy = http.ProxyURL(nil)
+						default:
+							logger.Debug("proxy type is set to env. Using the proxy from environment")
+							transport.Proxy = http.ProxyFromEnvironment
 						}
-						transport.Proxy = http.ProxyURL(u)
 					}
 
 					// handle secure socks proxy
