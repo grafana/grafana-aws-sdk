@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.39.1
 	github.com/aws/smithy-go v1.23.2
 	github.com/google/go-cmp v0.7.0
-	github.com/grafana/grafana-plugin-sdk-go v0.282.0
+	github.com/grafana/grafana-plugin-sdk-go v0.283.0
 	github.com/grafana/sqlds/v5 v5.0.3
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.15.0
