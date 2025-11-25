@@ -2,8 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.3.2
+## 1.4.0
 - Update sqlds to v5 [#359](https://github.com/grafana/grafana-aws-sdk/pull/359)
+- Add AWS/Redshift metrics and dimensions for zero-ETL integrations [#365](https://github.com//grafana-aws-sdk/pull/365)
+- Add missing ap-southeast-6 opt in region [#355](https://github.com//grafana-aws-sdk/pull/355)
+- Add AWS/NetworkManager namespace metrics and dimensions [#358](https://github.com//grafana-aws-sdk/pull/358)
+- fix bedrock metrics with split namespaces [#356](https://github.com//grafana-aws-sdk/pull/356)
+- Dependency updates
+  - Bump github.com/grafana/grafana-plugin-sdk-go from 0.282.0 to 0.283.0 [#373](https://github.com//grafana-aws-sdk/pull/373)
+  - Bump github.com/grafana/grafana-plugin-sdk-go from 0.281.0 to 0.282.0 [#371](https://github.com//grafana-aws-sdk/pull/371)
+  - Bump the aws-sdk-go-v2 group with 5 updates [#368](https://github.com//grafana-aws-sdk/pull/368)
+  - Bump github.com/aws/smithy-go from 1.23.1 to 1.23.2 [#367](https://github.com//grafana-aws-sdk/pull/367)
+  - Bump the aws-sdk-go-v2 group with 5 updates [#363](https://github.com//grafana-aws-sdk/pull/363)
+  - Bump the aws-sdk-go-v2 group with 5 updates [#361](https://github.com//grafana-aws-sdk/pull/361)
+  - Bump the aws-sdk-go-v2 group with 3 updates [#360](https://github.com//grafana-aws-sdk/pull/360)
+  - Bump the aws-sdk-go-v2 group with 5 updates [#354](https://github.com//grafana-aws-sdk/pull/354)
+
+## 1.3.2
 - Add AWS/NetworkManager namespace metrics and dimensions [#358](https://github.com/grafana/grafana-aws-sdk/pull/358)
 - fix bedrock metrics with split namespaces [#356](https://github.com/grafana/grafana-aws-sdk/pull/356)
 - Add missing ap-southeast-6 opt in region [#355](https://github.com/grafana/grafana-aws-sdk/pull/355)
