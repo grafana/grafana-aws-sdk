@@ -208,6 +208,7 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 			options.HTTPClient = client
 		}
 
+		// only set the http proxy if the feature flag is enabled
 		setHTTPProxy := backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(featureFlagHTTPProxy)
 		if s.ProxyOptions != nil || setHTTPProxy {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
@@ -230,8 +231,8 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 							logger.Debug("proxy type is set to none. Not using the proxy")
 							transport.Proxy = http.ProxyURL(nil)
 						default:
-							logger.Debug("proxy type is set to env. Using the proxy from environment")
-							transport.Proxy = http.ProxyFromEnvironment
+							logger.Debug("proxy type is set to env (default). Using the proxy from environment")
+							// This is the default behavior, so we don't need to do anything
 						}
 					}
 
