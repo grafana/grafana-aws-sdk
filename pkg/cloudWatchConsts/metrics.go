@@ -800,10 +800,13 @@ var NamespaceMetricsMap = map[string][]string{
 		"DataReadIOBytes",
 		"DataWriteIOBytes",
 		"MetadataIOBytes",
+		"MetadataReadIOBytes",
+		"MetadataWriteIOBytes",
 		"MeteredIOBytes",
 		"PercentIOLimit",
 		"PermittedThroughput",
 		"StorageBytes",
+		"TimeSinceLastSync",
 		"TotalIOBytes",
 	},
 	"AWS/EKS": {
