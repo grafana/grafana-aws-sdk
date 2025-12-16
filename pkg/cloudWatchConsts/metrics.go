@@ -313,6 +313,8 @@ var NamespaceMetricsMap = map[string][]string{
 		"NumberOfRestoreJobsRunning",
 	},
 	"AWS/Bedrock": {
+		"CacheWriteInputTokenCount",
+		"CacheWriteOutputTokenCount",
 		"InputTokenCount",
 		"InvocationClientErrors",
 		"InvocationLatency",
