@@ -16,11 +16,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup
-        uses: grafana/plugin-ci-workflows/actions/internal/plugins/setup@ci-cd-workflows/v4.3.0
+      - name: Go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version: "1.24.6"
-          golangci-lint-version: "2.1.6"
+
+      - name: Mage
+        shell: bash
+        run: |
+          go install github.com/magefile/mage@latest
+
+      - name: golangci-lint
+        shell: bash
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
+        env:
+          GOLANGCI_LINT_VERSION: "2.1.6"
 
       - name: Install dependencies
         run: go mod download
