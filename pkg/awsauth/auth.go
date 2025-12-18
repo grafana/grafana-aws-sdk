@@ -40,6 +40,9 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	if authSettings.AssumeRoleARN != "" && !grafanaAuthSettings.AssumeRoleEnabled {
 		return aws.Config{}, backend.DownstreamErrorf("trying to use assume role but it is disabled in grafana config")
 	}
+	if (authSettings.ProxyType == ProxyTypeUrl || authSettings.ProxyType == ProxyTypeNone) && !grafanaAuthSettings.PerDataSourceHTTPProxyEnabled {
+		return aws.Config{}, backend.DownstreamErrorf("trying to use non-env proxy type but per data source assume role is disabled in grafana config")
+	}
 
 	key := authSettings.Hash()
 	cached, exists := rcp.cache.Load(key)

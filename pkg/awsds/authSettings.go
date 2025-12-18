@@ -19,6 +19,9 @@ const (
 	// AssumeRoleEnabledEnvVarKeyName is the string literal for the aws assume role enabled environment variable key name
 	AssumeRoleEnabledEnvVarKeyName = "AWS_AUTH_AssumeRoleEnabled"
 
+	// PerDatasourceHTTPProxyEnabledEnvVarKeyName is the string literal for the aws per data source assume role enabled environment variable key name
+	PerDatasourceHTTPProxyEnabledEnvVarKeyName = "AWS_AUTH_PerDatasourceHTTPProxyEnabled"
+
 	// SessionDurationEnvVarKeyName is the string literal for the session duration variable key name
 	SessionDurationEnvVarKeyName = "AWS_AUTH_SESSION_DURATION"
 
@@ -34,9 +37,10 @@ const (
 	// SigV4VerboseLoggingEnvVarKeyName is the string literal for the sigv4 verbose logging environment variable key name
 	SigV4VerboseLoggingEnvVarKeyName = "AWS_SIGV4_VERBOSE_LOGGING"
 
-	defaultAssumeRoleEnabled         = true
-	defaultListMetricsPageLimit      = 500
-	defaultSecureSocksDSProxyEnabled = false
+	defaultAssumeRoleEnabled             = true
+	defaultPerDataSourceHTTPProxyEnabled = false
+	defaultListMetricsPageLimit          = 500
+	defaultSecureSocksDSProxyEnabled     = false
 )
 
 // ReadAuthSettings gets the Grafana auth settings from the context if its available, the environment variables if not
@@ -52,11 +56,12 @@ func ReadAuthSettings(ctx context.Context) *AuthSettings {
 
 func defaultAuthSettings() *AuthSettings {
 	return &AuthSettings{
-		AllowedAuthProviders:      []string{"default", "keys", "credentials"},
-		AssumeRoleEnabled:         defaultAssumeRoleEnabled,
-		SessionDuration:           &stscreds.DefaultDuration,
-		ListMetricsPageLimit:      defaultListMetricsPageLimit,
-		SecureSocksDSProxyEnabled: defaultSecureSocksDSProxyEnabled,
+		AllowedAuthProviders:          []string{"default", "keys", "credentials"},
+		AssumeRoleEnabled:             defaultAssumeRoleEnabled,
+		PerDataSourceHTTPProxyEnabled: defaultPerDataSourceHTTPProxyEnabled,
+		SessionDuration:               &stscreds.DefaultDuration,
+		ListMetricsPageLimit:          defaultListMetricsPageLimit,
+		SecureSocksDSProxyEnabled:     defaultSecureSocksDSProxyEnabled,
 	}
 }
 
@@ -90,6 +95,16 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 			settings.AssumeRoleEnabled = assumeRoleEnabled
 		} else {
 			backend.Logger.Error("could not parse context variable", "var", AllowedAuthProvidersEnvVarKeyName)
+		}
+		hasSettings = true
+	}
+
+	if v := cfg.Get(PerDatasourceHTTPProxyEnabledEnvVarKeyName); v != "" {
+		PerDataSourceHTTPProxyEnabled, err := strconv.ParseBool(v)
+		if err == nil {
+			settings.PerDataSourceHTTPProxyEnabled = PerDataSourceHTTPProxyEnabled
+		} else {
+			backend.Logger.Error("could not parse context variable", "var", PerDatasourceHTTPProxyEnabledEnvVarKeyName)
 		}
 		hasSettings = true
 	}
@@ -161,6 +176,18 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 	if err != nil {
 		backend.Logger.Error("could not parse env variable", "var", AssumeRoleEnabledEnvVarKeyName)
 		authSettings.AssumeRoleEnabled = defaultAssumeRoleEnabled
+	}
+
+	PerDatasourceHTTPProxyEnabledString := os.Getenv(PerDatasourceHTTPProxyEnabledEnvVarKeyName)
+	if len(PerDatasourceHTTPProxyEnabledString) == 0 {
+		backend.Logger.Warn("environment variable missing. falling back to disable per data source assume role", "var", PerDatasourceHTTPProxyEnabledEnvVarKeyName)
+		PerDatasourceHTTPProxyEnabledString = "false"
+	}
+
+	authSettings.PerDataSourceHTTPProxyEnabled, err = strconv.ParseBool(PerDatasourceHTTPProxyEnabledString)
+	if err != nil {
+		backend.Logger.Error("could not parse env variable", "var", PerDatasourceHTTPProxyEnabledEnvVarKeyName)
+		authSettings.PerDataSourceHTTPProxyEnabled = defaultPerDataSourceHTTPProxyEnabled
 	}
 
 	authSettings.ExternalID = os.Getenv(GrafanaAssumeRoleExternalIdKeyName)

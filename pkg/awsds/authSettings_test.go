@@ -47,19 +47,21 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 		{
 			name: "aws settings in config",
 			cfg: backend.NewGrafanaCfg(map[string]string{
-				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
-				AssumeRoleEnabledEnvVarKeyName:      "false",
-				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				ListMetricsPageLimitKeyName:         "50",
-				proxy.PluginSecureSocksProxyEnabled: "true",
+				AllowedAuthProvidersEnvVarKeyName:          "foo , bar,baz",
+				AssumeRoleEnabledEnvVarKeyName:             "false",
+				PerDatasourceHTTPProxyEnabledEnvVarKeyName: "true",
+				GrafanaAssumeRoleExternalIdKeyName:         "mock_id",
+				ListMetricsPageLimitKeyName:                "50",
+				proxy.PluginSecureSocksProxyEnabled:        "true",
 			}),
 			expectedSettings: &AuthSettings{
-				AllowedAuthProviders:      []string{"foo", "bar", "baz"},
-				AssumeRoleEnabled:         false,
-				ExternalID:                "mock_id",
-				ListMetricsPageLimit:      50,
-				SessionDuration:           &stscreds.DefaultDuration,
-				SecureSocksDSProxyEnabled: true,
+				AllowedAuthProviders:          []string{"foo", "bar", "baz"},
+				AssumeRoleEnabled:             false,
+				PerDataSourceHTTPProxyEnabled: true,
+				ExternalID:                    "mock_id",
+				ListMetricsPageLimit:          50,
+				SessionDuration:               &stscreds.DefaultDuration,
+				SecureSocksDSProxyEnabled:     true,
 			},
 			expectedHasSettings: true,
 		},
@@ -85,21 +87,23 @@ func TestReadAuthSettings(t *testing.T) {
 	ctxDuration := 10 * time.Minute
 	envDuration := 20 * time.Minute
 	expectedSessionContextSettings := &AuthSettings{
-		AllowedAuthProviders:      []string{"foo", "bar", "baz"},
-		AssumeRoleEnabled:         false,
-		SessionDuration:           &ctxDuration,
-		ExternalID:                "mock_id",
-		ListMetricsPageLimit:      50,
-		SecureSocksDSProxyEnabled: true,
+		AllowedAuthProviders:          []string{"foo", "bar", "baz"},
+		AssumeRoleEnabled:             false,
+		PerDataSourceHTTPProxyEnabled: true,
+		SessionDuration:               &ctxDuration,
+		ExternalID:                    "mock_id",
+		ListMetricsPageLimit:          50,
+		SecureSocksDSProxyEnabled:     true,
 	}
 
 	expectedSessionEnvSettings := &AuthSettings{
-		AllowedAuthProviders:      []string{"default", "keys", "credentials"},
-		AssumeRoleEnabled:         true,
-		SessionDuration:           &envDuration,
-		ExternalID:                "env_id",
-		ListMetricsPageLimit:      30,
-		SecureSocksDSProxyEnabled: false,
+		AllowedAuthProviders:          []string{"default", "keys", "credentials"},
+		AssumeRoleEnabled:             true,
+		PerDataSourceHTTPProxyEnabled: false,
+		SessionDuration:               &envDuration,
+		ExternalID:                    "env_id",
+		ListMetricsPageLimit:          30,
+		SecureSocksDSProxyEnabled:     false,
 	}
 
 	require.NoError(t, os.Setenv(ListMetricsPageLimitKeyName, "30"))
@@ -135,12 +139,13 @@ func TestReadAuthSettings(t *testing.T) {
 		{
 			name: "read from context",
 			cfg: backend.NewGrafanaCfg(map[string]string{
-				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
-				AssumeRoleEnabledEnvVarKeyName:      "false",
-				SessionDurationEnvVarKeyName:        "10m",
-				GrafanaAssumeRoleExternalIdKeyName:  "mock_id",
-				ListMetricsPageLimitKeyName:         "50",
-				proxy.PluginSecureSocksProxyEnabled: "true",
+				AllowedAuthProvidersEnvVarKeyName:          "foo , bar,baz",
+				AssumeRoleEnabledEnvVarKeyName:             "false",
+				PerDatasourceHTTPProxyEnabledEnvVarKeyName: "true",
+				SessionDurationEnvVarKeyName:               "10m",
+				GrafanaAssumeRoleExternalIdKeyName:         "mock_id",
+				ListMetricsPageLimitKeyName:                "50",
+				proxy.PluginSecureSocksProxyEnabled:        "true",
 			}),
 			expectedSettings: expectedSessionContextSettings,
 		},
