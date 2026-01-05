@@ -2,7 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.1
+
+- Support proxy http setting on backend [#366](https://github.com/grafana/grafana-aws-sdk/pull/366)
+- Fix push workflow by [#386](https://github.com/grafana/grafana-aws-sdk/pull/386)
+- Add AWS Bedrock cache metrics support in [#383](https://github.com/grafana/grafana-aws-sdk/pull/383)
+- add support for new EFS metrics by [#385](https://github.com/grafana/grafana-aws-sdk/pull/385)
+- Remove plugin-platform internal setup step in [#387](https://github.com/grafana/grafana-aws-sdk/pull/387)
+
 ## 1.4.0
+
 - Update sqlds to v5 [#359](https://github.com/grafana/grafana-aws-sdk/pull/359)
 - Add AWS/Redshift metrics and dimensions for zero-ETL integrations [#365](https://github.com//grafana-aws-sdk/pull/365)
 - Add missing ap-southeast-6 opt in region [#355](https://github.com//grafana-aws-sdk/pull/355)
@@ -19,6 +28,7 @@ All notable changes to this project will be documented in this file.
   - Bump the aws-sdk-go-v2 group with 5 updates [#354](https://github.com//grafana-aws-sdk/pull/354)
 
 ## 1.3.2
+
 - Add AWS/NetworkManager namespace metrics and dimensions [#358](https://github.com/grafana/grafana-aws-sdk/pull/358)
 - fix bedrock metrics with split namespaces [#356](https://github.com/grafana/grafana-aws-sdk/pull/356)
 - Add missing ap-southeast-6 opt in region [#355](https://github.com/grafana/grafana-aws-sdk/pull/355)
@@ -34,6 +44,7 @@ All notable changes to this project will be documented in this file.
 - Bump the aws-sdk-go-v2 group with 5 updates in [#342](https://github.com/grafana/grafana-aws-sdk/pull/342)
 
 ## 1.3.0
+
 - Feat: add session token support for sigv4 (to support the auth service) in [#340](https://github.com/grafana/grafana-aws-sdk/pull/340)
 - add error check to stop panic [#325](https://github.com/grafana/grafana-aws-sdk/pull/325)
 - Update workflows and templates [#333](https://github.com/grafana/grafana-aws-sdk/pull/333)
