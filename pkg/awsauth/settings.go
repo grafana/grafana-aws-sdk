@@ -3,17 +3,14 @@ package awsauth
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 	"hash/fnv"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
@@ -33,15 +30,6 @@ const (
 	awsTempCredsAccessKey = "/tmp/aws.credentials/access-key-id"
 	awsTempCredsSecretKey = "/tmp/aws.credentials/secret-access-key"
 	profileName           = "assume_role_credentials"
-	featureFlagHTTPProxy  = "awsDatasourcesHttpProxy"
-)
-
-type ProxyType string
-
-const (
-	ProxyTypeNone ProxyType = "none"
-	ProxyTypeEnv  ProxyType = "env"
-	ProxyTypeUrl  ProxyType = "url"
 )
 
 // Settings carries configuration for authenticating with AWS
@@ -61,11 +49,6 @@ type Settings struct {
 	SessionToken       string
 	HTTPClient         *http.Client
 	ProxyOptions       *proxy.Options
-
-	ProxyType     ProxyType
-	ProxyUrl      string
-	ProxyUsername string
-	ProxyPassword string
 }
 
 // Hash returns a value suitable for caching the config associated with these settings
@@ -84,9 +67,6 @@ func (s Settings) Hash() uint64 {
 	_, _ = h.Write([]byte(s.AssumeRoleARN))
 	_, _ = h.Write([]byte(s.Endpoint))
 	_, _ = h.Write([]byte(s.ExternalID))
-	_, _ = h.Write([]byte(s.ProxyUrl))
-	_, _ = h.Write([]byte(s.ProxyUsername))
-	_, _ = h.Write([]byte(s.ProxyPassword))
 	return h.Sum64()
 }
 
@@ -97,8 +77,8 @@ func (s Settings) GetAuthType() AuthType {
 	return fromLegacy(s.LegacyAuthType)
 }
 
-func (s Settings) BaseOptions(ctx context.Context) []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(ctx), s.WithUserAgent()}
+func (s Settings) BaseOptions() []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(), s.WithUserAgent()}
 }
 
 func (s Settings) WithRegion() LoadOptionsFunc {
@@ -194,8 +174,7 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 	}
 }
 
-func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
-	logger := backend.Logger.FromContext(ctx)
+func (s Settings) WithHTTPClient() LoadOptionsFunc {
 	return func(options *config.LoadOptions) error {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
@@ -207,41 +186,15 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 			}
 			options.HTTPClient = client
 		}
-
-		// only set the http proxy if the feature flag is enabled
-		setHTTPProxy := backend.GrafanaConfigFromContext(ctx).FeatureToggles().IsEnabled(featureFlagHTTPProxy)
-		if s.ProxyOptions != nil || setHTTPProxy {
+		if s.ProxyOptions != nil {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
 					client.Transport = httpclient.NewHTTPTransport()
 				}
 				if transport, ok := client.Transport.(*http.Transport); ok {
-					// handle datasource level proxy url
-					if setHTTPProxy {
-						switch s.ProxyType {
-						case ProxyTypeUrl:
-							logger.Debug("proxy type is set to url. Using the proxy", "proxy_url", s.ProxyUrl)
-							u, err := GetProxyUrl(s)
-							if err != nil {
-								logger.Error("error getting proxy url", "err", err.Error(), "proxy_url", s.ProxyUrl, "proxy_username", s.ProxyUsername)
-								return err
-							}
-							transport.Proxy = http.ProxyURL(u)
-						case ProxyTypeNone:
-							logger.Debug("proxy type is set to none. Not using the proxy")
-							transport.Proxy = http.ProxyURL(nil)
-						default:
-							logger.Debug("proxy type is set to env (default). Using the proxy from environment")
-							// This is the default behavior, so we don't need to do anything
-						}
-					}
-
-					// handle secure socks proxy
-					if s.ProxyOptions != nil {
-						err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
-						if err != nil {
-							return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
-						}
+					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
+					if err != nil {
+						return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
 					}
 				} else {
 					return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
@@ -252,17 +205,6 @@ func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
 		}
 		return nil
 	}
-}
-
-func GetProxyUrl(settings Settings) (*url.URL, error) {
-	u, err := url.Parse(settings.ProxyUrl)
-	if err != nil {
-		return nil, backend.DownstreamError(err)
-	}
-	if settings.ProxyUsername != "" && settings.ProxyPassword != "" {
-		u.User = url.UserPassword(settings.ProxyUsername, settings.ProxyPassword)
-	}
-	return u, nil
 }
 
 // WithUserAgent adds info to the UserAgent header of API requests.

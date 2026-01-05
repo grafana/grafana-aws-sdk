@@ -49,7 +49,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	}
 	logger.Debug("creating new config")
 
-	options := authSettings.BaseOptions(ctx)
+	options := authSettings.BaseOptions()
 
 	logger.Debug(fmt.Sprintf("Using auth type: %s", authType))
 	switch authType {
@@ -71,7 +71,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	}
 
 	if authSettings.AssumeRoleARN != "" {
-		options = append(authSettings.BaseOptions(ctx), authSettings.WithAssumeRole(cfg, rcp.client, grafanaAuthSettings.SessionDuration))
+		options = append(authSettings.BaseOptions(), authSettings.WithAssumeRole(cfg, rcp.client, grafanaAuthSettings.SessionDuration))
 		cfg, err = rcp.client.LoadDefaultConfig(ctx, options...)
 		if err != nil {
 			return aws.Config{}, err
@@ -88,7 +88,6 @@ var stsEndpointPrefixes = []string{
 	"https://sts.",
 	"https://sts-fips.",
 }
-
 func isStsEndpoint(ep *string) bool {
 	if ep == nil {
 		return false
