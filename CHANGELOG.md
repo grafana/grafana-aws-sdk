@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.4.2
 
-- Revert "Support proxy http setting on backend (#366)"
+- Revert "Support proxy http setting on backend (#366)" [#389](https://github.com/grafana/grafana-aws-sdk/pull/389)
 
 ## 1.4.1
 
