@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>grafana/grafana-renovate-config//presets/automerge"],
+  "minimumReleaseAge": "7 days",
+  "platformAutomerge": true,
+  "packageRules": [
+    {
+      "description": "Disable minimum release age for Grafana owned Go modules (github.com/grafana/*)",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/grafana/*"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Disable minimum release age for Grafana owned GitHub Actions (grafana/*)",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["grafana/*"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Automerge minor dependencies",
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "labels": ["automerge-minor"]
+    }
+  ]
+}
