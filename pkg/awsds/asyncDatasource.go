@@ -12,7 +12,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
-	"github.com/grafana/grafana-plugin-sdk-go/experimental/errorsource"
 	"github.com/grafana/sqlds/v5"
 )
 
@@ -124,7 +123,7 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
 			if err != nil {
-				errorResponse := errorsource.Response(err)
+				errorResponse := backend.ErrorResponseWithErrorSource(err)
 				var qeError *QueryExecutionError
 				// checking if we know the cause of downstream error
 				if errors.As(err, &qeError) {
