@@ -19,7 +19,7 @@ jobs:
       - name: Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25.5"
+          go-version-file: 'go.mod'
 
       - name: Mage
         shell: bash
@@ -31,7 +31,7 @@ jobs:
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v${GOLANGCI_LINT_VERSION}
         env:
-          GOLANGCI_LINT_VERSION: "2.1.6"
+          GOLANGCI_LINT_VERSION: "2.8.0"
 
       - name: Install dependencies
         run: go mod download
