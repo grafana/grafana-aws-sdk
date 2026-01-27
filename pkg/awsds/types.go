@@ -15,12 +15,13 @@ import (
 
 // AuthSettings stores the AWS settings from Grafana
 type AuthSettings struct {
-	AllowedAuthProviders       []string
-	AssumeRoleEnabled          bool
-	SessionDuration            *time.Duration
-	ExternalID                 string
-	ListMetricsPageLimit       int
-	MultiTenantTempCredentials bool
+	AllowedAuthProviders          []string
+	AssumeRoleEnabled             bool
+	SessionDuration               *time.Duration
+	ExternalID                    string
+	ListMetricsPageLimit          int
+	MultiTenantTempCredentials    bool
+	PerDatasourceHTTPProxyEnabled bool
 
 	// necessary for a work around until https://github.com/grafana/grafana/issues/39089 is implemented
 	SecureSocksDSProxyEnabled bool
