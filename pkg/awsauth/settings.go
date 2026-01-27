@@ -115,12 +115,12 @@ func (s Settings) GetAuthType() AuthType {
 	return fromLegacy(s.LegacyAuthType)
 }
 
-func (s Settings) BaseOptions(ctx context.Context) []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(ctx), s.WithUserAgent()}
+func (s Settings) BaseOptions() []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(), s.WithUserAgent()}
 }
 
 func (s Settings) BaseOptionsWithAuthSettings(ctx context.Context, authSettings *awsds.AuthSettings) []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClientFromAuthSettings(ctx, authSettings), s.WithUserAgent()}
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClientFromAuthSettings(authSettings), s.WithUserAgent()}
 }
 
 func (s Settings) WithRegion() LoadOptionsFunc {
@@ -216,12 +216,11 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 	}
 }
 
-func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
-	return s.WithHTTPClientFromAuthSettings(ctx, nil)
+func (s Settings) WithHTTPClient() LoadOptionsFunc {
+	return s.WithHTTPClientFromAuthSettings(nil)
 }
 
-func (s Settings) WithHTTPClientFromAuthSettings(ctx context.Context, authSettings *awsds.AuthSettings) LoadOptionsFunc {
-	logger := backend.Logger.FromContext(ctx)
+func (s Settings) WithHTTPClientFromAuthSettings(authSettings *awsds.AuthSettings) LoadOptionsFunc {
 	return func(options *config.LoadOptions) error {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
@@ -236,7 +235,6 @@ func (s Settings) WithHTTPClientFromAuthSettings(ctx context.Context, authSettin
 
 		// only set the datasource level http proxy if the feature flag is enabled and the proxy type is not env
 		setDatasourceLevelHTTPProxy := authSettings != nil && authSettings.PerDatasourceHTTPProxyEnabled && s.PerDatasourceProxySettings != nil && (s.PerDatasourceProxySettings.ProxyType != ProxyTypeEnv)
-		logger.Warn("setDatasourceLevelHTTPProxy", "authSettings", authSettings, "s.PerDatasourceProxySettings", s.PerDatasourceProxySettings, "setDatasourceLevelHTTPProxy", setDatasourceLevelHTTPProxy, "s.ProxyOptions", s.ProxyOptions != nil)
 		if s.ProxyOptions != nil || setDatasourceLevelHTTPProxy {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
@@ -247,18 +245,14 @@ func (s Settings) WithHTTPClientFromAuthSettings(ctx context.Context, authSettin
 					if setDatasourceLevelHTTPProxy {
 						switch s.PerDatasourceProxySettings.ProxyType {
 						case ProxyTypeUrl:
-							logger.Debug("proxy type is set to url. Using the proxy", "proxy_url", s.PerDatasourceProxySettings.ProxyUrl)
 							u, err := GetProxyUrl(*s.PerDatasourceProxySettings)
 							if err != nil {
-								logger.Error("error getting proxy url", "err", err.Error(), "proxy_url", s.PerDatasourceProxySettings.ProxyUrl, "proxy_username", s.PerDatasourceProxySettings.ProxyUsername)
 								return err
 							}
 							transport.Proxy = http.ProxyURL(u)
 						case ProxyTypeNone:
-							logger.Debug("proxy type is set to none. Not using the proxy")
 							transport.Proxy = http.ProxyURL(nil)
 						default:
-							logger.Debug("proxy type is set to env (default). Using the proxy from environment")
 							// This is the default behavior, so we don't need to do anything
 						}
 					}
