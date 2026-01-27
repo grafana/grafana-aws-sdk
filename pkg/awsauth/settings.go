@@ -3,14 +3,17 @@ package awsauth
 import (
 	"context"
 	"fmt"
-	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 	"hash/fnv"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/build/buildinfo"
 
 	"github.com/aws/aws-sdk-go-v2/aws/middleware"
 
@@ -32,6 +35,34 @@ const (
 	profileName           = "assume_role_credentials"
 )
 
+type ProxyType string
+
+const (
+	ProxyTypeNone ProxyType = "none"
+	ProxyTypeEnv  ProxyType = "env" // default
+	ProxyTypeUrl  ProxyType = "url"
+)
+
+func GetProxyTypeFromString(proxyType string) ProxyType {
+	switch proxyType {
+	case "none":
+		return ProxyTypeNone
+	case "env":
+		return ProxyTypeEnv
+	case "url":
+		return ProxyTypeUrl
+	default:
+		return ProxyTypeEnv
+	}
+}
+
+type PerDatasourceProxySettings struct {
+	ProxyType     ProxyType
+	ProxyUrl      string
+	ProxyUsername string
+	ProxyPassword string
+}
+
 // Settings carries configuration for authenticating with AWS
 type Settings struct {
 	AuthType AuthType
@@ -49,6 +80,8 @@ type Settings struct {
 	SessionToken       string
 	HTTPClient         *http.Client
 	ProxyOptions       *proxy.Options
+
+	PerDatasourceProxySettings *PerDatasourceProxySettings
 }
 
 // Hash returns a value suitable for caching the config associated with these settings
@@ -67,6 +100,11 @@ func (s Settings) Hash() uint64 {
 	_, _ = h.Write([]byte(s.AssumeRoleARN))
 	_, _ = h.Write([]byte(s.Endpoint))
 	_, _ = h.Write([]byte(s.ExternalID))
+	if s.PerDatasourceProxySettings != nil {
+		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUrl))
+		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUsername))
+		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyPassword))
+	}
 	return h.Sum64()
 }
 
@@ -77,8 +115,12 @@ func (s Settings) GetAuthType() AuthType {
 	return fromLegacy(s.LegacyAuthType)
 }
 
-func (s Settings) BaseOptions() []LoadOptionsFunc {
-	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(), s.WithUserAgent()}
+func (s Settings) BaseOptions(ctx context.Context) []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClient(ctx), s.WithUserAgent()}
+}
+
+func (s Settings) BaseOptionsWithAuthSettings(ctx context.Context, authSettings *awsds.AuthSettings) []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClientFromAuthSettings(ctx, authSettings), s.WithUserAgent()}
 }
 
 func (s Settings) WithRegion() LoadOptionsFunc {
@@ -174,7 +216,12 @@ func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
 	}
 }
 
-func (s Settings) WithHTTPClient() LoadOptionsFunc {
+func (s Settings) WithHTTPClient(ctx context.Context) LoadOptionsFunc {
+	return s.WithHTTPClientFromAuthSettings(ctx, nil)
+}
+
+func (s Settings) WithHTTPClientFromAuthSettings(ctx context.Context, authSettings *awsds.AuthSettings) LoadOptionsFunc {
+	logger := backend.Logger.FromContext(ctx)
 	return func(options *config.LoadOptions) error {
 		if s.HTTPClient != nil {
 			options.HTTPClient = s.HTTPClient
@@ -186,18 +233,45 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 			}
 			options.HTTPClient = client
 		}
-		if s.ProxyOptions != nil {
+
+		// only set the datasource level http proxy if the feature flag is enabled and the proxy type is not env
+		setDatasourceLevelHTTPProxy := authSettings != nil && authSettings.PerDatasourceHTTPProxyEnabled && s.PerDatasourceProxySettings != nil && (s.PerDatasourceProxySettings.ProxyType != ProxyTypeEnv)
+		logger.Warn("setDatasourceLevelHTTPProxy", "authSettings", authSettings, "s.PerDatasourceProxySettings", s.PerDatasourceProxySettings, "setDatasourceLevelHTTPProxy", setDatasourceLevelHTTPProxy, "s.ProxyOptions", s.ProxyOptions != nil)
+		if s.ProxyOptions != nil || setDatasourceLevelHTTPProxy {
 			if client, ok := options.HTTPClient.(*http.Client); ok {
 				if client.Transport == nil {
 					client.Transport = httpclient.NewHTTPTransport()
 				}
 				if transport, ok := client.Transport.(*http.Transport); ok {
-					err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
-					if err != nil {
-						return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
+					// handle datasource level proxy url
+					if setDatasourceLevelHTTPProxy {
+						switch s.PerDatasourceProxySettings.ProxyType {
+						case ProxyTypeUrl:
+							logger.Debug("proxy type is set to url. Using the proxy", "proxy_url", s.PerDatasourceProxySettings.ProxyUrl)
+							u, err := GetProxyUrl(*s.PerDatasourceProxySettings)
+							if err != nil {
+								logger.Error("error getting proxy url", "err", err.Error(), "proxy_url", s.PerDatasourceProxySettings.ProxyUrl, "proxy_username", s.PerDatasourceProxySettings.ProxyUsername)
+								return err
+							}
+							transport.Proxy = http.ProxyURL(u)
+						case ProxyTypeNone:
+							logger.Debug("proxy type is set to none. Not using the proxy")
+							transport.Proxy = http.ProxyURL(nil)
+						default:
+							logger.Debug("proxy type is set to env (default). Using the proxy from environment")
+							// This is the default behavior, so we don't need to do anything
+						}
+					}
+
+					// handle secure socks proxy
+					if s.ProxyOptions != nil {
+						err := proxy.New(s.ProxyOptions).ConfigureSecureSocksHTTPProxy(transport)
+						if err != nil {
+							return fmt.Errorf("error configuring Secure Socks proxy for Transport: %w", err)
+						}
 					}
 				} else {
-					return fmt.Errorf("cfg.HTTPClient.Transport is not *http.Transport")
+					return fmt.Errorf("cfg.HTTPClient.Transport is %T not *http.Transport", client.Transport)
 				}
 			} else {
 				return fmt.Errorf("cfg.HTTPClient is not *http.Client")
@@ -205,6 +279,17 @@ func (s Settings) WithHTTPClient() LoadOptionsFunc {
 		}
 		return nil
 	}
+}
+
+func GetProxyUrl(settings PerDatasourceProxySettings) (*url.URL, error) {
+	u, err := url.Parse(settings.ProxyUrl)
+	if err != nil {
+		return nil, backend.DownstreamError(err)
+	}
+	if settings.ProxyUsername != "" && settings.ProxyPassword != "" {
+		u.User = url.UserPassword(settings.ProxyUsername, settings.ProxyPassword)
+	}
+	return u, nil
 }
 
 // WithUserAgent adds info to the UserAgent header of API requests.
