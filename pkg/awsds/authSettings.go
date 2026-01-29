@@ -208,9 +208,10 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 		proxyEnabledString = "false"
 	}
 
-	perDatasourceHTTPProxyEnabledString := os.Getenv(PerDatasourceHTTPProxyEnabledEnvVarKeyName)
-	if len(perDatasourceHTTPProxyEnabledString) == 0 {
+	authSettings.PerDatasourceHTTPProxyEnabled, err = strconv.ParseBool(os.Getenv(PerDatasourceHTTPProxyEnabledEnvVarKeyName))
+	if err != nil {
 		backend.Logger.Warn("environment variable missing. falling back to per datasource http proxy disabled", "var", PerDatasourceHTTPProxyEnabledEnvVarKeyName)
+		authSettings.PerDatasourceHTTPProxyEnabled = defaultPerDatasourceHTTPProxyEnabled
 	}
 
 	authSettings.SecureSocksDSProxyEnabled, err = strconv.ParseBool(proxyEnabledString)

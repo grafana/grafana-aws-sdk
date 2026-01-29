@@ -101,6 +101,7 @@ func (s Settings) Hash() uint64 {
 	_, _ = h.Write([]byte(s.Endpoint))
 	_, _ = h.Write([]byte(s.ExternalID))
 	if s.PerDatasourceProxySettings != nil {
+		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyType))
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUrl))
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUsername))
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyPassword))
