@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.3
+
+- Update to use self-hosted renovate and remove dependabot [#390](https://github.com/grafana/grafana-aws-sdk/pull/390)
+- Support proxy http setting on backend [#400](https://github.com/grafana/grafana-aws-sdk/pull/400)
+- Dependency updates
+  - Update module github.com/aws/smithy-go to v1.24.0 [#393](https://github.com/grafana/grafana-aws-sdk/pull/393)
+  - Update module github.com/aws/aws-sdk-go-v2/feature/ec2/imds to v1.18.16 [#392](https://github.com/grafana/grafana-aws-sdk/pull/392)
+  - Update module golang.org/x/crypto to v0.45.0 [security] [#369](https://github.com/grafana/grafana-aws-sdk/pull/369)
+  - Pin dependencies [#344](https://github.com/grafana/grafana-aws-sdk/pull/344)
+  - Update aws-sdk-go-v2 monorepo [#364](https://github.com/grafana/grafana-aws-sdk/pull/364)
+  - Update actions/checkout action to v6 [#374](https://github.com/grafana/grafana-aws-sdk/pull/374)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.284.0 [#380](https://github.com/grafana/grafana-aws-sdk/pull/380)
+  - Update go patch updates [#396](https://github.com/grafana/grafana-aws-sdk/pull/396)
+  - Update actions/setup-go action to v6.2.0 [#397](https://github.com/grafana/grafana-aws-sdk/pull/397)
+  - Update module github.com/grafana/sqlds/v5 to v5.0.4 [#398](https://github.com/grafana/grafana-aws-sdk/pull/398)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.285.0 [#395](https://github.com/grafana/grafana-aws-sdk/pull/395)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.286.0 [#399](https://github.com/grafana/grafana-aws-sdk/pull/399)
+
 ## 1.4.2
 
 - Revert "Support proxy http setting on backend (#366)" [#389](https://github.com/grafana/grafana-aws-sdk/pull/389)
