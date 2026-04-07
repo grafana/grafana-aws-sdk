@@ -315,6 +315,7 @@ var NamespaceMetricsMap = map[string][]string{
 	"AWS/Bedrock": {
 		"CacheWriteInputTokenCount",
 		"CacheWriteOutputTokenCount",
+		"EstimatedTPMQuotaUsage",
 		"InputTokenCount",
 		"InvocationClientErrors",
 		"InvocationLatency",
@@ -330,6 +331,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"ModelInvocationLogsS3DeliverySuccess",
 		"OutputImageCount",
 		"OutputTokenCount",
+		"TimeToFirstToken",
 	},
 	"AWS/Bedrock/Agents": {
 		"InputTokenCount",
