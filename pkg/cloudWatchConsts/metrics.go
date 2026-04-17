@@ -2540,7 +2540,6 @@ var NamespaceMetricsMap = map[string][]string{
 		"ActiveFlowCount_TLS",
 		"ActiveFlowCount_UDP",
 		"ActiveZonalShiftHostCount",
-		"AvailabilityZone, LoadBalancer",
 		"ClientTLSNegotiationErrorCount",
 		"ConsumedLCUs",
 		"ConsumedLCUs_TCP",
