@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.4
+
+- Add missing metrics for AWS/NetworkELB [#432](https://github.com/grafana/grafana-aws-sdk/pull/432)
+- Add new AWS/Bedrock CloudWatch metrics [#429](https://github.com/grafana/grafana-aws-sdk/pull/429)
+- Add missing AWS/Prometheus metrics [#401](https://github.com/grafana/grafana-aws-sdk/pull/401)
+- Add CacheReadInputTokenCount metric to AWS/Bedrock
+- Update codeowners [#427](https://github.com/grafana/grafana-aws-sdk/pull/427)
+- Update renovate config to use data-sources base preset [#415](https://github.com/grafana/grafana-aws-sdk/pull/415)
+- Dependency updates
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.287.0 [#404](https://github.com/grafana/grafana-aws-sdk/pull/404)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.288.0 [#405](https://github.com/grafana/grafana-aws-sdk/pull/405)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.289.0 [#408](https://github.com/grafana/grafana-aws-sdk/pull/408)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.290.0 [#411](https://github.com/grafana/grafana-aws-sdk/pull/411)
+  - Update module github.com/grafana/grafana-plugin-sdk-go to v0.291.1 [#431](https://github.com/grafana/grafana-aws-sdk/pull/431)
+  - Update module github.com/aws/smithy-go to v1.24.1 [#412](https://github.com/grafana/grafana-aws-sdk/pull/412)
+  - Update module google.golang.org/grpc to v1.79.3 [security] [#420](https://github.com/grafana/grafana-aws-sdk/pull/420)
+  - Update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] [#407](https://github.com/grafana/grafana-aws-sdk/pull/407)
+  - Update module go.opentelemetry.io/otel/sdk to v1.43.0 [security] [#430](https://github.com/grafana/grafana-aws-sdk/pull/430)
+  - Update go patch updates [#409](https://github.com/grafana/grafana-aws-sdk/pull/409)
+  - Update go patch updates [#410](https://github.com/grafana/grafana-aws-sdk/pull/410)
+  - Update go patch updates [#413](https://github.com/grafana/grafana-aws-sdk/pull/413)
+  - Update backend dependencies [#416](https://github.com/grafana/grafana-aws-sdk/pull/416)
+  - Update backend dependencies [#418](https://github.com/grafana/grafana-aws-sdk/pull/418)
+  - Update backend dependencies [#421](https://github.com/grafana/grafana-aws-sdk/pull/421)
+  - Update backend dependencies [#423](https://github.com/grafana/grafana-aws-sdk/pull/423)
+  - Update backend dependencies [#428](https://github.com/grafana/grafana-aws-sdk/pull/428)
+  - Update backend dependencies [#433](https://github.com/grafana/grafana-aws-sdk/pull/433)
+  - Update actions/checkout digest to de0fac2 [#403](https://github.com/grafana/grafana-aws-sdk/pull/403)
+  - Update actions/setup-go action to v6.3.0 [#414](https://github.com/grafana/grafana-aws-sdk/pull/414)
+  - Update actions/setup-go action to v6.4.0 [#424](https://github.com/grafana/grafana-aws-sdk/pull/424)
+  - Update actions/stale digest to b5d41d4 [#406](https://github.com/grafana/grafana-aws-sdk/pull/406)
+  - Update actions/create-github-app-token digest to fee1f7d [#417](https://github.com/grafana/grafana-aws-sdk/pull/417)
+  - Update actions/create-github-app-token action to v3 [#419](https://github.com/grafana/grafana-aws-sdk/pull/419)
+  - Update grafana/shared-workflows/ action [#422](https://github.com/grafana/grafana-aws-sdk/pull/422)
+  - Update grafana/shared-workflows/ action [#425](https://github.com/grafana/grafana-aws-sdk/pull/425)
+  - Update grafana/shared-workflows/ action [#426](https://github.com/grafana/grafana-aws-sdk/pull/426)
+  - Update grafana/shared-workflows/ action [#434](https://github.com/grafana/grafana-aws-sdk/pull/434)
+
 ## 1.4.3
 
 - Update to use self-hosted renovate and remove dependabot [#390](https://github.com/grafana/grafana-aws-sdk/pull/390)
