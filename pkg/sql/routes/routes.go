@@ -24,6 +24,9 @@ func Write(rw http.ResponseWriter, b []byte) {
 
 func ParseBody(body io.ReadCloser) (sqlds.Options, error) {
 	reqBody := sqlds.Options{}
+	if body == nil {
+		return reqBody, nil
+	}
 	b, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
