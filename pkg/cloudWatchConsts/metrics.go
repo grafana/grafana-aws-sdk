@@ -3177,7 +3177,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"YellowChecks",
 		"YellowResources",
 	},
-	// YACE scrapes all metrics in this namespace, and all other metrics in this namespace are available as dimensions - Service, Class, Type, Resource - of these metrics.
+	// CloudWatch emits only these metric names across all services/operations.  Each service and operation is differentiated into a different metric series by dimensions. See https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Usage-Metrics.html for more details.
 	"AWS/Usage": {
 		"CallCount",
 		"ResourceCount",
