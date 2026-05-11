@@ -184,7 +184,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"DrainingCapacity",
 		"DrainModeActiveUserSessionCapacity",
 		"DrainModeUnusedUserSessionCapacity",
-		"FramesPerSecond"
+		"FramesPerSecond",
 		"InSessionLatency",
 		"InUseCapacity",
 		"InsufficientCapacityError",
