@@ -188,6 +188,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"InSessionLatency",
 		"InUseCapacity",
 		"InsufficientCapacityError",
+		"InsufficientConcurrencyLimitError",
 		"MemoryUtilizationInstance",
 		"MemoryUtilizationSession",
 		"PendingCapacity",
@@ -195,8 +196,6 @@ var NamespaceMetricsMap = map[string][]string{
 		"PagingFileUtilizationInstance",
 		"RunningCapacity",
 		"RunningUserSessionCapacity",
-		"InsufficientCapacityError",
-		"InsufficientConcurrencyLimitError",
 	},
 	"AWS/AppSync": {
 		"4XXError",
@@ -3229,9 +3228,8 @@ var NamespaceMetricsMap = map[string][]string{
 		"RequestsWithValidChallengeToken",
 	},
 	"AWS/WorkSpaces": {
-		"Available",
-		"ActiveUserSessionCapacity",
 		"ActualUserSessionCapacity",
+		"Available",
 		"AvailableUserSessionCapacity",
 		"CPUUsage",
 		"ConnectionAttempt",
