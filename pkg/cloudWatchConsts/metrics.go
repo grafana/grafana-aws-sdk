@@ -2692,6 +2692,9 @@ var NamespaceMetricsMap = map[string][]string{
 		"AuroraMemoryNumDeclinedSqlTotal",
 		"AuroraMemoryNumKillConnTotal",
 		"AuroraMemoryNumKillQueryTotal",
+		"AuroraMillisecondsSpentInOomRecovery",
+		"AuroraNumOomRecoverySuccessful",
+		"AuroraNumOomRecoveryTriggered",
 		"AuroraOptimizedReadsCacheHitRatio",
 		"AuroraReplicaLag",
 		"AuroraReplicaLagMaximum",
@@ -2803,6 +2806,7 @@ var NamespaceMetricsMap = map[string][]string{
 		"TempStorageIOPS",
 		"TempStorageThroughput",
 		"TotalBackupStorageBilled",
+		"TransactionAgeMaximum",		
 		"TransactionLogsDiskUsage",
 		"TransactionLogsGeneration",
 		"TruncateFinishedPoint",
@@ -3173,9 +3177,11 @@ var NamespaceMetricsMap = map[string][]string{
 		"YellowChecks",
 		"YellowResources",
 	},
+	// CloudWatch emits only these metric names across all services/operations.  Each service and operation is differentiated into a different metric series by dimensions. See https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Usage-Metrics.html for more details.
 	"AWS/Usage": {
 		"CallCount",
 		"ResourceCount",
+		"ThrottleCount",
 	},
 	"AWS/VPN": {
 		"TunnelDataIn",
