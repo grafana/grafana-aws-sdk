@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.5
+
+- Add missing metrics for AWS/WorkSpaces and AWS/AppStream (aka WorkSpaces Applications) [#441](https://github.com/grafana/grafana-aws-sdk/pull/441)
+- Add missing metrics for Aurora AWS/RDS [#439](https://github.com/grafana/grafana-aws-sdk/pull/439)
+- Update response handler to deal with empty body [#438](https://github.com/grafana/grafana-aws-sdk/pull/438)
+- Dependency updates
+  - Update grafana/shared-workflows actions [#435](https://github.com/grafana/grafana-aws-sdk/pull/435)
+  - Update module golang.org/x/net to v0.53.0 [security] [#440](https://github.com/grafana/grafana-aws-sdk/pull/440)
+
 ## 1.4.4
 
 - Add missing metrics for AWS/NetworkELB [#432](https://github.com/grafana/grafana-aws-sdk/pull/432)
