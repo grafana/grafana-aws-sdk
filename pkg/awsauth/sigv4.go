@@ -99,11 +99,19 @@ func (s SignerRoundTripper) SignHTTP(ctx context.Context, req *http.Request, cre
 			req.Header[k] = v
 		}
 	}()
+	var signerOptions []func(options *v4.SignerOptions)
 	payloadHash, err := getRequestBodyHash(req)
+	// support s3 for grafana-infinity-datasource
+	if s.httpOptions.SigV4.Service == "s3" {
+		req.Header.Add("X-Amz-Content-Sha256", payloadHash)
+		signerOptions = append(signerOptions, func(options *v4.SignerOptions) {
+			options.DisableURIPathEscaping = true
+		})
+	}
 	if err != nil {
 		return err
 	}
-	return s.signer.SignHTTP(ctx, credentials, req, payloadHash, s.httpOptions.SigV4.Service, s.httpOptions.SigV4.Region, s.clock.Now().UTC())
+	return s.signer.SignHTTP(ctx, credentials, req, payloadHash, s.httpOptions.SigV4.Service, s.httpOptions.SigV4.Region, s.clock.Now().UTC(), signerOptions...)
 }
 
 func getRequestBodyHash(req *http.Request) (string, error) {
