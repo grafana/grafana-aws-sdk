@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.6
+- Use GATB in GitHub workflows in [#445](https://github.com/grafana/grafana-aws-sdk/pull/445)
+- Fix: restore s3 support for SigV4 in [#454](https://github.com/grafana/grafana-aws-sdk/pull/445)
+
 ## 1.4.5
 
 - Add missing metrics for AWS/WorkSpaces and AWS/AppStream (aka WorkSpaces Applications) [#441](https://github.com/grafana/grafana-aws-sdk/pull/441)
