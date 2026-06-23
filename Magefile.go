@@ -14,7 +14,7 @@ func Build() error {
 
 // Test runs the test suite.
 func Test() error {
-	return sh.RunV("go", "test", "./...")
+	return sh.RunV("go", "test", "-race", "./...")
 }
 
 func Lint() error {
