@@ -1,6 +1,6 @@
 module github.com/grafana/grafana-aws-sdk
 
-go 1.25.7
+go 1.25.11
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.5
@@ -113,3 +113,5 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+tool github.com/magefile/mage
