@@ -68,7 +68,11 @@ func (tc testCase) Run(t *testing.T) {
 				assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
 			}
 			if tc.authSettings.GetAuthType() == AuthTypeGrafanaAssumeRole {
-				assert.Equal(t, client.assumeRoleClient.calledExternalId, StackID)
+				expectedExternalID := StackID
+				if tc.authSettings.GrafanaExternalID != "" {
+					expectedExternalID = tc.authSettings.GrafanaExternalID
+				}
+				assert.Equal(t, expectedExternalID, client.assumeRoleClient.calledExternalId)
 			} else if tc.authSettings.AssumeRoleARN != "" && tc.authSettings.ExternalID != "" {
 				assert.Equal(t, client.assumeRoleClient.calledExternalId, tc.authSettings.ExternalID)
 			}
@@ -356,6 +360,25 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 			authSettings: Settings{
 				AuthType:      AuthTypeGrafanaAssumeRole,
 				AssumeRoleARN: "arn:aws:iam::1234567890:role/customer-role",
+			},
+			environment: map[string]string{
+				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("horses"),
+				SecretAccessKey: aws.String("unicorns"),
+				SessionToken:    aws.String("riding"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "grafana assume role prefers per-datasource external ID over stack ID",
+			authSettings: Settings{
+				AuthType:          AuthTypeGrafanaAssumeRole,
+				AssumeRoleARN:     "arn:aws:iam::1234567890:role/customer-role",
+				GrafanaExternalID: "stackABC-dsUid1",
+				// Cross-account externalId must not be used for this auth type
+				ExternalID: "should-be-ignored",
 			},
 			environment: map[string]string{
 				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
