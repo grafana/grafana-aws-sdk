@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/gtime"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
+	"github.com/grafana/grafana-plugin-sdk-go/config"
 )
 
 const (
@@ -67,7 +68,7 @@ func defaultAuthSettings() *AuthSettings {
 
 // ReadAuthSettingsFromContext tries to get the auth settings from the GrafanaConfig in ctx, and returns true if it finds a config
 func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
-	cfg := backend.GrafanaConfigFromContext(ctx)
+	cfg := config.GrafanaConfigFromContext(ctx)
 	// initialize settings with the default values set
 	settings := defaultAuthSettings()
 	if cfg == nil {
@@ -225,7 +226,7 @@ func ReadAuthSettingsFromEnvironmentVariables() *AuthSettings {
 
 // ReadSigV4Settings gets the SigV4 settings from the context if its available
 func ReadSigV4Settings(ctx context.Context) *SigV4Settings {
-	cfg := backend.GrafanaConfigFromContext(ctx)
+	cfg := config.GrafanaConfigFromContext(ctx)
 	return &SigV4Settings{
 		Enabled:        cfg.Get(SigV4AuthEnabledEnvVarKeyName) == "true",
 		VerboseLogging: cfg.Get(SigV4VerboseLoggingEnvVarKeyName) == "true",
