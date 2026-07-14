@@ -3,16 +3,17 @@ package awsauth
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
-	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"maps"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
+	"github.com/grafana/grafana-plugin-sdk-go/config"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const StackID = "42"
@@ -43,7 +44,7 @@ type testCase struct {
 func (tc testCase) Run(t *testing.T) {
 	grafanaCfg := maps.Clone(defaultGrafanaConfig)
 	maps.Copy(grafanaCfg, tc.grafanaConfig)
-	ctx := backend.WithGrafanaConfig(context.Background(), backend.NewGrafanaCfg(grafanaCfg))
+	ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(grafanaCfg))
 	client := &mockAWSAPIClient{&mockAssumeRoleAPIClient{}}
 
 	if tc.authSettings.AssumeRoleARN != "" {
