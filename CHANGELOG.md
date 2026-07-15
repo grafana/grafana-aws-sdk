@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.0
+
+- Prefer per-datasource grafanaExternalId for Grafana Assume Role [#468](https://github.com/grafana/grafana-aws-sdk/pull/468)
+- Dependency updates
+  - Update actions/stale digest [#467](https://github.com/grafana/grafana-aws-sdk/pull/467)
+
+## 1.4.7
+
+- Security hardening for CI and dependencies [#457](https://github.com/grafana/grafana-aws-sdk/pull/457)
+- Add add-to-project workflow and remove issue_commands [#461](https://github.com/grafana/grafana-aws-sdk/pull/461)
+- Use shared data-sources Renovate base preset [#462](https://github.com/grafana/grafana-aws-sdk/pull/462)
+- Dependency updates
+  - Update github actions dependencies [#463](https://github.com/grafana/grafana-aws-sdk/pull/463)
+  - Update actions/checkout action to v7 [#464](https://github.com/grafana/grafana-aws-sdk/pull/464)
+  - Update backend dependencies [#451](https://github.com/grafana/grafana-aws-sdk/pull/451)
+
 ## 1.4.6
 - Use GATB in GitHub workflows in [#445](https://github.com/grafana/grafana-aws-sdk/pull/445)
 - Fix: restore s3 support for SigV4 in [#454](https://github.com/grafana/grafana-aws-sdk/pull/445)
