@@ -76,10 +76,14 @@ type Settings struct {
 	AssumeRoleARN      string
 	Endpoint           string
 	ExternalID         string
-	UserAgent          string
-	SessionToken       string
-	HTTPClient         *http.Client
-	ProxyOptions       *proxy.Options
+	// GrafanaExternalID is the per-datasource external ID for
+	// AuthTypeGrafanaAssumeRole. Prefer this over the stack-level ExternalID
+	// from Grafana config when set.
+	GrafanaExternalID string
+	UserAgent         string
+	SessionToken      string
+	HTTPClient        *http.Client
+	ProxyOptions      *proxy.Options
 
 	PerDatasourceProxySettings *PerDatasourceProxySettings
 }
@@ -100,6 +104,7 @@ func (s Settings) Hash() uint64 {
 	_, _ = h.Write([]byte(s.AssumeRoleARN))
 	_, _ = h.Write([]byte(s.Endpoint))
 	_, _ = h.Write([]byte(s.ExternalID))
+	_, _ = h.Write([]byte(s.GrafanaExternalID))
 	if s.PerDatasourceProxySettings != nil {
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyType))
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUrl))

@@ -59,7 +59,13 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	case AuthTypeSharedCreds:
 		options = append(options, authSettings.WithSharedCredentials())
 	case AuthTypeGrafanaAssumeRole:
-		authSettings.ExternalID = grafanaAuthSettings.ExternalID
+		// Prefer per-datasource external ID when set; otherwise fall back to
+		// the stack-level ID from Grafana config (legacy shared isolation).
+		if authSettings.GrafanaExternalID != "" {
+			authSettings.ExternalID = authSettings.GrafanaExternalID
+		} else {
+			authSettings.ExternalID = grafanaAuthSettings.ExternalID
+		}
 		options = append(options, authSettings.WithGrafanaAssumeRole(ctx, rcp.client))
 	default:
 		return aws.Config{}, backend.DownstreamErrorf("unknown auth type: %s", authType)
