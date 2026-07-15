@@ -69,10 +69,11 @@ func (tc testCase) Run(t *testing.T) {
 				assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
 			}
 			if tc.authSettings.GetAuthType() == AuthTypeGrafanaAssumeRole {
+				stackExternalID := grafanaCfg[awsds.GrafanaAssumeRoleExternalIdKeyName]
 				expectedExternalID := awsds.ResolveGrafanaAssumeRoleExternalID(
 					tc.authSettings.UsePerDatasourceExternalID,
 					tc.authSettings.GrafanaExternalID,
-					StackID,
+					stackExternalID,
 				)
 				assert.Equal(t, expectedExternalID, client.assumeRoleClient.calledExternalId)
 			} else if tc.authSettings.AssumeRoleARN != "" && tc.authSettings.ExternalID != "" {
@@ -380,8 +381,10 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 				AssumeRoleARN:              "arn:aws:iam::1234567890:role/customer-role",
 				GrafanaExternalID:          "stackABC-dsUid1",
 				UsePerDatasourceExternalID: boolPtr(true),
-				// Cross-account externalId must not be used for this auth type
-				ExternalID: "should-be-ignored",
+			},
+			// Stack ID always comes from Grafana config for this auth type.
+			grafanaConfig: map[string]string{
+				awsds.GrafanaAssumeRoleExternalIdKeyName: "stack-external-id",
 			},
 			environment: map[string]string{
 				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
@@ -401,6 +404,9 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 				GrafanaExternalID:          "stackABC-dsUid1",
 				UsePerDatasourceExternalID: boolPtr(false),
 			},
+			grafanaConfig: map[string]string{
+				awsds.GrafanaAssumeRoleExternalIdKeyName: "stack-external-id",
+			},
 			environment: map[string]string{
 				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
 			},
@@ -417,6 +423,9 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 				AuthType:          AuthTypeGrafanaAssumeRole,
 				AssumeRoleARN:     "arn:aws:iam::1234567890:role/customer-role",
 				GrafanaExternalID: "stackABC-dsUid1",
+			},
+			grafanaConfig: map[string]string{
+				awsds.GrafanaAssumeRoleExternalIdKeyName: "stack-external-id",
 			},
 			environment: map[string]string{
 				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
