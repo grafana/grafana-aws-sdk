@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.4.8
+## 1.5.0
 
 - Prefer per-datasource grafanaExternalId for Grafana Assume Role [#468](https://github.com/grafana/grafana-aws-sdk/pull/468)
 - Dependency updates
