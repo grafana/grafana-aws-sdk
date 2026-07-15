@@ -69,10 +69,11 @@ func (tc testCase) Run(t *testing.T) {
 				assert.Equal(t, tc.authSettings.SessionToken, creds.SessionToken)
 			}
 			if tc.authSettings.GetAuthType() == AuthTypeGrafanaAssumeRole {
-				expectedExternalID := StackID
-				if tc.authSettings.GrafanaExternalID != "" {
-					expectedExternalID = tc.authSettings.GrafanaExternalID
-				}
+				expectedExternalID := awsds.ResolveGrafanaAssumeRoleExternalID(
+					tc.authSettings.UsePerDatasourceExternalID,
+					tc.authSettings.GrafanaExternalID,
+					StackID,
+				)
 				assert.Equal(t, expectedExternalID, client.assumeRoleClient.calledExternalId)
 			} else if tc.authSettings.AssumeRoleARN != "" && tc.authSettings.ExternalID != "" {
 				assert.Equal(t, client.assumeRoleClient.calledExternalId, tc.authSettings.ExternalID)
@@ -373,11 +374,12 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 			},
 		},
 		{
-			name: "grafana assume role prefers per-datasource external ID over stack ID",
+			name: "grafana assume role prefers per-datasource external ID when enabled",
 			authSettings: Settings{
-				AuthType:          AuthTypeGrafanaAssumeRole,
-				AssumeRoleARN:     "arn:aws:iam::1234567890:role/customer-role",
-				GrafanaExternalID: "stackABC-dsUid1",
+				AuthType:                       AuthTypeGrafanaAssumeRole,
+				AssumeRoleARN:                  "arn:aws:iam::1234567890:role/customer-role",
+				GrafanaExternalID:              "stackABC-dsUid1",
+				UsePerDatasourceExternalID:     boolPtr(true),
 				// Cross-account externalId must not be used for this auth type
 				ExternalID: "should-be-ignored",
 			},
@@ -391,7 +393,46 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 				Expiration:      aws.Time(time.Now().Add(time.Hour)),
 			},
 		},
+		{
+			name: "grafana assume role uses stack ID when per-datasource mode is disabled",
+			authSettings: Settings{
+				AuthType:                   AuthTypeGrafanaAssumeRole,
+				AssumeRoleARN:              "arn:aws:iam::1234567890:role/customer-role",
+				GrafanaExternalID:          "stackABC-dsUid1",
+				UsePerDatasourceExternalID: boolPtr(false),
+			},
+			environment: map[string]string{
+				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("horses"),
+				SecretAccessKey: aws.String("unicorns"),
+				SessionToken:    aws.String("riding"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
+		{
+			name: "grafana assume role uses per-datasource ID when bool unset (legacy)",
+			authSettings: Settings{
+				AuthType:          AuthTypeGrafanaAssumeRole,
+				AssumeRoleARN:     "arn:aws:iam::1234567890:role/customer-role",
+				GrafanaExternalID: "stackABC-dsUid1",
+			},
+			environment: map[string]string{
+				"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
+			},
+			assumedCredentials: &ststypes.Credentials{
+				AccessKeyId:     aws.String("horses"),
+				SecretAccessKey: aws.String("unicorns"),
+				SessionToken:    aws.String("riding"),
+				Expiration:      aws.Time(time.Now().Add(time.Hour)),
+			},
+		},
 	}.runAll(t)
+}
+
+func boolPtr(v bool) *bool {
+	return &v
 }
 
 func TestGetAWSConfig_UnknownOrMissing(t *testing.T) {
