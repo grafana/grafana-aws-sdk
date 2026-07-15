@@ -412,7 +412,7 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 			},
 		},
 		{
-			name: "grafana assume role uses per-datasource ID when bool unset (legacy)",
+			name: "grafana assume role uses stack ID when bool unset even if per-DS ID is stored (legacy)",
 			authSettings: Settings{
 				AuthType:          AuthTypeGrafanaAssumeRole,
 				AssumeRoleARN:     "arn:aws:iam::1234567890:role/customer-role",

@@ -77,11 +77,10 @@ type Settings struct {
 	Endpoint           string
 	ExternalID string
 	// GrafanaExternalID is the per-datasource external ID for
-	// AuthTypeGrafanaAssumeRole. Used when UsePerDatasourceExternalID is true
-	// (or unset with a stored ID — legacy).
+	// AuthTypeGrafanaAssumeRole. Used only when UsePerDatasourceExternalID is true.
 	GrafanaExternalID string
 	// UsePerDatasourceExternalID selects per-datasource vs stack external ID.
-	// Nil means unset (legacy preference based on GrafanaExternalID presence).
+	// Nil/false → stack (legacy). True → use GrafanaExternalID when set.
 	UsePerDatasourceExternalID *bool
 	UserAgent                  string
 	SessionToken      string
