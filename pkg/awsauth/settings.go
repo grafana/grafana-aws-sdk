@@ -75,7 +75,7 @@ type Settings struct {
 	CredentialsProfile string
 	AssumeRoleARN      string
 	Endpoint           string
-	ExternalID string
+	ExternalID         string
 	// GrafanaExternalID is the per-datasource external ID for
 	// AuthTypeGrafanaAssumeRole. Used only when UsePerDatasourceExternalID is true.
 	GrafanaExternalID string
@@ -83,9 +83,9 @@ type Settings struct {
 	// Nil/false → stack (legacy). True → use GrafanaExternalID when set.
 	UsePerDatasourceExternalID *bool
 	UserAgent                  string
-	SessionToken      string
-	HTTPClient        *http.Client
-	ProxyOptions      *proxy.Options
+	SessionToken               string
+	HTTPClient                 *http.Client
+	ProxyOptions               *proxy.Options
 
 	PerDatasourceProxySettings *PerDatasourceProxySettings
 }

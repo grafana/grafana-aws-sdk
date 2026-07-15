@@ -376,10 +376,10 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 		{
 			name: "grafana assume role prefers per-datasource external ID when enabled",
 			authSettings: Settings{
-				AuthType:                       AuthTypeGrafanaAssumeRole,
-				AssumeRoleARN:                  "arn:aws:iam::1234567890:role/customer-role",
-				GrafanaExternalID:              "stackABC-dsUid1",
-				UsePerDatasourceExternalID:     boolPtr(true),
+				AuthType:                   AuthTypeGrafanaAssumeRole,
+				AssumeRoleARN:              "arn:aws:iam::1234567890:role/customer-role",
+				GrafanaExternalID:          "stackABC-dsUid1",
+				UsePerDatasourceExternalID: boolPtr(true),
 				// Cross-account externalId must not be used for this auth type
 				ExternalID: "should-be-ignored",
 			},
