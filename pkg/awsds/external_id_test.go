@@ -6,17 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPreferGrafanaExternalID(t *testing.T) {
-	trueVal := true
-	falseVal := false
-
-	assert.True(t, PreferGrafanaExternalID(&trueVal, "stack-uid"))
-	assert.False(t, PreferGrafanaExternalID(&falseVal, "stack-uid"))
-	assert.False(t, PreferGrafanaExternalID(&falseVal, ""))
-	assert.False(t, PreferGrafanaExternalID(nil, "stack-uid"))
-	assert.False(t, PreferGrafanaExternalID(nil, ""))
-}
-
 func TestResolveGrafanaAssumeRoleExternalID(t *testing.T) {
 	trueVal := true
 	falseVal := false

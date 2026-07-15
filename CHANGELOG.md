@@ -5,9 +5,6 @@ All notable changes to this project will be documented in this file.
 ## 1.5.1
 
 - Gate Grafana Assume Role external ID on `usePerDatasourceExternalId` [#470](https://github.com/grafana/grafana-aws-sdk/pull/470)
-  - STS uses the per-datasource ID only when the bool is `true`
-  - Unset/`false` keeps legacy stack external ID (stored `grafanaExternalId` stays dormant)
-  - Shared helper: `awsds.ResolveGrafanaAssumeRoleExternalID`
 
 ## 1.5.0
 

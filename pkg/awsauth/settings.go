@@ -107,14 +107,10 @@ func (s Settings) Hash() uint64 {
 	_, _ = h.Write([]byte(s.Endpoint))
 	_, _ = h.Write([]byte(s.ExternalID))
 	_, _ = h.Write([]byte(s.GrafanaExternalID))
-	if s.UsePerDatasourceExternalID != nil {
-		if *s.UsePerDatasourceExternalID {
-			_, _ = h.Write([]byte{1})
-		} else {
-			_, _ = h.Write([]byte{0})
-		}
+	if s.UsePerDatasourceExternalID != nil && *s.UsePerDatasourceExternalID {
+		_, _ = h.Write([]byte{1})
 	} else {
-		_, _ = h.Write([]byte{2})
+		_, _ = h.Write([]byte{0})
 	}
 	if s.PerDatasourceProxySettings != nil {
 		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyType))
