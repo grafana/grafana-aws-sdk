@@ -98,9 +98,14 @@ type AWSDatasourceSettings struct {
 	AssumeRoleARN string   `json:"assumeRoleARN"`
 	ExternalID    string   `json:"externalId"`
 	// GrafanaExternalID is the per-datasource external ID used for
-	// AuthTypeGrafanaAssumeRole. When empty, auth falls back to the stack-level
-	// AWS_AUTH_EXTERNAL_ID. Do not reuse ExternalID for this purpose.
+	// AuthTypeGrafanaAssumeRole when UsePerDatasourceExternalID is true.
+	// When the bool is unset/false, auth uses the stack external ID even if
+	// this field is stored (dormant). Do not reuse ExternalID for this purpose.
 	GrafanaExternalID string `json:"grafanaExternalId,omitempty"`
+	// UsePerDatasourceExternalID selects per-datasource vs stack external ID
+	// for Grafana Assume Role. Nil/false → stack (legacy). True → use
+	// GrafanaExternalID when set.
+	UsePerDatasourceExternalID *bool `json:"usePerDatasourceExternalId,omitempty"`
 
 	// Override the client endpoint
 	Endpoint string `json:"endpoint"`
