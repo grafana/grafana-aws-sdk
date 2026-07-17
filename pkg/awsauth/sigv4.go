@@ -1,6 +1,7 @@
 package awsauth
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -116,7 +117,7 @@ func (s SignerRoundTripper) SignHTTP(ctx context.Context, req *http.Request, cre
 
 func getRequestBodyHash(req *http.Request) (string, error) {
 	if req.GetBody == nil {
-		return EmptySha256Hash, nil
+		return getServerRequestBodyHash(req)
 	}
 	body, err := req.GetBody()
 	if err != nil {
@@ -129,6 +130,30 @@ func getRequestBodyHash(req *http.Request) (string, error) {
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 
+}
+
+// getServerRequestBodyHash hashes the body of a request that has no GetBody.
+// net/http only populates GetBody on client requests, so requests forwarded by
+// a reverse proxy (e.g. Grafana's datasource proxy) carry their payload in
+// Body alone. The body is buffered so it can be hashed here and still be sent
+// downstream, and GetBody is populated for any later reads.
+func getServerRequestBodyHash(req *http.Request) (string, error) {
+	if req.Body == nil || req.Body == http.NoBody {
+		return EmptySha256Hash, nil
+	}
+	payload, err := io.ReadAll(req.Body)
+	if err != nil {
+		return "", err
+	}
+	if err := req.Body.Close(); err != nil {
+		return "", err
+	}
+	req.Body = io.NopCloser(bytes.NewReader(payload))
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(payload)), nil
+	}
+	hash := sha256.Sum256(payload)
+	return hex.EncodeToString(hash[:]), nil
 }
 
 type Clock interface {
