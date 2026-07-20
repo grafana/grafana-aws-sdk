@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 )
 
@@ -76,11 +77,18 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e
 	ctx := req.Context()
 	cfg, err := s.awsConfigProvider.GetConfig(ctx, awsAuthSettings)
 	if err != nil {
-		return nil, err
+		// Resolving the AWS auth config (auth type, profile, assume-role setup)
+		// depends on the user's datasource configuration, so a failure here is a
+		// downstream error rather than a plugin fault.
+		return nil, backend.DownstreamError(err)
 	}
 	credentials, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return nil, err
+		// Credential retrieval failures (e.g. a denied sts:AssumeRole, or expired
+		// or invalid credentials) originate from the user's AWS account and IAM
+		// configuration, not the plugin. Mark them downstream so they are not
+		// misattributed to the plugin (which drops plugin error-rate SLOs).
+		return nil, backend.DownstreamError(err)
 	}
 	err = s.SignHTTP(ctx, req, credentials)
 	if err != nil {

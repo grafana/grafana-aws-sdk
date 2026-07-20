@@ -1,15 +1,20 @@
 package awsauth
 
 import (
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var OnceUponATime = time.Unix(1234567890, 0) // 2009-02-13 UTC
@@ -207,4 +212,53 @@ type testRoundTripper struct {
 func (t *testRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	t.seen = request
 	return &http.Response{Status: "everything is awesome", StatusCode: 200}, nil
+}
+
+// failingCredentialsProvider mimics a CredentialsCache whose Retrieve fails, as
+// happens when an sts:AssumeRole is denied or credentials cannot be refreshed.
+type failingCredentialsProvider struct{}
+
+func (failingCredentialsProvider) Retrieve(_ context.Context) (aws.Credentials, error) {
+	return aws.Credentials{}, errors.New("failed to refresh cached credentials, operation error STS: AssumeRole, https response error StatusCode: 403, api error AccessDenied: not authorized to perform: sts:AssumeRole")
+}
+
+// retrieveFailConfigProvider returns a config whose credential retrieval fails.
+type retrieveFailConfigProvider struct{}
+
+func (retrieveFailConfigProvider) GetConfig(_ context.Context, _ Settings) (aws.Config, error) {
+	return aws.Config{Credentials: failingCredentialsProvider{}}, nil
+}
+
+// AWS auth/credential failures are the user's responsibility, not the plugin's,
+// so the signer must surface them as downstream errors. Otherwise Grafana
+// defaults the (unlabeled) error to "plugin" and drops plugin error-rate SLOs.
+func TestSignerRoundTripper_AuthFailuresAreDownstream(t *testing.T) {
+	sigV4Config := &httpclient.SigV4Config{
+		AuthType:  "keys",
+		AccessKey: "good",
+		SecretKey: "excellent",
+		Region:    "us-east-1",
+	}
+
+	t.Run("credential retrieval failure (e.g. denied assume-role) is downstream", func(t *testing.T) {
+		s := NewSignerRoundTripper(httpclient.Options{SigV4: sigV4Config}, &testRoundTripper{}, v4.NewSigner())
+		s.awsConfigProvider = retrieveFailConfigProvider{}
+
+		req, _ := http.NewRequest("GET", "https://service.aws.amazon.notreally", nil)
+		_, err := s.RoundTrip(req)
+
+		require.Error(t, err)
+		assert.True(t, backend.IsDownstreamError(err), "assume-role/credential failures must be downstream, got: %v", err)
+	})
+
+	t.Run("config resolution failure is downstream", func(t *testing.T) {
+		s := NewSignerRoundTripper(httpclient.Options{SigV4: sigV4Config}, &testRoundTripper{}, v4.NewSigner())
+		s.awsConfigProvider = NewFakeConfigProvider(true)
+
+		req, _ := http.NewRequest("GET", "https://service.aws.amazon.notreally", nil)
+		_, err := s.RoundTrip(req)
+
+		require.Error(t, err)
+		assert.True(t, backend.IsDownstreamError(err), "config resolution failures must be downstream, got: %v", err)
+	})
 }
