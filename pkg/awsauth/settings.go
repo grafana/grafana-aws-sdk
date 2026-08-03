@@ -35,6 +35,17 @@ const (
 	profileName           = "assume_role_credentials"
 )
 
+var (
+	grafanaAssumeRoleAccessKeyPath = awsTempCredsAccessKey
+	grafanaAssumeRoleSecretKeyPath = awsTempCredsSecretKey
+
+	grafanaAssumeRoleCredentialsFilesExist = func() bool {
+		_, keyErr := os.Stat(grafanaAssumeRoleAccessKeyPath)
+		_, secretErr := os.Stat(grafanaAssumeRoleSecretKeyPath)
+		return keyErr == nil && secretErr == nil
+	}
+)
+
 type ProxyType string
 
 const (
@@ -183,11 +194,9 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	accessKey, keyErr := os.ReadFile(awsTempCredsAccessKey)
-	secretKey, secretErr := os.ReadFile(awsTempCredsSecretKey)
-	if keyErr == nil && secretErr == nil {
+	if grafanaAssumeRoleCredentialsFilesExist() {
 		return func(opts *config.LoadOptions) error {
-			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
+			opts.Credentials = newGrafanaAssumeRoleProvider(grafanaAssumeRoleAccessKeyPath, grafanaAssumeRoleSecretKeyPath)
 			return nil
 		}
 	}

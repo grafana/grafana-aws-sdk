@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/config"
@@ -438,6 +439,59 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 			},
 		},
 	}.runAll(t)
+}
+
+func TestGetAWSConfig_GrafanaAssumeRoleUsesSharedCredentialsWhenFilesAreMissing(t *testing.T) {
+	origFilesExist := grafanaAssumeRoleCredentialsFilesExist
+	grafanaAssumeRoleCredentialsFilesExist = func() bool {
+		return false
+	}
+	t.Cleanup(func() {
+		grafanaAssumeRoleCredentialsFilesExist = origFilesExist
+	})
+
+	testCase{
+		name: "grafana assume role uses shared credentials fallback",
+		authSettings: Settings{
+			AuthType:      AuthTypeGrafanaAssumeRole,
+			AssumeRoleARN: "arn:aws:iam::1234567890:role/customer-role",
+		},
+		environment: map[string]string{
+			"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
+		},
+		assumedCredentials: &ststypes.Credentials{
+			AccessKeyId:     aws.String("horses"),
+			SecretAccessKey: aws.String("unicorns"),
+			SessionToken:    aws.String("riding"),
+			Expiration:      aws.Time(time.Now().Add(time.Hour)),
+		},
+	}.Run(t)
+}
+
+func TestGetAWSConfig_GrafanaAssumeRoleUsesFileCredentialsWhenFilesExist(t *testing.T) {
+	accessKeyPath, secretKeyPath := writeCredentialFiles(t, "file-access-key", "file-secret-key")
+
+	origAccessKeyPath := grafanaAssumeRoleAccessKeyPath
+	origSecretKeyPath := grafanaAssumeRoleSecretKeyPath
+	grafanaAssumeRoleAccessKeyPath = accessKeyPath
+	grafanaAssumeRoleSecretKeyPath = secretKeyPath
+	t.Cleanup(func() {
+		grafanaAssumeRoleAccessKeyPath = origAccessKeyPath
+		grafanaAssumeRoleSecretKeyPath = origSecretKeyPath
+	})
+
+	ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+	provider := newAWSConfigProviderWithClient(&mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}})
+
+	cfg, err := provider.GetConfig(ctx, Settings{AuthType: AuthTypeGrafanaAssumeRole})
+	require.NoError(t, err)
+
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "file-access-key", creds.AccessKeyID)
+	assert.Equal(t, "file-secret-key", creds.SecretAccessKey)
+	assert.True(t, creds.CanExpire)
+	assert.WithinDuration(t, time.Now().Add(stscreds.DefaultDuration), creds.Expires, time.Second)
 }
 
 func boolPtr(v bool) *bool {
