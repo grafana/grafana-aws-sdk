@@ -110,3 +110,5 @@ require (
 )
 
 tool github.com/magefile/mage
+
+replace github.com/grafana/sqlds/v5 => /Users/isabellasiu/code/sqlds/.worktrees/defer-bootstrap-connect

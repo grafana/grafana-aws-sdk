@@ -82,12 +82,15 @@ func isAsyncFlow(query backend.DataQuery) bool {
 }
 
 func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	key := defaultKey(getDatasourceUID(settings))
+
 	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
-		return nil, err
+		backend.Logger.Debug("async DB not ready at init; deferring connect", "error", err)
+		ds.storeDBConnection(key, dbConnection{db: nil, settings: settings})
+	} else {
+		ds.storeDBConnection(key, dbConnection{db: db, settings: settings})
 	}
-	key := defaultKey(getDatasourceUID(settings))
-	ds.storeDBConnection(key, dbConnection{db, settings})
 
 	// initialize the wrapped ds.SQLDatasource
 	_, err = ds.SQLDatasource.NewDatasource(ctx, settings)
@@ -150,7 +153,8 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 }
 
 func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	datasourceUID := req.PluginContext.DataSourceInstanceSettings.UID
+	settings := req.PluginContext.DataSourceInstanceSettings
+	datasourceUID := settings.UID
 	key := defaultKey(datasourceUID)
 	dbConn, ok := ds.getDBConnection(key)
 	if !ok {
@@ -158,6 +162,17 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 			Status:  backend.HealthStatusError,
 			Message: "No database connection found for datasource uid: " + datasourceUID,
 		}, nil
+	}
+	if dbConn.db == nil {
+		db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, nil)
+		if err != nil {
+			return &backend.CheckHealthResult{
+				Status:  backend.HealthStatusError,
+				Message: err.Error(),
+			}, nil
+		}
+		dbConn = dbConnection{db: db, settings: dbConn.settings}
+		ds.storeDBConnection(key, dbConn)
 	}
 	err := dbConn.db.Ping(ctx)
 	if err != nil {
@@ -176,13 +191,22 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQ
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
 	}
-	// The database connection may vary depending on query arguments
-	// The raw arguments are used as key to store the db connection in memory so they can be reused
+
 	key := defaultKey(datasourceUID)
 	dbConn, ok := ds.getDBConnection(key)
 	if !ok {
 		return nil, sqlds.ErrorMissingDBConnection
 	}
+
+	if dbConn.db == nil {
+		db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, nil)
+		if err != nil {
+			return nil, err
+		}
+		dbConn = dbConnection{db: db, settings: dbConn.settings}
+		ds.storeDBConnection(key, dbConn)
+	}
+
 	if !ds.EnableMultipleConnections || len(q.ConnectionArgs) == 0 {
 		return dbConn.db, nil
 	}
@@ -192,15 +216,12 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQ
 		return cachedConn.db, nil
 	}
 
-	var err error
 	db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, q.ConnectionArgs)
 	if err != nil {
 		return nil, err
 	}
-	// Assign this connection in the cache
-	dbConn = dbConnection{db, dbConn.settings}
+	dbConn = dbConnection{db: db, settings: dbConn.settings}
 	ds.storeDBConnection(key, dbConn)
-
 	return dbConn.db, nil
 }
 
