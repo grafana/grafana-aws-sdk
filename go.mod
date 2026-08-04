@@ -11,7 +11,7 @@ require (
 	github.com/aws/smithy-go v1.27.4
 	github.com/google/go-cmp v0.7.0
 	github.com/grafana/grafana-plugin-sdk-go v0.294.0
-	github.com/grafana/sqlds/v5 v5.3.0
+	github.com/grafana/sqlds/v5 v5.3.1-0.20260804205142-6b3756b42c1c
 	github.com/jpillora/backoff v1.0.0
 	github.com/magefile/mage v1.17.2
 	github.com/stretchr/testify v1.11.1
@@ -110,5 +110,3 @@ require (
 )
 
 tool github.com/magefile/mage
-
-replace github.com/grafana/sqlds/v5 => /Users/isabellasiu/code/sqlds/.worktrees/defer-bootstrap-connect
