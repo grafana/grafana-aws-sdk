@@ -36,6 +36,7 @@ type AsyncAWSDatasource struct {
 	*sqlds.SQLDatasource
 
 	dbConnections         sync.Map
+	asyncDBMu             sync.Mutex
 	driver                AsyncDriver
 	sqldsQueryDataHandler backend.QueryDataHandlerFunc
 }
@@ -86,7 +87,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backen
 
 	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
-		backend.Logger.Debug("async DB not ready at init; deferring connect", "error", err)
+		backend.Logger.Warn("async DB not ready at init; deferring connect", "error", err)
 		ds.storeDBConnection(key, dbConnection{db: nil, settings: settings})
 	} else {
 		ds.storeDBConnection(key, dbConnection{db: db, settings: settings})
@@ -156,25 +157,20 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 	settings := req.PluginContext.DataSourceInstanceSettings
 	datasourceUID := settings.UID
 	key := defaultKey(datasourceUID)
-	dbConn, ok := ds.getDBConnection(key)
-	if !ok {
+	dbConn, err := ds.ensureDefaultAsyncDB(ctx, key)
+	if errors.Is(err, sqlds.ErrorMissingDBConnection) {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
 			Message: "No database connection found for datasource uid: " + datasourceUID,
 		}, nil
 	}
-	if dbConn.db == nil {
-		db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, nil)
-		if err != nil {
-			return &backend.CheckHealthResult{
-				Status:  backend.HealthStatusError,
-				Message: err.Error(),
-			}, nil
-		}
-		dbConn = dbConnection{db: db, settings: dbConn.settings}
-		ds.storeDBConnection(key, dbConn)
+	if err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: err.Error(),
+		}, nil
 	}
-	err := dbConn.db.Ping(ctx)
+	err = dbConn.db.Ping(ctx)
 	if err != nil {
 		return &backend.CheckHealthResult{
 			Status:  backend.HealthStatusError,
@@ -187,24 +183,44 @@ func (ds *AsyncAWSDatasource) CheckHealth(ctx context.Context, req *backend.Chec
 	}, nil
 }
 
+func (ds *AsyncAWSDatasource) ensureDefaultAsyncDB(ctx context.Context, key string) (dbConnection, error) {
+	dbConn, ok := ds.getDBConnection(key)
+	if !ok {
+		return dbConnection{}, sqlds.ErrorMissingDBConnection
+	}
+	if dbConn.db != nil {
+		return dbConn, nil
+	}
+
+	ds.asyncDBMu.Lock()
+	defer ds.asyncDBMu.Unlock()
+
+	dbConn, ok = ds.getDBConnection(key)
+	if !ok {
+		return dbConnection{}, sqlds.ErrorMissingDBConnection
+	}
+	if dbConn.db != nil {
+		return dbConn, nil
+	}
+
+	db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, nil)
+	if err != nil {
+		return dbConnection{}, err
+	}
+	dbConn = dbConnection{db: db, settings: dbConn.settings}
+	ds.storeDBConnection(key, dbConn)
+	return dbConn, nil
+}
+
 func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQuery, datasourceUID string) (AsyncDB, error) {
 	if !ds.EnableMultipleConnections && len(q.ConnectionArgs) > 0 {
 		return nil, sqlds.ErrorMissingMultipleConnectionsConfig
 	}
 
 	key := defaultKey(datasourceUID)
-	dbConn, ok := ds.getDBConnection(key)
-	if !ok {
-		return nil, sqlds.ErrorMissingDBConnection
-	}
-
-	if dbConn.db == nil {
-		db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, nil)
-		if err != nil {
-			return nil, err
-		}
-		dbConn = dbConnection{db: db, settings: dbConn.settings}
-		ds.storeDBConnection(key, dbConn)
+	dbConn, err := ds.ensureDefaultAsyncDB(ctx, key)
+	if err != nil {
+		return nil, err
 	}
 
 	if !ds.EnableMultipleConnections || len(q.ConnectionArgs) == 0 {

@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 
@@ -95,6 +97,56 @@ func TestGetAsyncDBFromQuery_ConnectsWhenDeferred(t *testing.T) {
 	db, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{}, "uid1")
 	require.NoError(t, err)
 	require.Equal(t, live, db)
+}
+
+func TestGetAsyncDBFromQuery_ConcurrentDeferredConnectOpensOnce(t *testing.T) {
+	const workers = 16
+
+	live := &fakeAsyncDB{}
+	gate := make(chan struct{})
+	var calls atomic.Int32
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		if calls.Add(1) == 1 {
+			return nil, fmt.Errorf("not ready")
+		}
+		<-gate
+		return live, nil
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			<-start
+			db, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{}, "uid1")
+			if err == nil && db != live {
+				err = fmt.Errorf("expected cached live db")
+			}
+			errs <- err
+		}()
+	}
+
+	close(start)
+	deadline := time.Now().Add(time.Second)
+	for calls.Load() < 2 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	time.Sleep(25 * time.Millisecond)
+	close(gate)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	require.Equal(t, int32(2), calls.Load(), "expected bootstrap plus one on-demand GetAsyncDB call")
 }
 
 func Test_getDBConnectionFromQuery(t *testing.T) {
