@@ -2983,9 +2983,12 @@ var NamespaceMetricsMap = map[string][]string{
 		"TimeToFirstByte",
 	},
 	"AWS/Route53Resolver": {
+		"EndpointHealthyENICount",
+		"EndpointUnhealthyENICount",
 		"InboundQueryVolume",
 		"OutboundQueryAggregateVolume",
 		"OutboundQueryVolume",
+		"ResolverEndpointCapacityStatus",
 	},
 	"AWS/S3": {
 		"4xxErrors",
