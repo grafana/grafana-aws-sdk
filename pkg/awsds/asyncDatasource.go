@@ -82,6 +82,10 @@ func isAsyncFlow(query backend.DataQuery) bool {
 	return q.Meta.QueryFlow == "async"
 }
 
+// NewDatasource creates the async AWS datasource instance. A failed initial
+// GetAsyncDB is not returned as an error: settings are stored with a nil DB
+// so CallResource routes can register, and connecting is retried on demand by
+// the first query or health check — which is where a persistent failure surfaces.
 func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	key := defaultKey(getDatasourceUID(settings))
 
