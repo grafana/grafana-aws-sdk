@@ -87,7 +87,7 @@ func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backen
 
 	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
-		backend.Logger.Warn("async DB not ready at init; deferring connect", "error", err)
+		backend.Logger.Debug("async DB not ready at init; deferring connect", "error", err)
 		ds.storeDBConnection(key, dbConnection{db: nil, settings: settings})
 	} else {
 		ds.storeDBConnection(key, dbConnection{db: db, settings: settings})
