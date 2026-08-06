@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.2
+
+- Soft-fail async DB connect at datasource init so CallResource routes can register when AWS auth is not ready yet; connect on demand from query and health paths [#482](https://github.com/grafana/grafana-aws-sdk/pull/482)
+
 ## 1.5.1
 
 - Gate Grafana Assume Role external ID on `usePerDatasourceExternalId` [#470](https://github.com/grafana/grafana-aws-sdk/pull/470)

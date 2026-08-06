@@ -2,11 +2,14 @@ package awsds
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/sqlds/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeAsyncDB struct{}
@@ -44,6 +48,105 @@ type fakeDriver struct {
 
 func (d fakeDriver) GetAsyncDB(context.Context, backend.DataSourceInstanceSettings, json.RawMessage) (db AsyncDB, err error) {
 	return d.openDBfn()
+}
+
+func (d fakeDriver) Connect(context.Context, backend.DataSourceInstanceSettings, json.RawMessage) (*sql.DB, error) {
+	return nil, fmt.Errorf("trying to use non-allowed auth method default")
+}
+
+func (d fakeDriver) Settings(context.Context, backend.DataSourceInstanceSettings) sqlds.DriverSettings {
+	return sqlds.DriverSettings{}
+}
+
+func (d fakeDriver) Macros() sqlds.Macros            { return sqlds.Macros{} }
+func (d fakeDriver) Converters() []sqlutil.Converter { return nil }
+
+func TestNewDatasource_DefersAsyncDBOnGetAsyncDBError(t *testing.T) {
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		return nil, fmt.Errorf("trying to use non-allowed auth method default")
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid-1", ID: 1}
+
+	inst, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+	require.NotNil(t, inst)
+
+	key := defaultKey("uid-1")
+	conn, ok := ds.getDBConnection(key)
+	require.True(t, ok, "settings stub must be stored")
+	require.Nil(t, conn.db)
+	require.Equal(t, "uid-1", conn.settings.UID)
+}
+
+func TestGetAsyncDBFromQuery_ConnectsWhenDeferred(t *testing.T) {
+	live := &fakeAsyncDB{}
+	calls := 0
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		calls++
+		if calls == 1 {
+			return nil, fmt.Errorf("not ready")
+		}
+		return live, nil
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	db, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{}, "uid1")
+	require.NoError(t, err)
+	require.Equal(t, live, db)
+}
+
+func TestGetAsyncDBFromQuery_ConcurrentDeferredConnectOpensOnce(t *testing.T) {
+	const workers = 16
+
+	live := &fakeAsyncDB{}
+	gate := make(chan struct{})
+	var calls atomic.Int32
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		if calls.Add(1) == 1 {
+			return nil, fmt.Errorf("not ready")
+		}
+		<-gate
+		return live, nil
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			<-start
+			db, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{}, "uid1")
+			if err == nil && db != live {
+				err = fmt.Errorf("expected cached live db")
+			}
+			errs <- err
+		}()
+	}
+
+	close(start)
+	deadline := time.Now().Add(time.Second)
+	for calls.Load() < 2 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	time.Sleep(25 * time.Millisecond)
+	close(gate)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	require.Equal(t, int32(2), calls.Load(), "expected bootstrap plus one on-demand GetAsyncDB call")
 }
 
 func Test_getDBConnectionFromQuery(t *testing.T) {
@@ -226,6 +329,46 @@ func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCheckHealth_ConnectsWhenDeferred(t *testing.T) {
+	live := &fakeAsyncDB{}
+	calls := 0
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		calls++
+		if calls == 1 {
+			return nil, fmt.Errorf("not ready")
+		}
+		return live, nil
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{
+		PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
+	})
+	require.NoError(t, err)
+	require.Equal(t, backend.HealthStatusOk, result.Status)
+	require.Equal(t, "Data source is working", result.Message)
+}
+
+func TestCheckHealth_ReturnsDeferredConnectError(t *testing.T) {
+	d := &fakeDriver{openDBfn: func() (AsyncDB, error) {
+		return nil, fmt.Errorf("trying to use non-allowed auth method default")
+	}}
+	ds := NewAsyncAWSDatasource(d)
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{
+		PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
+	})
+	require.NoError(t, err)
+	require.Equal(t, backend.HealthStatusError, result.Status)
+	require.Equal(t, "trying to use non-allowed auth method default", result.Message)
 }
 
 func Test_isAsyncFlow(t *testing.T) {
