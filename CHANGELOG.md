@@ -2,9 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.5.2
+## 1.5.3
 
 - Soft-fail async DB connect at datasource init so CallResource routes can register when AWS auth is not ready yet; connect on demand from query and health paths [#482](https://github.com/grafana/grafana-aws-sdk/pull/482)
+- Rename Avails MediaTailor metrics to Avail [#481](https://github.com/grafana/grafana-aws-sdk/pull/481)
+- Add missing metrics for Route 53 Resolver [#480](https://github.com/grafana/grafana-aws-sdk/pull/480)
+- Add MSK Replicator metrics to AWS/Kafka [#479](https://github.com/grafana/grafana-aws-sdk/pull/479)
+
+## 1.5.2
+
+- Hash request body when GetBody is nil [#465](https://github.com/grafana/grafana-aws-sdk/pull/465)
+- Mark SigV4 credential/config failures as downstream errors [#474](https://github.com/grafana/grafana-aws-sdk/pull/474)
+- Add missing metrics for EC2, MemoryDB and ElastiCache [#477](https://github.com/grafana/grafana-aws-sdk/pull/477)
+- Dependency updates
+  - Update backend dependencies [#471](https://github.com/grafana/grafana-aws-sdk/pull/471)
+  - Update backend dependencies [#473](https://github.com/grafana/grafana-aws-sdk/pull/473)
 
 ## 1.5.1
 
