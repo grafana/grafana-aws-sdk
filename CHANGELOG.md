@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Re-read the mounted Grafana Assume Role source credentials instead of caching them for the lifetime of the process, so rotated keys are picked up without a restart
+
 ## 1.5.3
 
 - Soft-fail async DB connect at datasource init so CallResource routes can register when AWS auth is not ready yet; connect on demand from query and health paths [#482](https://github.com/grafana/grafana-aws-sdk/pull/482)

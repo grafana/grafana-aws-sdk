@@ -35,17 +35,6 @@ const (
 	profileName           = "assume_role_credentials"
 )
 
-var (
-	grafanaAssumeRoleAccessKeyPath = awsTempCredsAccessKey
-	grafanaAssumeRoleSecretKeyPath = awsTempCredsSecretKey
-
-	grafanaAssumeRoleCredentialsFilesExist = func() bool {
-		_, keyErr := os.Stat(grafanaAssumeRoleAccessKeyPath)
-		_, secretErr := os.Stat(grafanaAssumeRoleSecretKeyPath)
-		return keyErr == nil && secretErr == nil
-	}
-)
-
 type ProxyType string
 
 const (
@@ -194,14 +183,18 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	if grafanaAssumeRoleCredentialsFilesExist() {
+	logger := backend.Logger.FromContext(ctx)
+	if grafanaAssumeRoleSourceCredentials.exist() {
+		logger.Debug("using mounted source credentials for Grafana Assume Role")
 		return func(opts *config.LoadOptions) error {
-			opts.Credentials = newGrafanaAssumeRoleProvider(grafanaAssumeRoleAccessKeyPath, grafanaAssumeRoleSecretKeyPath)
+			provider := newGrafanaAssumeRoleProvider(grafanaAssumeRoleSourceCredentials)
+			opts.Credentials = client.NewCredentialsCache(provider)
 			return nil
 		}
 	}
 
 	// if we don't find the files assume it's running single tenant and use the credentials file
+	logger.Debug("mounted source credentials not found for Grafana Assume Role, falling back to shared profile", "profile", profileName)
 	return func(options *config.LoadOptions) error {
 		options.SharedConfigProfile = profileName
 		if s.CredentialsPath != "" {
