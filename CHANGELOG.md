@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.4
+
+- Bump Go to 1.26.6 to address standard library vulnerabilities [#486](https://github.com/grafana/grafana-aws-sdk/pull/486)
+- Dependency updates
+  - Update backend dependencies [#487](https://github.com/grafana/grafana-aws-sdk/pull/487)
+
 ## 1.5.3
 
 - Soft-fail async DB connect at datasource init so CallResource routes can register when AWS auth is not ready yet; connect on demand from query and health paths [#482](https://github.com/grafana/grafana-aws-sdk/pull/482)
