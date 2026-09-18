@@ -183,16 +183,18 @@ func (s Settings) WithSharedCredentials() LoadOptionsFunc {
 
 // WithGrafanaAssumeRole returns a LoadOptionsFunc to initialize config for Grafana Assume Role
 func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient) LoadOptionsFunc {
-	accessKey, keyErr := os.ReadFile(awsTempCredsAccessKey)
-	secretKey, secretErr := os.ReadFile(awsTempCredsSecretKey)
-	if keyErr == nil && secretErr == nil {
+	logger := backend.Logger.FromContext(ctx)
+	if grafanaAssumeRoleSourceCredentials.exist() {
+		logger.Debug("using mounted source credentials for Grafana Assume Role")
 		return func(opts *config.LoadOptions) error {
-			opts.Credentials = client.NewStaticCredentialsProvider(string(accessKey), string(secretKey), "")
+			provider := newGrafanaAssumeRoleProvider(grafanaAssumeRoleSourceCredentials)
+			opts.Credentials = client.NewCredentialsCache(provider)
 			return nil
 		}
 	}
 
 	// if we don't find the files assume it's running single tenant and use the credentials file
+	logger.Debug("mounted source credentials not found for Grafana Assume Role, falling back to shared profile", "profile", profileName)
 	return func(options *config.LoadOptions) error {
 		options.SharedConfigProfile = profileName
 		if s.CredentialsPath != "" {

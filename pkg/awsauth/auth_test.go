@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/config"
@@ -438,6 +440,88 @@ func TestGetAWSConfig_Shared(t *testing.T) {
 			},
 		},
 	}.runAll(t)
+}
+
+func TestGetAWSConfig_GrafanaAssumeRoleUsesSharedCredentialsWhenFilesAreMissing(t *testing.T) {
+	useCredentialFiles(t, credentialFilePaths{
+		accessKey: filepath.Join(t.TempDir(), "access-key-id"),
+		secretKey: filepath.Join(t.TempDir(), "secret-access-key"),
+	})
+
+	testCase{
+		name: "grafana assume role uses shared credentials fallback",
+		authSettings: Settings{
+			AuthType:      AuthTypeGrafanaAssumeRole,
+			AssumeRoleARN: "arn:aws:iam::1234567890:role/customer-role",
+		},
+		environment: map[string]string{
+			"AWS_SHARED_CREDENTIALS_FILE": testDataPath("assume_role_credentials"),
+		},
+		assumedCredentials: &ststypes.Credentials{
+			AccessKeyId:     aws.String("horses"),
+			SecretAccessKey: aws.String("unicorns"),
+			SessionToken:    aws.String("riding"),
+			Expiration:      aws.Time(time.Now().Add(time.Hour)),
+		},
+	}.Run(t)
+}
+
+func TestGetAWSConfig_GrafanaAssumeRoleUsesFileCredentialsWhenFilesExist(t *testing.T) {
+	useCredentialFiles(t, writeCredentialFiles(t, "file-access-key", "file-secret-key"))
+
+	ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+	provider := newAWSConfigProviderWithClient(&mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}})
+
+	cfg, err := provider.GetConfig(ctx, Settings{AuthType: AuthTypeGrafanaAssumeRole})
+	require.NoError(t, err)
+
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "file-access-key", creds.AccessKeyID)
+	assert.Equal(t, "file-secret-key", creds.SecretAccessKey)
+	assert.True(t, creds.CanExpire)
+	assert.WithinDuration(t, time.Now().Add(stscreds.DefaultDuration), creds.Expires, time.Second)
+}
+
+// TestGetAWSConfig_GrafanaAssumeRoleRereadsRotatedSourceCredentials is the case that motivated the
+// file-backed provider: the STS client that performs the customer AssumeRole must pick up a rotated
+// key without the process restarting. It asserts against the config the STS client was built from,
+// since that is the credential chain the AssumeRole call signs with.
+func TestGetAWSConfig_GrafanaAssumeRoleRereadsRotatedSourceCredentials(t *testing.T) {
+	paths := writeCredentialFiles(t, "first-access-key", "first-secret-key")
+	useCredentialFiles(t, paths)
+
+	ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+	client := &mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}}
+	client.assumeRoleClient.On("AssumeRole").Return(false, &ststypes.Credentials{
+		AccessKeyId:     aws.String("horses"),
+		SecretAccessKey: aws.String("unicorns"),
+		SessionToken:    aws.String("riding"),
+		Expiration:      aws.Time(time.Now().Add(time.Hour)),
+	})
+	provider := newAWSConfigProviderWithClient(client)
+
+	cfg, err := provider.GetConfig(ctx, Settings{
+		AuthType:      AuthTypeGrafanaAssumeRole,
+		AssumeRoleARN: "arn:aws:iam::1234567890:role/customer-role",
+	})
+	require.NoError(t, err)
+
+	_, err = cfg.Credentials.Retrieve(ctx)
+	require.NoError(t, err)
+
+	stsCreds := client.assumeRoleClient.stsConfig.Credentials
+	source, err := stsCreds.Retrieve(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "first-access-key", source.AccessKeyID)
+
+	rotateCredentialFiles(t, paths, "second-access-key", "second-secret-key")
+	expireCredentialsCache(t, stsCreds)
+
+	source, err = stsCreds.Retrieve(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "second-access-key", source.AccessKeyID)
+	assert.Equal(t, "second-secret-key", source.SecretAccessKey)
 }
 
 func boolPtr(v bool) *bool {
