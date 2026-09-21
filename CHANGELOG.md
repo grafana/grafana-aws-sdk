@@ -2,9 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 1.5.5
 
-- Re-read the mounted Grafana Assume Role source credentials instead of caching them for the lifetime of the process, so rotated keys are picked up without a restart
+- Re-read the mounted Grafana Assume Role source credentials instead of caching them for the lifetime of the process, so rotated keys are picked up without a restart [#485](https://github.com/grafana/grafana-aws-sdk/pull/485)
+- Add metrics for Firehose Delivery to Iceberg [#491](https://github.com/grafana/grafana-aws-sdk/pull/491)
 
 ## 1.5.4
 
