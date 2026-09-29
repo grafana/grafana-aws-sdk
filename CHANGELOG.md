@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Stop sending STS calls (Assume Role, web identity) to the custom service endpoint, which failed with a 404 when a datasource set both an Assume Role ARN and a custom endpoint [#375](https://github.com/grafana/grafana-aws-sdk/issues/375)
+- Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role
+
 ## 1.5.6
 
 - Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware [#495](https://github.com/grafana/grafana-aws-sdk/pull/495)

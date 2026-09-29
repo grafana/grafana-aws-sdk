@@ -30,3 +30,13 @@ func TestLoadSettings(t *testing.T) {
 	assert.Empty(t, cmp.Diff(settings.AuthType, copy.AuthType))
 	assert.Empty(t, cmp.Diff(settings.DefaultRegion, copy.DefaultRegion))
 }
+
+func TestLoadSettingsEndpoints(t *testing.T) {
+	s := &AWSDatasourceSettings{}
+	err := s.Load(backend.DataSourceInstanceSettings{
+		JSONData: []byte(`{"endpoint":"https://athena.eu-west-2.amazonaws.com","stsEndpoint":"https://sts.eu-west-2.amazonaws.com"}`),
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://athena.eu-west-2.amazonaws.com", s.Endpoint)
+	assert.Equal(t, "https://sts.eu-west-2.amazonaws.com", s.STSEndpoint)
+}
