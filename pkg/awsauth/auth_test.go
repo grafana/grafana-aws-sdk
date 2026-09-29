@@ -3,14 +3,18 @@ package awsauth
 import (
 	"context"
 	"fmt"
+	"io"
 	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/config"
@@ -553,4 +557,166 @@ func TestGetAWSConfig_UnknownOrMissing(t *testing.T) {
 			shouldError: false,
 		},
 	}.runAll(t)
+}
+
+// TestGetAWSConfig_Endpoints checks where STS and service calls go for each endpoint setting.
+// The STS endpoint is resolved the way the real AssumeRole client resolves it, from the config
+// it was built from, so a service endpoint leaking in through ConfigSources is caught as well.
+func TestGetAWSConfig_Endpoints(t *testing.T) {
+	const (
+		serviceEndpoint = "https://query-cell1.timestream.us-west-2.amazonaws.com"
+		fipsEndpoint    = "https://athena-fips.us-west-2.amazonaws.com"
+		stsEndpoint     = "https://vpce-123.sts.us-west-2.vpce.amazonaws.com"
+		roleARN         = "arn:aws:iam::1234567890:role/aws-service-role"
+	)
+	useCredentialFiles(t, writeCredentialFiles(t, "file-access-key", "file-secret-key"))
+
+	keys := func(endpoint, stsEndpoint, assumeRoleARN string) Settings {
+		return Settings{
+			AuthType:      AuthTypeKeys,
+			AccessKey:     "tensile",
+			SecretKey:     "diaphanous",
+			Region:        "us-west-2",
+			Endpoint:      endpoint,
+			STSEndpoint:   stsEndpoint,
+			AssumeRoleARN: assumeRoleARN,
+		}
+	}
+
+	tests := []struct {
+		name                string
+		settings            Settings
+		env                 map[string]string
+		wantSTSEndpoint     string // empty means the default STS endpoint
+		wantSTSFIPS         bool
+		wantServiceEndpoint string
+	}{
+		{
+			name:                "service endpoint without assume role",
+			settings:            keys(serviceEndpoint, "", ""),
+			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:                "service endpoint is not used for assume role",
+			settings:            keys(serviceEndpoint, "", roleARN),
+			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:                "sts endpoint is used for assume role only",
+			settings:            keys(serviceEndpoint, stsEndpoint, roleARN),
+			wantSTSEndpoint:     stsEndpoint,
+			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:            "sts endpoint without a scheme gets https",
+			settings:        keys("", "sts.us-west-2.amazonaws.com", roleARN),
+			wantSTSEndpoint: "https://sts.us-west-2.amazonaws.com",
+		},
+		{
+			name:                "AWS_ENDPOINT_URL_STS is used for assume role",
+			settings:            keys(serviceEndpoint, "", roleARN),
+			env:                 map[string]string{"AWS_ENDPOINT_URL_STS": stsEndpoint},
+			wantSTSEndpoint:     stsEndpoint,
+			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:        "fips service endpoint enables fips for assume role",
+			settings:    keys(fipsEndpoint, "", roleARN),
+			wantSTSFIPS: true,
+		},
+		{
+			name:            "sts endpoint disables fips for assume role",
+			settings:        keys(fipsEndpoint, stsEndpoint, roleARN),
+			wantSTSEndpoint: stsEndpoint,
+		},
+		{
+			name: "sts endpoint is ignored for grafana assume role",
+			settings: Settings{
+				AuthType:      AuthTypeGrafanaAssumeRole,
+				Region:        "us-west-2",
+				STSEndpoint:   stsEndpoint,
+				AssumeRoleARN: roleARN,
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+			client := &mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}}
+
+			cfg, err := newAWSConfigProviderWithClient(client).GetConfig(ctx, tc.settings)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantServiceEndpoint, aws.ToString(cfg.BaseEndpoint))
+			if tc.settings.AssumeRoleARN == "" {
+				return
+			}
+			stsOptions := sts.NewFromConfig(client.assumeRoleClient.stsConfig).Options()
+			assert.Equal(t, tc.wantSTSEndpoint, aws.ToString(stsOptions.BaseEndpoint))
+			assert.Equal(t, tc.wantSTSFIPS, stsOptions.EndpointOptions.UseFIPSEndpoint == aws.FIPSEndpointStateEnabled)
+		})
+	}
+}
+
+// TestGetAWSConfig_WebIdentityDoesNotUseServiceEndpoint covers the STS client the SDK builds
+// itself while resolving the default credential chain, which awsauth never sees.
+func TestGetAWSConfig_WebIdentityDoesNotUseServiceEndpoint(t *testing.T) {
+	const serviceEndpoint = "https://athena.eu-west-2.amazonaws.com"
+	dir := t.TempDir()
+	tokenFile := filepath.Join(dir, "token")
+	require.NoError(t, os.WriteFile(tokenFile, []byte("web-identity-token"), 0600))
+	t.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFile)
+	t.Setenv("AWS_ROLE_ARN", "arn:aws:iam::1234567890:role/web-identity")
+	t.Setenv("AWS_ACCESS_KEY_ID", "")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
+	t.Setenv("AWS_PROFILE", "")
+	t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))
+
+	stsServer := &webIdentitySTS{}
+	ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+	provider := newAWSConfigProviderWithClient(&mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}})
+
+	cfg, err := provider.GetConfig(ctx, Settings{
+		AuthType:   AuthTypeDefault,
+		Region:     "eu-west-2",
+		Endpoint:   serviceEndpoint,
+		HTTPClient: &http.Client{Transport: stsServer},
+	})
+	require.NoError(t, err)
+	creds, err := cfg.Credentials.Retrieve(ctx)
+	require.NoError(t, err)
+
+	assert.Equal(t, "web-identity-key", creds.AccessKeyID)
+	assert.Equal(t, []string{"sts.eu-west-2.amazonaws.com"}, stsServer.hosts)
+	assert.Equal(t, serviceEndpoint, aws.ToString(cfg.BaseEndpoint))
+}
+
+// webIdentitySTS answers every request with AssumeRoleWithWebIdentity credentials and
+// records the host each request was sent to.
+type webIdentitySTS struct {
+	hosts []string
+}
+
+func (s *webIdentitySTS) RoundTrip(req *http.Request) (*http.Response, error) {
+	s.hosts = append(s.hosts, req.URL.Host)
+	body := fmt.Sprintf(`<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+  <AssumeRoleWithWebIdentityResult>
+    <Credentials>
+      <AccessKeyId>web-identity-key</AccessKeyId>
+      <SecretAccessKey>web-identity-secret</SecretAccessKey>
+      <SessionToken>web-identity-session</SessionToken>
+      <Expiration>%s</Expiration>
+    </Credentials>
+  </AssumeRoleWithWebIdentityResult>
+</AssumeRoleWithWebIdentityResponse>`, time.Now().Add(time.Hour).UTC().Format(time.RFC3339))
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/xml"}},
+		Body:       io.NopCloser(strings.NewReader(body)),
+		Request:    req,
+	}, nil
 }
