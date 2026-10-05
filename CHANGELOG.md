@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 1.5.6
 
-- Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware
+- Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware [#495](https://github.com/grafana/grafana-aws-sdk/pull/495)
 
 ## 1.5.5
 
