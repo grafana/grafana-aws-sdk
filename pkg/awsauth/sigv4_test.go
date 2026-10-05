@@ -262,3 +262,89 @@ func TestSignerRoundTripper_AuthFailuresAreDownstream(t *testing.T) {
 		assert.True(t, backend.IsDownstreamError(err), "config resolution failures must be downstream, got: %v", err)
 	})
 }
+
+func TestSignerRoundTripper_loadsSigV4PerDsExternalIDFromJSONData(t *testing.T) {
+	next := &testRoundTripper{}
+	s := NewSignerRoundTripper(httpclient.Options{
+		SigV4: &httpclient.SigV4Config{
+			AuthType:      string(AuthTypeGrafanaAssumeRole),
+			AssumeRoleARN: "arn:aws:iam::123:role/test",
+			Region:        "us-east-1",
+		},
+	}, next, v4.NewSigner())
+	recorder := &recordingConfigProvider{inner: NewFakeConfigProvider(false)}
+	s.awsConfigProvider = recorder
+	s.clock = staticClock{OnceUponATime}
+
+	dsJSON := []byte(`{"sigV4GrafanaExternalId":"12345-uid-abcdef0123456789","sigV4UsePerDatasourceExternalId":true}`)
+	ctx := backend.WithPluginContext(context.Background(), backend.PluginContext{
+		DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{JSONData: dsJSON},
+	})
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://service.aws.amazon.notreally", nil)
+	require.NoError(t, err)
+
+	_, err = s.RoundTrip(req)
+	require.NoError(t, err)
+	require.Equal(t, "12345-uid-abcdef0123456789", recorder.last.GrafanaExternalID)
+	require.NotNil(t, recorder.last.UsePerDatasourceExternalID)
+	assert.True(t, *recorder.last.UsePerDatasourceExternalID)
+}
+
+func TestSignerRoundTripper_keepsStackModeWhenPerDatasourceFlagIsFalse(t *testing.T) {
+	s := NewSignerRoundTripper(httpclient.Options{
+		SigV4: &httpclient.SigV4Config{
+			AuthType: string(AuthTypeGrafanaAssumeRole),
+			Region:   "us-east-1",
+		},
+	}, &testRoundTripper{}, v4.NewSigner())
+	recorder := &recordingConfigProvider{inner: NewFakeConfigProvider(false)}
+	s.awsConfigProvider = recorder
+	s.clock = staticClock{OnceUponATime}
+
+	dsJSON := []byte(`{"sigV4GrafanaExternalId":"12345-uid-abcdef0123456789","sigV4UsePerDatasourceExternalId":false}`)
+	ctx := backend.WithPluginContext(context.Background(), backend.PluginContext{
+		DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{JSONData: dsJSON},
+	})
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://service.aws.amazon.notreally", nil)
+	require.NoError(t, err)
+
+	_, err = s.RoundTrip(req)
+	require.NoError(t, err)
+	require.Equal(t, "12345-uid-abcdef0123456789", recorder.last.GrafanaExternalID)
+	require.NotNil(t, recorder.last.UsePerDatasourceExternalID)
+	assert.False(t, *recorder.last.UsePerDatasourceExternalID)
+}
+
+func TestSignerRoundTripper_ignoresPerDatasourceFieldsForOtherAuthTypes(t *testing.T) {
+	s := NewSignerRoundTripper(httpclient.Options{
+		SigV4: &httpclient.SigV4Config{
+			AuthType: string(AuthTypeKeys),
+			Region:   "us-east-1",
+		},
+	}, &testRoundTripper{}, v4.NewSigner())
+	recorder := &recordingConfigProvider{inner: NewFakeConfigProvider(false)}
+	s.awsConfigProvider = recorder
+	s.clock = staticClock{OnceUponATime}
+
+	dsJSON := []byte(`{"sigV4GrafanaExternalId":"12345-uid-abcdef0123456789","sigV4UsePerDatasourceExternalId":true}`)
+	ctx := backend.WithPluginContext(context.Background(), backend.PluginContext{
+		DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{JSONData: dsJSON},
+	})
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://service.aws.amazon.notreally", nil)
+	require.NoError(t, err)
+
+	_, err = s.RoundTrip(req)
+	require.NoError(t, err)
+	assert.Empty(t, recorder.last.GrafanaExternalID)
+	assert.Nil(t, recorder.last.UsePerDatasourceExternalID)
+}
+
+type recordingConfigProvider struct {
+	inner ConfigProvider
+	last  Settings
+}
+
+func (r *recordingConfigProvider) GetConfig(ctx context.Context, settings Settings) (aws.Config, error) {
+	r.last = settings
+	return r.inner.GetConfig(ctx, settings)
+}

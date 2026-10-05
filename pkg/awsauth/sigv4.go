@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -56,6 +57,13 @@ type SignerRoundTripper struct {
 	clock             Clock
 }
 
+// sigV4PerDsExternalIDJSON is the SigV4 jsonData shape for a per-datasource
+// Grafana Assume Role external ID. httpclient.SigV4Config has no fields for it.
+type sigV4PerDsExternalIDJSON struct {
+	GrafanaExternalID          string `json:"sigV4GrafanaExternalId"`
+	UsePerDatasourceExternalID *bool  `json:"sigV4UsePerDatasourceExternalId"`
+}
+
 func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -75,6 +83,17 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e
 		HTTPClient:         &http.Client{},
 	}
 	ctx := req.Context()
+	// SigV4Config cannot carry the per-datasource external ID. Grafana Assume Role
+	// reads it from datasource jsonData so GetConfig can select it over the stack ID.
+	if awsAuthSettings.AuthType == AuthTypeGrafanaAssumeRole {
+		if ds := backend.PluginConfigFromContext(ctx).DataSourceInstanceSettings; ds != nil && len(ds.JSONData) > 0 {
+			var perDS sigV4PerDsExternalIDJSON
+			if err := json.Unmarshal(ds.JSONData, &perDS); err == nil {
+				awsAuthSettings.GrafanaExternalID = perDS.GrafanaExternalID
+				awsAuthSettings.UsePerDatasourceExternalID = perDS.UsePerDatasourceExternalID
+			}
+		}
+	}
 	cfg, err := s.awsConfigProvider.GetConfig(ctx, awsAuthSettings)
 	if err != nil {
 		// Resolving the AWS auth config (auth type, profile, assume-role setup)

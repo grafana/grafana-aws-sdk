@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware
+
 ## 1.5.5
 
 - Re-read the mounted Grafana Assume Role source credentials instead of caching them for the lifetime of the process, so rotated keys are picked up without a restart [#485](https://github.com/grafana/grafana-aws-sdk/pull/485)
