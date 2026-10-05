@@ -88,10 +88,13 @@ func (s SignerRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e
 	if awsAuthSettings.AuthType == AuthTypeGrafanaAssumeRole {
 		if ds := backend.PluginConfigFromContext(ctx).DataSourceInstanceSettings; ds != nil && len(ds.JSONData) > 0 {
 			var perDS sigV4PerDsExternalIDJSON
-			if err := json.Unmarshal(ds.JSONData, &perDS); err == nil {
-				awsAuthSettings.GrafanaExternalID = perDS.GrafanaExternalID
-				awsAuthSettings.UsePerDatasourceExternalID = perDS.UsePerDatasourceExternalID
+			if err := json.Unmarshal(ds.JSONData, &perDS); err != nil {
+				// Invalid datasource jsonData would otherwise fall through to the
+				// stack external ID. Surface it as a downstream config error.
+				return nil, backend.DownstreamError(err)
 			}
+			awsAuthSettings.GrafanaExternalID = perDS.GrafanaExternalID
+			awsAuthSettings.UsePerDatasourceExternalID = perDS.UsePerDatasourceExternalID
 		}
 	}
 	cfg, err := s.awsConfigProvider.GetConfig(ctx, awsAuthSettings)

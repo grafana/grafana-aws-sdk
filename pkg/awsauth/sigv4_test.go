@@ -348,3 +348,26 @@ func (r *recordingConfigProvider) GetConfig(ctx context.Context, settings Settin
 	r.last = settings
 	return r.inner.GetConfig(ctx, settings)
 }
+
+func TestSignerRoundTripper_invalidSigV4JSONIsDownstream(t *testing.T) {
+	next := &testRoundTripper{}
+	s := NewSignerRoundTripper(httpclient.Options{
+		SigV4: &httpclient.SigV4Config{
+			AuthType: string(AuthTypeGrafanaAssumeRole),
+			Region:   "us-east-1",
+		},
+	}, next, v4.NewSigner())
+	s.awsConfigProvider = NewFakeConfigProvider(false)
+	s.clock = staticClock{OnceUponATime}
+
+	ctx := backend.WithPluginContext(context.Background(), backend.PluginContext{
+		DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{JSONData: []byte(`{`)},
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://service.aws.amazon.notreally", nil)
+	require.NoError(t, err)
+
+	_, err = s.RoundTrip(req)
+	require.Error(t, err)
+	assert.True(t, backend.IsDownstreamError(err), "invalid datasource jsonData must be downstream, got: %v", err)
+	assert.Nil(t, next.seen)
+}
