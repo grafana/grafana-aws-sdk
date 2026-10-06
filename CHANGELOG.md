@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Report async query errors as downstream when sqlds wraps a downstream error in a plugin error, the same as the sync path [#496](https://github.com/grafana/grafana-aws-sdk/pull/496)
 - Stop sending STS calls (Assume Role, web identity) to the custom service endpoint, which failed with a 404 when a datasource set both an Assume Role ARN and a custom endpoint [#375](https://github.com/grafana/grafana-aws-sdk/issues/375)
 - Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role [#494](https://github.com/grafana/grafana-aws-sdk/pull/494)
 
