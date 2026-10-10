@@ -475,10 +475,14 @@ func Test_QueryData_AsyncQueryPanicReturnsPluginError(t *testing.T) {
 		PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
 		Queries: []backend.DataQuery{
 			{RefID: "A", JSON: []byte(`{"meta": {"queryFlow": "async"}, "queryID": "q1", "rawSql": "SELECT 1"}`)},
+			{RefID: "B", JSON: []byte(`{"meta": {"queryFlow": "async"}, "rawSql": "SELECT 1"}`)},
 		},
 	})
 	require.NoError(t, err)
 	require.Error(t, resp.Responses["A"].Error)
 	assert.Contains(t, resp.Responses["A"].Error.Error(), "async query execution panic")
 	assert.Equal(t, backend.ErrorSourcePlugin, resp.Responses["A"].ErrorSource)
+	require.NoError(t, resp.Responses["B"].Error)
+	require.Len(t, resp.Responses["B"].Frames, 1)
+	assert.Equal(t, queryMeta{Status: "started"}, resp.Responses["B"].Frames[0].Meta.Custom)
 }
