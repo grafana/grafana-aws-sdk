@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -239,6 +240,51 @@ func Test_Async_QueryData_uses_synchronous_flow_when_header_has_alert_and_expres
 			_, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{Headers: tt.headers})
 			assert.NoError(t, err)
 			assert.True(t, syncCalled)
+		})
+	}
+}
+
+func Test_Async_QueryData_error_source(t *testing.T) {
+	awsErr := errors.New("operation error Athena: GetQueryResults, https response error StatusCode: 400")
+	tests := []struct {
+		desc     string
+		err      error
+		expected backend.ErrorSource
+	}{
+		{
+			desc:     "downstream error wrapped as a plugin error by sqlds",
+			err:      backend.NewErrorWithSource(fmt.Errorf("%w: %w", sqlds.ErrorQuery, backend.DownstreamError(awsErr)), backend.ErrorSourcePlugin),
+			expected: backend.ErrorSourceDownstream,
+		},
+		{
+			desc:     "downstream error",
+			err:      backend.DownstreamError(awsErr),
+			expected: backend.ErrorSourceDownstream,
+		},
+		{
+			desc:     "plugin error",
+			err:      backend.PluginError(awsErr),
+			expected: backend.ErrorSourcePlugin,
+		},
+		{
+			desc:     "error without a source",
+			err:      awsErr,
+			expected: backend.ErrorSourcePlugin,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			ds := NewAsyncAWSDatasource(&fakeDriver{openDBfn: func() (AsyncDB, error) { return nil, tt.err }})
+			settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+			ds.storeDBConnection(defaultKey(settings.UID), dbConnection{settings: settings})
+
+			resp, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{
+				PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
+				Queries:       []backend.DataQuery{{RefID: "A", JSON: []byte(`{"meta": {"queryFlow": "async"}}`)}},
+			})
+			require.NoError(t, err)
+			require.ErrorIs(t, resp.Responses["A"].Error, awsErr)
+			assert.Equal(t, tt.expected, resp.Responses["A"].ErrorSource)
 		})
 	}
 }

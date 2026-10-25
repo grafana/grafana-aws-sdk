@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.7
+
+- Report async query errors as downstream when sqlds wraps a downstream error in a plugin error, the same as the sync path [#496](https://github.com/grafana/grafana-aws-sdk/pull/496)
+
 ## 1.5.6
 
 - Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware [#495](https://github.com/grafana/grafana-aws-sdk/pull/495)

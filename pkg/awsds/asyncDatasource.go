@@ -131,7 +131,7 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
 			if err != nil {
-				errorResponse := backend.ErrorResponseWithErrorSource(err)
+				errorResponse := backend.DataResponse{Error: err, ErrorSource: sqlds.ErrorSource(err)}
 				var qeError *QueryExecutionError
 				// checking if we know the cause of downstream error
 				if errors.As(err, &qeError) {
