@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -455,4 +456,33 @@ func Test_QueryData_MalformedJSON_FallsBackToSync(t *testing.T) {
 	_, err := ds.QueryData(context.Background(), req)
 	assert.NoError(t, err, "QueryData should not error when handling malformed JSON")
 	assert.True(t, syncCalled, "QueryData should fall back to sync flow when isAsyncFlow returns false due to malformed JSON")
+}
+
+type panickingStatusDB struct{ fakeAsyncDB }
+
+func (panickingStatusDB) QueryStatus(context.Context, string) (QueryStatus, error) {
+	var reason *string
+	return QueryUnknown, errors.New(*reason)
+}
+
+func Test_QueryData_AsyncQueryPanicReturnsPluginError(t *testing.T) {
+	ds := NewAsyncAWSDatasource(&fakeDriver{openDBfn: func() (AsyncDB, error) { return panickingStatusDB{}, nil }})
+	settings := backend.DataSourceInstanceSettings{UID: "uid1"}
+	_, err := ds.NewDatasource(context.Background(), settings)
+	require.NoError(t, err)
+
+	resp, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{
+		PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
+		Queries: []backend.DataQuery{
+			{RefID: "A", JSON: []byte(`{"meta": {"queryFlow": "async"}, "queryID": "q1", "rawSql": "SELECT 1"}`)},
+			{RefID: "B", JSON: []byte(`{"meta": {"queryFlow": "async"}, "rawSql": "SELECT 1"}`)},
+		},
+	})
+	require.NoError(t, err)
+	require.Error(t, resp.Responses["A"].Error)
+	assert.Contains(t, resp.Responses["A"].Error.Error(), "async query execution panic")
+	assert.Equal(t, backend.ErrorSourcePlugin, resp.Responses["A"].ErrorSource)
+	require.NoError(t, resp.Responses["B"].Error)
+	require.Len(t, resp.Responses["B"].Frames, 1)
+	assert.Equal(t, queryMeta{Status: "started"}, resp.Responses["B"].Frames[0].Meta.Custom)
 }
