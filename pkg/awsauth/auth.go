@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
@@ -49,7 +50,7 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 	}
 	logger.Debug("creating new config")
 
-	options := authSettings.BaseOptionsWithAuthSettings(ctx, grafanaAuthSettings)
+	options := authSettings.credentialOptions(grafanaAuthSettings)
 
 	logger.Debug(fmt.Sprintf("Using auth type: %s", authType))
 	switch authType {
@@ -74,8 +75,17 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 		return aws.Config{}, err
 	}
 
+	// The config above was loaded without the service endpoint so that STS calls made to
+	// resolve credentials don't go to it. Reload with the endpoint and the resolved
+	// credentials; setting them explicitly stops the SDK from building STS clients again.
 	if authSettings.AssumeRoleARN != "" {
 		options = append(authSettings.BaseOptionsWithAuthSettings(ctx, grafanaAuthSettings), authSettings.WithAssumeRole(cfg, rcp.client, grafanaAuthSettings.SessionDuration))
+		cfg, err = rcp.client.LoadDefaultConfig(ctx, options...)
+		if err != nil {
+			return aws.Config{}, err
+		}
+	} else if authSettings.hasServiceEndpoint() {
+		options = append(options, authSettings.WithEndpoint(), config.WithCredentialsProvider(cfg.Credentials))
 		cfg, err = rcp.client.LoadDefaultConfig(ctx, options...)
 		if err != nil {
 			return aws.Config{}, err
