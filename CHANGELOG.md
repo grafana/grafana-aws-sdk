@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.7
+
+- Bump Go to 1.26.9 and golang.org/x/net to v0.60.0 to address vulnerabilities [#498](https://github.com/grafana/grafana-aws-sdk/pull/498)
+- Dependency updates
+  - Update actions/setup-go action to v7 [#478](https://github.com/grafana/grafana-aws-sdk/pull/478)
+
 ## 1.5.6
 
 - Load SigV4 per-datasource Grafana Assume Role external ID fields from plugin jsonData in the SigV4 middleware [#495](https://github.com/grafana/grafana-aws-sdk/pull/495)
