@@ -3664,7 +3664,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/Athena":                         {"QueryState", "QueryType", "WorkGroup"},
 	"AWS/AutoScaling":                    {"AutoScalingGroupName", "PairIndex", "PolicyName"},
 	"AWS/Backup":                         {"BackupVaultName", "ResourceType"},
-	"AWS/Bedrock":                        {"BucketedStepSize", "ImageSize", "ModelId"},
+	"AWS/Bedrock":                        {"BucketedStepSize", "ContextWindow", "ImageSize", "ModelId"},
 	"AWS/Bedrock/Agents":                 {"AgentAliasArn", "ModelId", "Operation"},
 	"AWS/Bedrock-AgentCore":              {"AggregateOperation", "Category", "ComputeType", "ExceptionType", "Filter", "FlowType", "Method", "Mode", "Name", "Operation", "OperationName", "Policy", "PolicyEnforcementMode", "PolicyEngine", "Protocol", "ProviderName", "Resource", "ResourceId", "Service", "TargetResource", "TargetType", "TokenVault", "ToolName", "Type", "WorkloadIdentity", "WorkloadIdentityDirectory"},
 	"AWS/Bedrock/DataAutomation":         {"Operation"},
