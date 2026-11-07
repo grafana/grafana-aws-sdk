@@ -440,6 +440,14 @@ var NamespaceMetricsMap = map[string][]string{
 		"WorkloadAccessTokenFetchSuccess",
 		"WorkloadAccessTokenFetchThrottles",
 	},
+	"AWS/BedrockMantle": {
+		"InferenceClientErrors",
+		"Inferences",
+		"InputTokens",
+		"OutputTokens",
+		"TotalInputTokens",
+		"TotalOutputTokens",
+	},
 	"AWS/Billing": {
 		"EstimatedCharges",
 	},
@@ -3669,6 +3677,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/Bedrock-AgentCore":              {"AggregateOperation", "Category", "ComputeType", "ExceptionType", "Filter", "FlowType", "Method", "Mode", "Name", "Operation", "OperationName", "Policy", "PolicyEnforcementMode", "PolicyEngine", "Protocol", "ProviderName", "Resource", "ResourceId", "Service", "TargetResource", "TargetType", "TokenVault", "ToolName", "Type", "WorkloadIdentity", "WorkloadIdentityDirectory"},
 	"AWS/Bedrock/DataAutomation":         {"Operation"},
 	"AWS/Bedrock/Guardrails":             {"FindingType", "GuardrailArn", "GuardrailContentSource", "GuardrailPolicyType", "GuardrailVersion", "Operation", "PolicyArn", "PolicyVersion"},
+	"AWS/BedrockMantle":                  {"Model", "Project"},
 	"AWS/Billing":                        {"Currency", "LinkedAccount", "ServiceName"},
 	"AWS/CertificateManager":             {"CertificateArn"},
 	"AWS/Chatbot":                        {"ConfigurationName"},
