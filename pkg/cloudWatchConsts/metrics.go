@@ -370,6 +370,13 @@ var NamespaceMetricsMap = map[string][]string{
 		"TTFT",
 		"TotalTime",
 	},
+	"AWS/Bedrock/DataAutomation": {
+		"InvocationClientErrors",
+		"InvocationLatency",
+		"InvocationServerErrors",
+		"InvocationThrottleErrors",
+		"Invocations",
+	},
 	"AWS/Bedrock/Guardrails": {
 		"FindingCounts",
 		"InputTokenCount",
@@ -3640,6 +3647,7 @@ var NamespaceDimensionKeysMap = map[string][]string{
 	"AWS/Bedrock":                        {"BucketedStepSize", "ImageSize", "ModelId"},
 	"AWS/Bedrock/Agents":                 {"AgentAliasArn", "ModelId", "Operation"},
 	"AWS/Bedrock-AgentCore":              {"AggregateOperation", "ComputeType", "ExceptionType", "Method", "Mode", "Name", "Operation", "OperationName", "Policy", "PolicyEngine", "Protocol", "ProviderName", "Resource", "ResourceId", "Service", "TargetResource", "TargetType", "TokenVault", "ToolName", "Type", "WorkloadIdentity", "WorkloadIdentityDirectory"},
+	"AWS/Bedrock/DataAutomation":         {"Operation"},
 	"AWS/Bedrock/Guardrails":             {"FindingType", "GuardrailArn", "GuardrailContentSource", "GuardrailPolicyType", "GuardrailVersion", "Operation", "PolicyArn", "PolicyVersion"},
 	"AWS/Billing":                        {"Currency", "LinkedAccount", "ServiceName"},
 	"AWS/CertificateManager":             {"CertificateArn"},
