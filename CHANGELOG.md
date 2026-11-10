@@ -6,7 +6,13 @@ All notable changes to this project will be documented in this file.
 
 - Stop sending STS calls (Assume Role, web identity) to the custom service endpoint, which failed with a 404 when a datasource set both an Assume Role ARN and a custom endpoint [#375](https://github.com/grafana/grafana-aws-sdk/issues/375)
 - Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role
-- Bump Go to 1.26.10 to address standard library vulnerabilities [#494](https://github.com/grafana/grafana-aws-sdk/pull/494)
+
+## 1.5.7
+
+- Bump Go to 1.26.9 and golang.org/x/net to v0.60.0 to address vulnerabilities [#498](https://github.com/grafana/grafana-aws-sdk/pull/498)
+- Bump Go to 1.26.10 to address GO-2026-6809 in crypto/x509 [#502](https://github.com/grafana/grafana-aws-sdk/pull/502)
+- Dependency updates
+  - Update actions/setup-go action to v7 [#478](https://github.com/grafana/grafana-aws-sdk/pull/478)
 
 ## 1.5.6
 
