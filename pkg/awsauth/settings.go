@@ -77,8 +77,8 @@ type Settings struct {
 	// Endpoint overrides the endpoint of the service clients built from the
 	// returned config. It is not used for the STS calls that resolve credentials.
 	Endpoint string
-	// STSEndpoint overrides the STS endpoint used to assume AssumeRoleARN.
-	// Ignored for AuthTypeGrafanaAssumeRole.
+	// STSEndpoint overrides the STS endpoint used to assume AssumeRoleARN. It takes
+	// priority over AWS_ENDPOINT_URL_STS. Ignored for AuthTypeGrafanaAssumeRole.
 	STSEndpoint string
 	ExternalID  string
 	// GrafanaExternalID is the per-datasource external ID for
@@ -235,13 +235,21 @@ func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient
 }
 
 func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDuration *time.Duration) LoadOptionsFunc {
-	if common.IsOptInRegion(cfg.Region) {
+	if stsEndpoint := s.assumeRoleSTSEndpoint(); stsEndpoint != "" {
+		// The region is kept even for opt-in regions: a custom STS endpoint (e.g. a VPC
+		// endpoint) is regional and rejects requests signed for another region.
+		cfg.BaseEndpoint = aws.String(stsEndpoint)
+		// The STS client prefers an endpoint from ConfigSources over cfg.BaseEndpoint when
+		// AWS_ENDPOINT_URL_STS is set, so put it there too, first. That makes it win over the
+		// env var, the same way Endpoint wins over AWS_ENDPOINT_URL_<SERVICE>. FIPS is disabled
+		// because STS refuses a custom endpoint while FIPS is enabled, which a FIPS service
+		// endpoint turns on.
+		cfg.ConfigSources = append([]any{config.LoadOptions{
+			BaseEndpoint:    stsEndpoint,
+			UseFIPSEndpoint: aws.FIPSEndpointStateDisabled,
+		}}, cfg.ConfigSources...)
+	} else if common.IsOptInRegion(cfg.Region) {
 		cfg.Region = "us-east-1"
-	}
-	if s.STSEndpoint != "" && s.GetAuthType() != AuthTypeGrafanaAssumeRole {
-		cfg.BaseEndpoint = aws.String(withDefaultScheme(s.STSEndpoint))
-		// STS refuses a custom endpoint while FIPS is enabled, which a FIPS service endpoint turns on.
-		cfg.ConfigSources = append([]any{config.LoadOptions{UseFIPSEndpoint: aws.FIPSEndpointStateDisabled}}, cfg.ConfigSources...)
 	}
 	stsClient := client.NewSTSClientFromConfig(cfg)
 	provider := client.NewAssumeRoleProvider(stsClient, s.AssumeRoleARN, func(options *stscreds.AssumeRoleOptions) {
@@ -257,6 +265,17 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDur
 		options.Credentials = cache
 		return nil
 	}
+}
+
+// assumeRoleSTSEndpoint returns the STS endpoint to assume AssumeRoleARN with, or "" to
+// use the default one. STSEndpoint is ignored for Grafana Assume Role, so calls signed
+// with Grafana Cloud's source credentials can't be sent to a host the user picks.
+func (s Settings) assumeRoleSTSEndpoint() string {
+	ep := strings.TrimSpace(s.STSEndpoint)
+	if ep == "" || s.GetAuthType() == AuthTypeGrafanaAssumeRole {
+		return ""
+	}
+	return withDefaultScheme(ep)
 }
 
 // withDefaultScheme prefixes ep with https:// when it has no scheme, since the SDK

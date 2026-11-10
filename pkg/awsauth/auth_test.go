@@ -583,12 +583,18 @@ func TestGetAWSConfig_Endpoints(t *testing.T) {
 		}
 	}
 
+	inRegion := func(s Settings, region string) Settings {
+		s.Region = region
+		return s
+	}
+
 	tests := []struct {
 		name                string
 		settings            Settings
 		env                 map[string]string
 		wantSTSEndpoint     string // empty means the default STS endpoint
 		wantSTSFIPS         bool
+		wantSTSRegion       string // empty means settings.Region
 		wantServiceEndpoint string
 	}{
 		{
@@ -613,11 +619,37 @@ func TestGetAWSConfig_Endpoints(t *testing.T) {
 			wantSTSEndpoint: "https://sts.us-west-2.amazonaws.com",
 		},
 		{
+			name:            "sts endpoint is trimmed",
+			settings:        keys("", "  sts.us-west-2.amazonaws.com\n", roleARN),
+			wantSTSEndpoint: "https://sts.us-west-2.amazonaws.com",
+		},
+		{
+			name:     "blank sts endpoint uses the default",
+			settings: keys("", "  ", roleARN),
+		},
+		{
 			name:                "AWS_ENDPOINT_URL_STS is used for assume role",
 			settings:            keys(serviceEndpoint, "", roleARN),
 			env:                 map[string]string{"AWS_ENDPOINT_URL_STS": stsEndpoint},
 			wantSTSEndpoint:     stsEndpoint,
 			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:                "sts endpoint takes priority over AWS_ENDPOINT_URL_STS",
+			settings:            keys(serviceEndpoint, stsEndpoint, roleARN),
+			env:                 map[string]string{"AWS_ENDPOINT_URL_STS": "https://sts.from-env.example.com"},
+			wantSTSEndpoint:     stsEndpoint,
+			wantServiceEndpoint: serviceEndpoint,
+		},
+		{
+			name:          "opt-in region assumes role through us-east-1",
+			settings:      inRegion(keys("", "", roleARN), "ap-east-1"),
+			wantSTSRegion: "us-east-1",
+		},
+		{
+			name:            "opt-in region keeps its region with an sts endpoint",
+			settings:        inRegion(keys("", "https://vpce-123.sts.ap-east-1.vpce.amazonaws.com", roleARN), "ap-east-1"),
+			wantSTSEndpoint: "https://vpce-123.sts.ap-east-1.vpce.amazonaws.com",
 		},
 		{
 			name:        "fips service endpoint enables fips for assume role",
@@ -657,6 +689,11 @@ func TestGetAWSConfig_Endpoints(t *testing.T) {
 			stsOptions := sts.NewFromConfig(client.assumeRoleClient.stsConfig).Options()
 			assert.Equal(t, tc.wantSTSEndpoint, aws.ToString(stsOptions.BaseEndpoint))
 			assert.Equal(t, tc.wantSTSFIPS, stsOptions.EndpointOptions.UseFIPSEndpoint == aws.FIPSEndpointStateEnabled)
+			wantSTSRegion := tc.wantSTSRegion
+			if wantSTSRegion == "" {
+				wantSTSRegion = tc.settings.Region
+			}
+			assert.Equal(t, wantSTSRegion, stsOptions.Region)
 		})
 	}
 }
