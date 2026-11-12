@@ -74,8 +74,13 @@ type Settings struct {
 	CredentialsPath    string
 	CredentialsProfile string
 	AssumeRoleARN      string
-	Endpoint           string
-	ExternalID         string
+	// Endpoint overrides the endpoint of the service clients built from the
+	// returned config. It is not used for the STS calls that resolve credentials.
+	Endpoint string
+	// STSEndpoint overrides the STS endpoint used to assume AssumeRoleARN. It takes
+	// priority over AWS_ENDPOINT_URL_STS. Ignored for AuthTypeGrafanaAssumeRole.
+	STSEndpoint string
+	ExternalID  string
 	// GrafanaExternalID is the per-datasource external ID for
 	// AuthTypeGrafanaAssumeRole. Used only when UsePerDatasourceExternalID is true.
 	GrafanaExternalID string
@@ -97,26 +102,33 @@ func (s Settings) Hash() uint64 {
 	// change the datasource instance will be recycled. However, to ensure no leakage
 	// of credentials between instances, we check everything except proxy options.
 	// If those change the datasource will definitely not be reused.
-	_, _ = h.Write([]byte(s.GetAuthType()))
-	_, _ = h.Write([]byte(s.AccessKey))
-	_, _ = h.Write([]byte(s.SecretKey))
-	_, _ = h.Write([]byte(s.Region))
-	_, _ = h.Write([]byte(s.CredentialsPath))
-	_, _ = h.Write([]byte(s.CredentialsProfile))
-	_, _ = h.Write([]byte(s.AssumeRoleARN))
-	_, _ = h.Write([]byte(s.Endpoint))
-	_, _ = h.Write([]byte(s.ExternalID))
-	_, _ = h.Write([]byte(s.GrafanaExternalID))
+	// Terminate each field so that moving a value between adjacent fields
+	// (e.g. Endpoint and STSEndpoint) changes the hash.
+	write := func(v string) {
+		_, _ = h.Write([]byte(v))
+		_, _ = h.Write([]byte{0})
+	}
+	write(string(s.GetAuthType()))
+	write(s.AccessKey)
+	write(s.SecretKey)
+	write(s.Region)
+	write(s.CredentialsPath)
+	write(s.CredentialsProfile)
+	write(s.AssumeRoleARN)
+	write(s.Endpoint)
+	write(s.STSEndpoint)
+	write(s.ExternalID)
+	write(s.GrafanaExternalID)
 	if s.UsePerDatasourceExternalID != nil && *s.UsePerDatasourceExternalID {
 		_, _ = h.Write([]byte{1})
 	} else {
 		_, _ = h.Write([]byte{0})
 	}
 	if s.PerDatasourceProxySettings != nil {
-		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyType))
-		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUrl))
-		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyUsername))
-		_, _ = h.Write([]byte(s.PerDatasourceProxySettings.ProxyPassword))
+		write(string(s.PerDatasourceProxySettings.ProxyType))
+		write(s.PerDatasourceProxySettings.ProxyUrl)
+		write(s.PerDatasourceProxySettings.ProxyUsername)
+		write(s.PerDatasourceProxySettings.ProxyPassword)
 	}
 	return h.Sum64()
 }
@@ -136,6 +148,14 @@ func (s Settings) BaseOptionsWithAuthSettings(ctx context.Context, authSettings 
 	return []LoadOptionsFunc{s.WithRegion(), s.WithEndpoint(), s.WithHTTPClientFromAuthSettings(authSettings), s.WithUserAgent()}
 }
 
+// credentialOptions is BaseOptionsWithAuthSettings without the service endpoint.
+// LoadOptions.BaseEndpoint applies to every client built from the config, including
+// the STS clients used to resolve credentials (AssumeRole, web identity, SSO), so
+// the service endpoint must stay out of any config those clients are built from.
+func (s Settings) credentialOptions(authSettings *awsds.AuthSettings) []LoadOptionsFunc {
+	return []LoadOptionsFunc{s.WithRegion(), s.withFIPS(), s.WithHTTPClientFromAuthSettings(authSettings), s.WithUserAgent()}
+}
+
 func (s Settings) WithRegion() LoadOptionsFunc {
 	return func(opts *config.LoadOptions) error {
 		if s.Region != "" && s.Region != "default" {
@@ -146,21 +166,31 @@ func (s Settings) WithRegion() LoadOptionsFunc {
 }
 
 func (s Settings) WithEndpoint() LoadOptionsFunc {
-	useFips := false
-	if strings.Contains(s.Endpoint, "-fips.") {
-		// TODO: add fips support as an toggle option
-		s.Endpoint = ""
-		useFips = true
-	}
+	withFIPS := s.withFIPS()
 	return func(options *config.LoadOptions) error {
-		if s.Endpoint != "" && s.Endpoint != "default" && !isStsEndpoint(&s.Endpoint) {
+		if s.hasServiceEndpoint() {
 			options.BaseEndpoint = s.Endpoint
 		}
-		if useFips {
+		return withFIPS(options)
+	}
+}
+
+func (s Settings) withFIPS() LoadOptionsFunc {
+	return func(options *config.LoadOptions) error {
+		if isFIPSEndpoint(s.Endpoint) {
 			options.UseFIPSEndpoint = aws.FIPSEndpointStateEnabled
 		}
 		return nil
 	}
+}
+
+func isFIPSEndpoint(ep string) bool {
+	// TODO: add fips support as an toggle option
+	return strings.Contains(ep, "-fips.")
+}
+
+func (s Settings) hasServiceEndpoint() bool {
+	return s.Endpoint != "" && s.Endpoint != "default" && !isFIPSEndpoint(s.Endpoint) && !isStsEndpoint(&s.Endpoint)
 }
 
 func (s Settings) WithStaticCredentials(client AWSAPIClient) LoadOptionsFunc {
@@ -205,7 +235,20 @@ func (s Settings) WithGrafanaAssumeRole(ctx context.Context, client AWSAPIClient
 }
 
 func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDuration *time.Duration) LoadOptionsFunc {
-	if common.IsOptInRegion(cfg.Region) {
+	if stsEndpoint := s.assumeRoleSTSEndpoint(); stsEndpoint != "" {
+		// The region is kept even for opt-in regions: a custom STS endpoint (e.g. a VPC
+		// endpoint) is regional and rejects requests signed for another region.
+		cfg.BaseEndpoint = aws.String(stsEndpoint)
+		// The STS client prefers an endpoint from ConfigSources over cfg.BaseEndpoint when
+		// AWS_ENDPOINT_URL_STS is set, so put it there too, first. That makes it win over the
+		// env var, the same way Endpoint wins over AWS_ENDPOINT_URL_<SERVICE>. FIPS is disabled
+		// because STS refuses a custom endpoint while FIPS is enabled, which a FIPS service
+		// endpoint turns on.
+		cfg.ConfigSources = append([]any{config.LoadOptions{
+			BaseEndpoint:    stsEndpoint,
+			UseFIPSEndpoint: aws.FIPSEndpointStateDisabled,
+		}}, cfg.ConfigSources...)
+	} else if common.IsOptInRegion(cfg.Region) {
 		cfg.Region = "us-east-1"
 	}
 	stsClient := client.NewSTSClientFromConfig(cfg)
@@ -222,6 +265,26 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDur
 		options.Credentials = cache
 		return nil
 	}
+}
+
+// assumeRoleSTSEndpoint returns the STS endpoint to assume AssumeRoleARN with, or "" to
+// use the default one. STSEndpoint is ignored for Grafana Assume Role, so calls signed
+// with Grafana Cloud's source credentials can't be sent to a host the user picks.
+func (s Settings) assumeRoleSTSEndpoint() string {
+	ep := strings.TrimSpace(s.STSEndpoint)
+	if ep == "" || s.GetAuthType() == AuthTypeGrafanaAssumeRole {
+		return ""
+	}
+	return withDefaultScheme(ep)
+}
+
+// withDefaultScheme prefixes ep with https:// when it has no scheme, since the SDK
+// rejects a bare host as an endpoint.
+func withDefaultScheme(ep string) string {
+	if strings.Contains(ep, "://") {
+		return ep
+	}
+	return "https://" + ep
 }
 
 func (s Settings) WithEC2RoleCredentials(client AWSAPIClient) LoadOptionsFunc {
