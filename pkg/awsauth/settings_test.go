@@ -44,3 +44,14 @@ func TestGetProxyUrl(t *testing.T) {
 		})
 	}
 }
+
+func TestSettingsHashIncludesEndpoints(t *testing.T) {
+	base := Settings{AuthType: AuthTypeKeys, Region: "us-west-2", AssumeRoleARN: "arn:aws:iam::1234567890:role/r"}
+	withSTS := base
+	withSTS.STSEndpoint = "https://sts.us-west-2.amazonaws.com"
+	withService := base
+	withService.Endpoint = "https://sts.us-west-2.amazonaws.com"
+
+	assert.NotEqual(t, base.Hash(), withSTS.Hash())
+	assert.NotEqual(t, withSTS.Hash(), withService.Hash())
+}
