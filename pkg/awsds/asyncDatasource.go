@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sync"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -127,11 +128,24 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 	for _, q := range req.Queries {
 		wg.Add(1)
 		go func(query backend.DataQuery) {
+			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					errorMsg := fmt.Sprintf("async query execution panic: %v", r)
+					backend.Logger.Error(errorMsg, "panic", r, "refID", query.RefID, "queryType", query.QueryType)
+					backend.Logger.Debug("Panic stack trace", "stack", string(debug.Stack()))
+					response.Set(query.RefID, backend.DataResponse{
+						Error:       backend.PluginError(errors.New(errorMsg)),
+						ErrorSource: backend.ErrorSourcePlugin,
+					})
+				}
+			}()
+
 			var frames data.Frames
 			var err error
 			frames, err = ds.handleAsyncQuery(ctx, query, req.PluginContext.DataSourceInstanceSettings.UID)
 			if err != nil {
-				errorResponse := backend.ErrorResponseWithErrorSource(err)
+				errorResponse := backend.DataResponse{Error: err, ErrorSource: sqlds.ErrorSource(err)}
 				var qeError *QueryExecutionError
 				// checking if we know the cause of downstream error
 				if errors.As(err, &qeError) {
@@ -148,8 +162,6 @@ func (ds *AsyncAWSDatasource) QueryData(ctx context.Context, req *backend.QueryD
 			} else {
 				response.Set(query.RefID, backend.DataResponse{Frames: frames})
 			}
-
-			wg.Done()
 		}(q)
 	}
 

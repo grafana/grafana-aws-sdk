@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+- Report async query errors as downstream when sqlds wraps a downstream error in a plugin error, the same as the sync path [#496](https://github.com/grafana/grafana-aws-sdk/pull/496)
 - Stop sending STS calls (Assume Role, web identity) to the custom service endpoint, which failed with a 404 when a datasource set both an Assume Role ARN and a custom endpoint [#375](https://github.com/grafana/grafana-aws-sdk/issues/375)
+- Bump Go to 1.26.11 to address GO-2026-6859 in net/http [#508](https://github.com/grafana/grafana-aws-sdk/pull/508)
 - Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role [#494](https://github.com/grafana/grafana-aws-sdk/pull/494)
+- Recover from panics in async query goroutines, so a panic fails only that query and does not stop the plugin process [#497](https://github.com/grafana/grafana-aws-sdk/pull/497)
 
 ## 1.5.7
 
