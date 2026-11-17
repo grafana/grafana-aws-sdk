@@ -2,6 +2,8 @@ package awsauth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"hash/fnv"
 	"net/http"
@@ -87,10 +89,25 @@ type Settings struct {
 	// UsePerDatasourceExternalID selects per-datasource vs stack external ID.
 	// Nil/false → stack (legacy). True → use GrafanaExternalID when set.
 	UsePerDatasourceExternalID *bool
-	UserAgent                  string
-	SessionToken               string
-	HTTPClient                 *http.Client
-	ProxyOptions               *proxy.Options
+	// SourceIdentityFromUser, when true, sets the STS SourceIdentity of the assumed
+	// role session to the Grafana user making the request, so that AWS-side logs such
+	// as CloudTrail can attribute API calls to a person instead of a shared role.
+	// It only applies when AssumeRoleARN is set. The role's trust policy must allow
+	// sts:SetSourceIdentity. When the request has no user (for example alerting or
+	// other backend-initiated queries) no SourceIdentity is set and the role is assumed
+	// as before, so to enforce attribution add a trust policy condition that requires
+	// sts:SourceIdentity to be present. It only takes effect where the plugin copies it
+	// into Settings (it is not read for SigV4 requests). Each distinct user adds one
+	// cached config for the life of the provider.
+	SourceIdentityFromUser bool
+	// SourceIdentity is the resolved identity for this request. It is filled in by
+	// the config provider from the request context when SourceIdentityFromUser is
+	// true; callers should not set it directly.
+	SourceIdentity string
+	UserAgent      string
+	SessionToken   string
+	HTTPClient     *http.Client
+	ProxyOptions   *proxy.Options
 
 	PerDatasourceProxySettings *PerDatasourceProxySettings
 }
@@ -124,6 +141,8 @@ func (s Settings) Hash() uint64 {
 	} else {
 		_, _ = h.Write([]byte{0})
 	}
+	// Sessions with different identities must never share cached credentials.
+	write(s.SourceIdentity)
 	if s.PerDatasourceProxySettings != nil {
 		write(string(s.PerDatasourceProxySettings.ProxyType))
 		write(s.PerDatasourceProxySettings.ProxyUrl)
@@ -259,7 +278,13 @@ func (s Settings) WithAssumeRole(cfg aws.Config, client AWSAPIClient, sessionDur
 		if sessionDuration != nil {
 			options.Duration = *sessionDuration
 		}
+		if s.SourceIdentity != "" {
+			options.SourceIdentity = aws.String(s.SourceIdentity)
+		}
 	})
+	if s.SourceIdentity != "" {
+		provider = sourceIdentityHintProvider{inner: provider}
+	}
 	cache := client.NewCredentialsCache(provider)
 	return func(options *config.LoadOptions) error {
 		options.Credentials = cache
@@ -393,4 +418,72 @@ func (s Settings) WithUserAgent() LoadOptionsFunc {
 		options.APIOptions = append(options.APIOptions, apiOpts...)
 		return nil
 	}
+}
+
+const (
+	minSourceIdentityLength = 2
+	maxSourceIdentityLength = 64
+)
+
+// SourceIdentityFromUser derives an STS SourceIdentity from the Grafana user in ctx.
+// It prefers the login and falls back to the email. STS only accepts letters, digits
+// and _+=,.@- (2 to 64 characters). An identity that is already valid is used as is.
+// Otherwise unsupported characters are replaced with "_" and, because that mapping (and
+// truncation to 64 characters) is lossy, a short hash of the original is appended so two
+// different users never end up with the same identity. It returns "" when there is no
+// usable user.
+func SourceIdentityFromUser(ctx context.Context) string {
+	user := backend.UserFromContext(ctx)
+	if user == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(user.Login)
+	if raw == "" {
+		raw = strings.TrimSpace(user.Email)
+	}
+	if len(raw) < minSourceIdentityLength {
+		return ""
+	}
+	var b strings.Builder
+	changed := false
+	for _, r := range raw {
+		if isSourceIdentityRune(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+			changed = true
+		}
+	}
+	out := b.String()
+	if !changed && len(out) <= maxSourceIdentityLength {
+		return out
+	}
+	sum := sha256.Sum256([]byte(raw))
+	suffix := "-" + hex.EncodeToString(sum[:4])
+	if len(out) > maxSourceIdentityLength-len(suffix) {
+		out = out[:maxSourceIdentityLength-len(suffix)]
+	}
+	return out + suffix
+}
+
+func isSourceIdentityRune(r rune) bool {
+	switch {
+	case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		return true
+	}
+	return strings.ContainsRune("_+=,.@-", r)
+}
+
+// sourceIdentityHintProvider adds a hint to credential errors when a SourceIdentity
+// was requested, because the most likely cause is a trust policy that does not allow it.
+type sourceIdentityHintProvider struct {
+	inner aws.CredentialsProvider
+}
+
+func (p sourceIdentityHintProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
+	creds, err := p.inner.Retrieve(ctx)
+	if err != nil {
+		return creds, fmt.Errorf("%w (a SourceIdentity was set for this session; the role's trust policy must allow sts:SetSourceIdentity)", err)
+	}
+	return creds, nil
 }
