@@ -45,6 +45,19 @@ func TestReadAuthSettingsFromContext(t *testing.T) {
 			expectedHasSettings: false,
 		},
 		{
+			name: "only session duration in config",
+			cfg: config.NewGrafanaCfg(map[string]string{
+				SessionDurationEnvVarKeyName: "10m",
+			}),
+			expectedSettings: func() *AuthSettings {
+				settings := defaultAuthSettings()
+				d := 10 * time.Minute
+				settings.SessionDuration = &d
+				return settings
+			}(),
+			expectedHasSettings: true,
+		},
+		{
 			name: "aws settings in config",
 			cfg: config.NewGrafanaCfg(map[string]string{
 				AllowedAuthProvidersEnvVarKeyName:   "foo , bar,baz",
