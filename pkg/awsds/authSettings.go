@@ -112,6 +112,7 @@ func ReadAuthSettingsFromContext(ctx context.Context) (*AuthSettings, bool) {
 		} else {
 			backend.Logger.Error("could not parse env variable", "var", SessionDurationEnvVarKeyName)
 		}
+		hasSettings = true
 	}
 
 	if v := cfg.Get(ListMetricsPageLimitKeyName); v != "" {
