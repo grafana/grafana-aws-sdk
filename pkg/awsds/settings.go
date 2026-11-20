@@ -106,6 +106,12 @@ type AWSDatasourceSettings struct {
 	// for Grafana Assume Role. Nil/false → stack (legacy). True → use
 	// GrafanaExternalID when set.
 	UsePerDatasourceExternalID *bool `json:"usePerDatasourceExternalId,omitempty"`
+	// SourceIdentityFromUser sets the STS SourceIdentity of the assumed role
+	// session to the Grafana user making the request, so that AWS logs such as
+	// CloudTrail can attribute calls to a person. Requires AssumeRoleARN and
+	// sts:SetSourceIdentity in the role's trust policy. Plugins must copy it into
+	// awsauth.Settings.SourceIdentityFromUser; it has no effect on its own.
+	SourceIdentityFromUser bool `json:"sourceIdentityFromUser,omitempty"`
 
 	// Override the client endpoint
 	Endpoint string `json:"endpoint"`

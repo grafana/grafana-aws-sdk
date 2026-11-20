@@ -42,6 +42,16 @@ func (rcp *awsConfigProvider) GetConfig(ctx context.Context, authSettings Settin
 		return aws.Config{}, backend.DownstreamErrorf("trying to use assume role but it is disabled in grafana config")
 	}
 
+	// Resolve the per-user identity before hashing so every user gets their own
+	// cached config and credentials.
+	authSettings.SourceIdentity = ""
+	if authSettings.SourceIdentityFromUser && authSettings.AssumeRoleARN != "" {
+		authSettings.SourceIdentity = SourceIdentityFromUser(ctx)
+		if authSettings.SourceIdentity == "" {
+			logger.Debug("source identity from user is enabled but the request has no usable user")
+		}
+	}
+
 	key := authSettings.Hash()
 	cached, exists := rcp.cache.Load(key)
 	if exists {
