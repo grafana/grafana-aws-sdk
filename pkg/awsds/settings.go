@@ -109,6 +109,8 @@ type AWSDatasourceSettings struct {
 
 	// Override the client endpoint
 	Endpoint string `json:"endpoint"`
+	// Override the STS endpoint used for AssumeRole calls
+	STSEndpoint string `json:"stsEndpoint,omitempty"`
 
 	//go:deprecated Use Region instead
 	DefaultRegion string `json:"defaultRegion"`
