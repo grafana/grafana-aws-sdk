@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Bump Go to 1.26.11 to address GO-2026-6859 in net/http [#508](https://github.com/grafana/grafana-aws-sdk/pull/508)
 - Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role [#494](https://github.com/grafana/grafana-aws-sdk/pull/494)
 - Recover from panics in async query goroutines, so a panic fails only that query and does not stop the plugin process [#497](https://github.com/grafana/grafana-aws-sdk/pull/497)
+- Close cached async query connections when a data source instance is replaced, and close connections opened for query connection arguments after 5 minutes without use
 
 ## 1.5.7
 

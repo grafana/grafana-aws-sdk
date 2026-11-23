@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
@@ -28,30 +29,83 @@ func keyWithConnectionArgs(datasourceUID string, connArgs json.RawMessage) strin
 	return fmt.Sprintf("%s-%s", datasourceUID, string(connArgs))
 }
 
+const asyncDBIdleTimeout = 5 * time.Minute
+
 type dbConnection struct {
 	db       AsyncDB
 	settings backend.DataSourceInstanceSettings
+	lastUsed time.Time
 }
 
 type AsyncAWSDatasource struct {
 	*sqlds.SQLDatasource
 
-	dbConnections         sync.Map
+	// connMu guards dbConnections and disposed.
+	connMu                sync.Mutex
+	dbConnections         map[string]dbConnection
+	disposed              bool
 	asyncDBMu             sync.Mutex
 	driver                AsyncDriver
 	sqldsQueryDataHandler backend.QueryDataHandlerFunc
 }
 
 func (ds *AsyncAWSDatasource) getDBConnection(key string) (dbConnection, bool) {
-	conn, ok := ds.dbConnections.Load(key)
-	if !ok {
-		return dbConnection{}, false
+	ds.connMu.Lock()
+	defer ds.connMu.Unlock()
+	conn, ok := ds.dbConnections[key]
+	if ok {
+		conn.lastUsed = time.Now()
+		ds.dbConnections[key] = conn
 	}
-	return conn.(dbConnection), true
+	return conn, ok
 }
 
-func (ds *AsyncAWSDatasource) storeDBConnection(key string, dbConn dbConnection) {
-	ds.dbConnections.Store(key, dbConn)
+// After Dispose nothing would close a cached AsyncDB, so storeDBConnection closes it when ctx is done instead.
+func (ds *AsyncAWSDatasource) storeDBConnection(ctx context.Context, key string, dbConn dbConnection) {
+	ds.connMu.Lock()
+	defer ds.connMu.Unlock()
+	if ds.disposed {
+		if dbConn.db != nil {
+			context.AfterFunc(ctx, func() { _ = dbConn.db.Close() })
+		}
+		return
+	}
+	if ds.dbConnections == nil {
+		ds.dbConnections = make(map[string]dbConnection)
+	}
+	dbConn.lastUsed = time.Now()
+	ds.dbConnections[key] = dbConn
+}
+
+func (ds *AsyncAWSDatasource) closeIdleDBConnections(keep string) {
+	var idle []AsyncDB
+	ds.connMu.Lock()
+	for key, conn := range ds.dbConnections {
+		if key != keep && time.Since(conn.lastUsed) > asyncDBIdleTimeout {
+			idle = append(idle, conn.db)
+			delete(ds.dbConnections, key)
+		}
+	}
+	ds.connMu.Unlock()
+	for _, db := range idle {
+		_ = db.Close()
+	}
+}
+
+// Dispose closes every cached AsyncDB, then disposes the embedded SQLDatasource.
+func (ds *AsyncAWSDatasource) Dispose() {
+	ds.connMu.Lock()
+	ds.disposed = true
+	conns := ds.dbConnections
+	ds.dbConnections = nil
+	ds.connMu.Unlock()
+
+	for _, conn := range conns {
+		if conn.db != nil {
+			_ = conn.db.Close()
+		}
+	}
+	ds.SQLDatasource.Dispose()
 }
 
 func getDatasourceUID(settings backend.DataSourceInstanceSettings) string {
@@ -93,9 +147,9 @@ func (ds *AsyncAWSDatasource) NewDatasource(ctx context.Context, settings backen
 	db, err := ds.driver.GetAsyncDB(ctx, settings, nil)
 	if err != nil {
 		backend.Logger.Debug("async DB not ready at init; deferring connect", "error", err)
-		ds.storeDBConnection(key, dbConnection{db: nil, settings: settings})
+		ds.storeDBConnection(ctx, key, dbConnection{db: nil, settings: settings})
 	} else {
-		ds.storeDBConnection(key, dbConnection{db: db, settings: settings})
+		ds.storeDBConnection(ctx, key, dbConnection{db: db, settings: settings})
 	}
 
 	// initialize the wrapped ds.SQLDatasource
@@ -224,7 +278,7 @@ func (ds *AsyncAWSDatasource) ensureDefaultAsyncDB(ctx context.Context, key stri
 		return dbConnection{}, err
 	}
 	dbConn = dbConnection{db: db, settings: dbConn.settings}
-	ds.storeDBConnection(key, dbConn)
+	ds.storeDBConnection(ctx, key, dbConn)
 	return dbConn, nil
 }
 
@@ -238,6 +292,7 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQ
 	if err != nil {
 		return nil, err
 	}
+	ds.closeIdleDBConnections(key)
 
 	if !ds.EnableMultipleConnections || len(q.ConnectionArgs) == 0 {
 		return dbConn.db, nil
@@ -248,13 +303,18 @@ func (ds *AsyncAWSDatasource) getAsyncDBFromQuery(ctx context.Context, q *AsyncQ
 		return cachedConn.db, nil
 	}
 
+	ds.asyncDBMu.Lock()
+	defer ds.asyncDBMu.Unlock()
+	if cachedConn, ok := ds.getDBConnection(key); ok {
+		return cachedConn.db, nil
+	}
+
 	db, err := ds.driver.GetAsyncDB(ctx, dbConn.settings, q.ConnectionArgs)
 	if err != nil {
 		return nil, err
 	}
-	dbConn = dbConnection{db: db, settings: dbConn.settings}
-	ds.storeDBConnection(key, dbConn)
-	return dbConn.db, nil
+	ds.storeDBConnection(ctx, key, dbConnection{db: db, settings: dbConn.settings})
+	return db, nil
 }
 
 type queryMeta struct {

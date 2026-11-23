@@ -7,14 +7,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/sqlds/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -192,12 +195,12 @@ func Test_getDBConnectionFromQuery(t *testing.T) {
 			settings := backend.DataSourceInstanceSettings{UID: tt.dsUID}
 			key := defaultKey(tt.dsUID)
 			// Add the mandatory default db
-			ds.storeDBConnection(key, dbConnection{db, settings})
+			ds.storeDBConnection(context.Background(), key, dbConnection{db: db, settings: settings})
 			if tt.args != "" {
 				key = keyWithConnectionArgs(tt.dsUID, []byte(tt.args))
 			}
 			if tt.existingDB != nil {
-				ds.storeDBConnection(key, dbConnection{tt.existingDB, settings})
+				ds.storeDBConnection(context.Background(), key, dbConnection{db: tt.existingDB, settings: settings})
 			}
 
 			dbConn, err := ds.getAsyncDBFromQuery(context.Background(), &AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(tt.args)}}, tt.dsUID)
@@ -276,7 +279,7 @@ func Test_Async_QueryData_error_source(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			ds := NewAsyncAWSDatasource(&fakeDriver{openDBfn: func() (AsyncDB, error) { return nil, tt.err }})
 			settings := backend.DataSourceInstanceSettings{UID: "uid1"}
-			ds.storeDBConnection(defaultKey(settings.UID), dbConnection{settings: settings})
+			ds.storeDBConnection(context.Background(), defaultKey(settings.UID), dbConnection{settings: settings})
 
 			resp, err := ds.QueryData(context.Background(), &backend.QueryDataRequest{
 				PluginContext: backend.PluginContext{DataSourceInstanceSettings: &settings},
@@ -360,11 +363,11 @@ func Test_AsyncDatasource_CheckHealth(t *testing.T) {
 			db := new(MockDB)
 			db.On("Ping", context.Background()).Return(tt.mockPingResponse)
 			dbC := dbConnection{
-				db,
-				backend.DataSourceInstanceSettings{UID: "uid1"},
+				db:       db,
+				settings: backend.DataSourceInstanceSettings{UID: "uid1"},
 			}
-			ds := &AsyncAWSDatasource{dbConnections: sync.Map{}}
-			ds.dbConnections.Store(defaultKey("uid1"), dbC)
+			ds := &AsyncAWSDatasource{}
+			ds.storeDBConnection(context.Background(), defaultKey("uid1"), dbC)
 
 			result, err := ds.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 				PluginContext: backend.PluginContext{
@@ -530,4 +533,206 @@ func Test_QueryData_AsyncQueryPanicReturnsPluginError(t *testing.T) {
 	require.NoError(t, resp.Responses["B"].Error)
 	require.Len(t, resp.Responses["B"].Frames, 1)
 	assert.Equal(t, queryMeta{Status: "started"}, resp.Responses["B"].Frames[0].Meta.Custom)
+}
+
+type trackedAsyncDB struct {
+	fakeAsyncDB
+	closed atomic.Bool
+}
+
+func (db *trackedAsyncDB) Close() error {
+	db.closed.Store(true)
+	return nil
+}
+
+type closableConnector struct{ closed atomic.Bool }
+
+func (c *closableConnector) Connect(context.Context) (driver.Conn, error) {
+	return nil, errors.New("not implemented")
+}
+func (c *closableConnector) Driver() driver.Driver { return nil }
+func (c *closableConnector) Close() error {
+	c.closed.Store(true)
+	return nil
+}
+
+type recordingDriver struct {
+	fakeDriver
+	sqlConnector closableConnector
+	argsGate     chan struct{}
+
+	mu           sync.Mutex
+	openedByArgs map[string][]*trackedAsyncDB
+}
+
+func (d *recordingDriver) GetAsyncDB(_ context.Context, _ backend.DataSourceInstanceSettings, args json.RawMessage) (AsyncDB, error) {
+	db := &trackedAsyncDB{}
+	d.mu.Lock()
+	d.openedByArgs[string(args)] = append(d.openedByArgs[string(args)], db)
+	d.mu.Unlock()
+	if len(args) > 0 && d.argsGate != nil {
+		<-d.argsGate
+	}
+	return db, nil
+}
+
+func (d *recordingDriver) Connect(context.Context, backend.DataSourceInstanceSettings, json.RawMessage) (*sql.DB, error) {
+	return sql.OpenDB(&d.sqlConnector), nil
+}
+
+func (d *recordingDriver) openedFor(args string) []*trackedAsyncDB {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return slices.Clone(d.openedByArgs[args])
+}
+
+const (
+	argsA = `{"region":"a"}`
+	argsB = `{"region":"b"}`
+)
+
+func newRecordingDatasource(t *testing.T) (*AsyncAWSDatasource, *recordingDriver) {
+	t.Helper()
+	drv := &recordingDriver{openedByArgs: map[string][]*trackedAsyncDB{}}
+	ds := NewAsyncAWSDatasource(drv)
+	ds.EnableMultipleConnections = true
+	_, err := ds.NewDatasource(context.Background(), backend.DataSourceInstanceSettings{UID: "uid1"})
+	require.NoError(t, err)
+	return ds, drv
+}
+
+func queryWithArgs(connArgs string) *AsyncQuery {
+	return &AsyncQuery{Query: sqlutil.Query{ConnectionArgs: json.RawMessage(connArgs)}}
+}
+
+func lookupAsyncDB(t *testing.T, ds *AsyncAWSDatasource, connArgs string) AsyncDB {
+	t.Helper()
+	db, err := ds.getAsyncDBFromQuery(context.Background(), queryWithArgs(connArgs), "uid1")
+	require.NoError(t, err)
+	return db
+}
+
+func TestDispose_ClosesEveryAsyncDBAndTheSQLDatasource(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		drv := &recordingDriver{openedByArgs: map[string][]*trackedAsyncDB{}}
+		ds := NewAsyncAWSDatasource(drv)
+		ds.EnableMultipleConnections = true
+		inst, err := ds.NewDatasource(context.Background(), backend.DataSourceInstanceSettings{UID: "uid1"})
+		require.NoError(t, err)
+		lookupAsyncDB(t, ds, argsA)
+		lookupAsyncDB(t, ds, argsB)
+
+		disposer, ok := inst.(instancemgmt.InstanceDisposer)
+		require.True(t, ok)
+		disposer.Dispose()
+
+		for _, args := range []string{"", argsA, argsB} {
+			opened := drv.openedFor(args)
+			require.Len(t, opened, 1, args)
+			assert.True(t, opened[0].closed.Load(), "AsyncDB for %q must be closed", args)
+		}
+		assert.True(t, drv.sqlConnector.closed.Load(), "the sqlds connection must be closed")
+	})
+}
+
+func TestGetAsyncDBFromQuery_ClosesAsyncDBIdlePastTimeout(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ds, drv := newRecordingDatasource(t)
+		lookupAsyncDB(t, ds, argsA)
+
+		time.Sleep(5*time.Minute + time.Second)
+		lookupAsyncDB(t, ds, argsB)
+
+		assert.True(t, drv.openedFor(argsA)[0].closed.Load(), "idle AsyncDB must be closed")
+		_, ok := ds.getDBConnection(keyWithConnectionArgs("uid1", json.RawMessage(argsA)))
+		assert.False(t, ok, "idle AsyncDB must be removed")
+		assert.False(t, drv.openedFor("")[0].closed.Load(), "the default AsyncDB is never evicted")
+
+		lookupAsyncDB(t, ds, argsA)
+		assert.Len(t, drv.openedFor(argsA), 2, "a lookup after eviction opens a new AsyncDB")
+		ds.Dispose()
+	})
+}
+
+func TestGetAsyncDBFromQuery_KeepsAsyncDBUsedWithinIdleTimeout(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ds, drv := newRecordingDatasource(t)
+		first := lookupAsyncDB(t, ds, argsA)
+
+		time.Sleep(4 * time.Minute)
+		lookupAsyncDB(t, ds, argsA)
+		time.Sleep(4 * time.Minute)
+		lookupAsyncDB(t, ds, argsB)
+
+		assert.Same(t, first, lookupAsyncDB(t, ds, argsA))
+		assert.False(t, drv.openedFor(argsA)[0].closed.Load())
+		assert.Len(t, drv.openedFor(argsA), 1)
+		ds.Dispose()
+	})
+}
+
+func TestGetAsyncDBFromQuery_ConcurrentFirstLookupsOpenOneAsyncDB(t *testing.T) {
+	const workers = 16
+	ds, drv := newRecordingDatasource(t)
+	t.Cleanup(ds.Dispose)
+	drv.argsGate = make(chan struct{})
+
+	dbs := make([]AsyncDB, workers)
+	errs := make([]error, workers)
+	var wg sync.WaitGroup
+	for i := range workers {
+		wg.Go(func() {
+			dbs[i], errs[i] = ds.getAsyncDBFromQuery(context.Background(), queryWithArgs(argsA), "uid1")
+		})
+	}
+	// Workers waiting on a sync.Mutex are not durably blocked, so synctest cannot tell when all have arrived.
+	deadline := time.Now().Add(100 * time.Millisecond)
+	for len(drv.openedFor(argsA)) < workers && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	close(drv.argsGate)
+	wg.Wait()
+
+	assert.Len(t, drv.openedFor(argsA), 1)
+	for i := range workers {
+		require.NoError(t, errs[i])
+		assert.Same(t, dbs[0], dbs[i])
+	}
+}
+
+func TestGetAsyncDBFromQuery_ClosesAsyncDBOpenedDuringDispose(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ds, drv := newRecordingDatasource(t)
+		drv.argsGate = make(chan struct{})
+		ctx, cancel := context.WithCancel(context.Background())
+		result := make(chan AsyncDB)
+		go func() {
+			db, _ := ds.getAsyncDBFromQuery(ctx, queryWithArgs(argsA), "uid1")
+			result <- db
+		}()
+
+		synctest.Wait()
+		ds.Dispose()
+		close(drv.argsGate)
+		db := <-result
+
+		require.NotNil(t, db)
+		assert.False(t, drv.openedFor(argsA)[0].closed.Load(), "the request that opened it can still use it")
+		cancel()
+		synctest.Wait()
+		assert.True(t, drv.openedFor(argsA)[0].closed.Load(), "AsyncDB must be closed when its request ends")
+		_, ok := ds.getDBConnection(keyWithConnectionArgs("uid1", json.RawMessage(argsA)))
+		assert.False(t, ok, "nothing is cached after Dispose")
+	})
+}
+
+func TestDispose_LeavesNoGoroutineRunning(t *testing.T) {
+	// synctest.Test fails if a goroutine started in the bubble is still blocked when it returns.
+	synctest.Test(t, func(t *testing.T) {
+		ds, _ := newRecordingDatasource(t)
+		lookupAsyncDB(t, ds, argsA)
+		time.Sleep(6 * time.Minute)
+		lookupAsyncDB(t, ds, argsB)
+		ds.Dispose()
+	})
 }
