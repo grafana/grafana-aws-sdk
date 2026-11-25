@@ -33,7 +33,7 @@ func (at *AuthType) String() string {
 	case AuthTypeGrafanaAssumeRole:
 		return "grafana_assume_role"
 	default:
-		panic(fmt.Sprintf("Unrecognized auth type %d", at))
+		panic(fmt.Sprintf("Unrecognized auth type %d", *at))
 	}
 }
 
