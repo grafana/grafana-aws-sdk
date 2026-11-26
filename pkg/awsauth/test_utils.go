@@ -57,6 +57,8 @@ type mockAssumeRoleAPIClient struct {
 	mock.Mock
 	stsConfig        aws.Config
 	calledExternalId string
+	// sourceIdentities records the SourceIdentity of every AssumeRole call ("" when unset).
+	sourceIdentities []string
 }
 
 func (m *mockAssumeRoleAPIClient) AssumeRole(_ context.Context, params *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
@@ -64,6 +66,7 @@ func (m *mockAssumeRoleAPIClient) AssumeRole(_ context.Context, params *sts.Assu
 	if params.ExternalId != nil {
 		m.calledExternalId = *params.ExternalId
 	}
+	m.sourceIdentities = append(m.sourceIdentities, aws.ToString(params.SourceIdentity))
 	if args.Bool(0) { // shouldError
 		return &sts.AssumeRoleOutput{}, fmt.Errorf("assume role failed")
 	}
