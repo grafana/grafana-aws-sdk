@@ -642,9 +642,8 @@ func TestGetAWSConfig_Endpoints(t *testing.T) {
 			wantServiceEndpoint: serviceEndpoint,
 		},
 		{
-			name:          "opt-in region assumes role through us-east-1",
-			settings:      inRegion(keys("", "", roleARN), "ap-east-1"),
-			wantSTSRegion: "us-east-1",
+			name:     "opt-in region assumes role through its own region",
+			settings: inRegion(keys("", "", roleARN), "ap-east-1"),
 		},
 		{
 			name:            "opt-in region keeps its region with an sts endpoint",
@@ -694,6 +693,36 @@ func TestGetAWSConfig_Endpoints(t *testing.T) {
 				wantSTSRegion = tc.settings.Region
 			}
 			assert.Equal(t, wantSTSRegion, stsOptions.Region)
+		})
+	}
+}
+
+// TestGetAWSConfig_AssumeRoleUsesRegionalSTSEndpoint checks the host the STS client resolves for
+// regions that are off by default. Pointing it at us-east-1 sends the call to a region the
+// user may block, and tokens from there are not accepted in opt-in regions.
+func TestGetAWSConfig_AssumeRoleUsesRegionalSTSEndpoint(t *testing.T) {
+	useCredentialFiles(t, writeCredentialFiles(t, "file-access-key", "file-secret-key"))
+	for _, region := range []string{"eu-central-2", "eu-south-1", "ap-east-1", "il-central-1", "us-west-2"} {
+		t.Run(region, func(t *testing.T) {
+			ctx := config.WithGrafanaConfig(context.Background(), config.NewGrafanaCfg(defaultGrafanaConfig))
+			client := &mockAWSAPIClient{assumeRoleClient: &mockAssumeRoleAPIClient{}}
+			_, err := newAWSConfigProviderWithClient(client).GetConfig(ctx, Settings{
+				AuthType:      AuthTypeKeys,
+				AccessKey:     "tensile",
+				SecretKey:     "diaphanous",
+				Region:        region,
+				AssumeRoleARN: "arn:aws:iam::1234567890:role/aws-service-role",
+			})
+			require.NoError(t, err)
+
+			options := sts.NewFromConfig(client.assumeRoleClient.stsConfig).Options()
+			endpoint, err := sts.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, sts.EndpointParameters{
+				Region:       aws.String(options.Region),
+				UseFIPS:      aws.Bool(false),
+				UseDualStack: aws.Bool(false),
+			})
+			require.NoError(t, err)
+			assert.Equal(t, "sts."+region+".amazonaws.com", endpoint.URI.Host)
 		})
 	}
 }
