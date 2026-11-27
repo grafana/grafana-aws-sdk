@@ -2,13 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 1.5.8
 
 - Report async query errors as downstream when sqlds wraps a downstream error in a plugin error, the same as the sync path [#496](https://github.com/grafana/grafana-aws-sdk/pull/496)
 - Stop sending STS calls (Assume Role, web identity) to the custom service endpoint, which failed with a 404 when a datasource set both an Assume Role ARN and a custom endpoint [#375](https://github.com/grafana/grafana-aws-sdk/issues/375)
 - Bump Go to 1.26.11 to address GO-2026-6859 in net/http [#508](https://github.com/grafana/grafana-aws-sdk/pull/508)
 - Add an optional `stsEndpoint` setting for the STS endpoint used to assume the role. It is ignored for Grafana Assume Role [#494](https://github.com/grafana/grafana-aws-sdk/pull/494)
 - Recover from panics in async query goroutines, so a panic fails only that query and does not stop the plugin process [#497](https://github.com/grafana/grafana-aws-sdk/pull/497)
+- Fix security vulnerabilities in golang.org/x/net, golang.org/x/crypto, go.opentelemetry.io/otel and github.com/klauspost/compress [#507](https://github.com/grafana/grafana-aws-sdk/pull/507) [#509](https://github.com/grafana/grafana-aws-sdk/pull/509)
+- Raise the go directive to 1.27.4. Modules that update to this version need Go 1.27.4 or later [#509](https://github.com/grafana/grafana-aws-sdk/pull/509)
+- Dependency updates
+  - Update backend dependencies [#501](https://github.com/grafana/grafana-aws-sdk/pull/501) [#506](https://github.com/grafana/grafana-aws-sdk/pull/506) [#509](https://github.com/grafana/grafana-aws-sdk/pull/509)
+  - Update github.com/aws/smithy-go to v1.28.8 [#503](https://github.com/grafana/grafana-aws-sdk/pull/503)
 
 ## 1.5.7
 
